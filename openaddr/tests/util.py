@@ -12,7 +12,7 @@ from urllib.parse import urlparse, parse_qs
 from httmock import HTTMock, response
 from mock import Mock, patch
 
-from .. import util, ci, LocalProcessedResult, __version__
+from .. import util, LocalProcessedResult, __version__
 
 class TestUtilities (unittest.TestCase):
 

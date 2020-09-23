@@ -199,41 +199,6 @@ def conform(data_source_name, data_source, destdir, extras):
                          attr_flag,
                          attr_name)
 
-def iterate_local_processed_files(runs, sort_on='datetime_tz'):
-    ''' Yield a stream of local processed result files for a list of runs.
-
-        Used in ci.collect and dotmap processes.
-    '''
-    if sort_on == 'source_path':
-        reverse, key = False, lambda run: run.source_path
-    else:
-        reverse, key = True, lambda run: run.datetime_tz or date(1970, 1, 1)
-
-    for run in sorted(runs, key=key, reverse=reverse):
-        source_base, _ = splitext(relpath(run.source_path, 'sources'))
-        processed_url = run.state and run.state.processed
-        run_state = run.state
-
-        if not processed_url:
-            continue
-
-        try:
-            filename = download_processed_file(processed_url)
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 404:
-                continue
-            else:
-                _L.error('HTTP {} while downloading {}: {}'.format(e.response.status_code, processed_url, e))
-                continue
-        except Exception as e:
-            _L.error('Failed to download {}: {}'.format(processed_url, e))
-            continue
-
-        yield LocalProcessedResult(source_base, filename, run_state, run.code_version)
-
-        if filename and exists(filename):
-            remove(filename)
-
 def download_processed_file(url):
     ''' Download a URL to a local temporary file, return its path.
 

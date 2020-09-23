@@ -48,11 +48,10 @@ import mock
 
 from .. import (
     cache, conform, S3, process_one,
-    iterate_local_processed_files, download_processed_file
+    download_processed_file
     )
 
 from ..util import package_output
-from ..ci.objects import Run, RunState
 from ..cache import CacheResult
 from ..conform import ConformResult
 from ..process_one import find_source_problem, SourceProblem
@@ -1908,44 +1907,6 @@ class TestPackage (unittest.TestCase):
         self.assertEqual(call2[1][1], 'us-ca-carson.txt')
 
         self.assertEqual(call3[0], 'close')
-
-    def test_iterate_local_processed_files(self):
-        import requests
-        state0 = {'processed': 'http://s3.amazonaws.com/openaddresses/000.csv'}
-        state1 = {'processed': 'http://s3.amazonaws.com/openaddresses/123.csv', 'website': 'http://example.com'}
-        state3 = {'processed': 'http://s3.amazonaws.com/openaddresses/789.csv', 'license': 'ODbL'}
-
-        runs = [
-            Run(000, 'sources/000.json', '___', b'', None,
-                RunState(state0), None, None, None, None, None, None, None, None),
-            Run(123, 'sources/123.json', 'abc', b'', None,
-                RunState(state1), None, None, None, None, None, None, None, None),
-            Run(456, 'sources/456.json', 'def', b'', None,
-                RunState({'processed': None}), None, None, None, None, None, None, None, None),
-            Run(789, 'sources/7/9.json', 'ghi', b'', None,
-                RunState(state3), None, None, None, None, None, None, None, None),
-            ]
-
-        def _download_processed_file(url):
-            if url == state0['processed']:
-                raise requests.exceptions.HTTPError('HTTP 404 Not Found', response=FakeResponse(404))
-            else:
-                return 'nonexistent file'
-
-        with mock.patch('openaddr.download_processed_file') as download_processed_file:
-            download_processed_file.side_effect = _download_processed_file
-            local_processed_files = iterate_local_processed_files(runs)
-
-            local_processed_result1 = next(local_processed_files)
-            local_processed_result2 = next(local_processed_files)
-
-            self.assertEqual(local_processed_result1.source_base, '123')
-            self.assertEqual(local_processed_result1.filename, 'nonexistent file')
-            self.assertEqual(local_processed_result1.run_state.processed, state1['processed'])
-            self.assertEqual(local_processed_result2.source_base, '7/9')
-            self.assertEqual(local_processed_result2.filename, 'nonexistent file')
-            self.assertEqual(local_processed_result2.run_state.processed, state3['processed'])
-            self.assertEqual(local_processed_result2.run_state.license, state3['license'])
 
     def test_download_processed_file_csv(self):
         with mock.patch('openaddr.S3') as s3:
