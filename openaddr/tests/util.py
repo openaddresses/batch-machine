@@ -79,22 +79,6 @@ class TestUtilities (unittest.TestCase):
             self.assertEqual(mock_call[1][:1], (10800, ))
             self.assertEqual(mock_call[1][-3:], ('tasks queue', 'ns', 'Maximum'))
 
-    def test_summarize_result_licenses(self):
-        '''
-        '''
-        s1 = {'license': 'ODbL', 'attribution name': 'ABC Co.'}
-        s2 = {'website': 'http://example.com', 'attribution flag': 'false'}
-        s3 = {'attribution flag': 'true', 'attribution name': ''}
-        r1 = LocalProcessedResult('abc', 'abc.zip', ci.objects.RunState(s1), None)
-        r2 = LocalProcessedResult('def', 'def.zip', ci.objects.RunState(s2), None)
-        r3 = LocalProcessedResult('ghi', 'ghi.zip', ci.objects.RunState(s3), None)
-
-        content = util.summarize_result_licenses((r1, r2, r3))
-
-        self.assertIn('abc\nWebsite: Unknown\nLicense: ODbL\nRequired attribution: ABC Co.\n', content)
-        self.assertIn('def\nWebsite: http://example.com\nLicense: Unknown\nRequired attribution: No\n', content)
-        self.assertIn('ghi\nWebsite: Unknown\nLicense: Unknown\nRequired attribution: Yes\n', content)
-
     def test_request_ftp_file(self):
         '''
         '''

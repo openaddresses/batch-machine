@@ -87,28 +87,6 @@ def package_output(source, processed_path, website, license):
 
     return zip_path
 
-def summarize_result_licenses(results):
-    '''
-    '''
-    template = u'{source}\nWebsite: {website}\nLicense: {license}\nRequired attribution: {attribution}\n'
-    license_lines = [u'Data collected by OpenAddresses (http://openaddresses.io).\n']
-
-    for result in sorted(results, key=attrgetter('source_base')):
-        attribution = 'No'
-        if result.run_state.attribution_flag != 'false':
-            attribution = result.run_state.attribution_name or 'Yes'
-
-        license_line = template.format(
-            source=result.source_base,
-            website=result.run_state.website or 'Unknown',
-            license=result.run_state.license or 'Unknown',
-            attribution=attribution
-            )
-
-        license_lines.append(license_line)
-
-    return '\n'.join(license_lines)
-
 def build_request_ftp_file_callback():
     '''
     '''
