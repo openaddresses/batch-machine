@@ -444,7 +444,6 @@ def main():
     logger_state['stream handler'] = handler1
 
     args = parser.parse_args()
-    setup_logger(logfile=args.logfile, log_level=logging.DEBUG)
 
     # Allow CSV files with very long fields
     csv.field_size_limit(sys.maxsize)
