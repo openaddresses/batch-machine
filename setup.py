@@ -11,28 +11,21 @@ setup(
     author = 'Michal Migurski',
     author_email = 'mike-pypi@teczno.com',
     description = 'In-progress scripts for running OpenAddresses on a complete data set and publishing the results.',
-    packages = ['openaddr', 'openaddr.util', 'openaddr.ci', 'openaddr.ci.coverage', 'openaddr.tests', 'openaddr.parcels'],
+    packages = ['openaddr', 'openaddr.util', 'openaddr.tests'],
     entry_points = dict(
         console_scripts = [
-            'openaddr-render-us = openaddr.render:main',
             'openaddr-preview-source = openaddr.preview:main',
             'openaddr-process-one = openaddr.process_one:main',
             'openaddr-collect-extracts = openaddr.ci.collect:main',
             'openaddr-index-tiles = openaddr.ci.tileindex:main',
             'openaddr-update-dotmap = openaddr.dotmap:main',
-            'openaddr-sum-up-data = openaddr.ci.sum_up:main',
+            'openaddr-sum-up-data = openaddr.ci.sum_up:main'
         ]
     ),
     package_data = {
         'openaddr': [
             'geodata/*.shp', 'geodata/*.shx', 'geodata/*.prj', 'geodata/*.dbf',
             'geodata/*.cpg', 'VERSION',
-        ],
-        'openaddr.ci': [
-            'schema.pgsql', 'templates/*.*', 'static/*.*'
-        ],
-        'openaddr.ci.coverage': [
-            'schema.pgsql'
         ],
         'openaddr.tests': [
             'data/*.*', 'outputs/*.*', 'sources/*.*', 'sources/fr/*.*',
@@ -44,9 +37,6 @@ setup(
             'parcels/sources/us/ca/*.*', 'parcels/sources/us/id/*.*',
             'parcels/data/*.*', 'parcels/data/us/ca/*.*',
             'parcels/data/us/ca/berkeley/*.*'
-        ],
-        'openaddr.parcels': [
-            'README.md'
         ],
         'openaddr.util': [
             'templates/*.*'

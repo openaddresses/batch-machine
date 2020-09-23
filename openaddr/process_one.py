@@ -425,10 +425,26 @@ parser.add_argument('-q', '--quiet', help='Turn off most logging',
 def main():
     '''
     '''
-    from .jobs import setup_logger
+
+    # Get a handle for the openaddr logger and its children
+    openaddr_logger = logging.getLogger('openaddr')
+    logger_state = {'previous loglevel': openaddr_logger.level}
+
+    # Default logging format.
+    log_format = '%(asctime)s %(levelname)07s: %(message)s'
+
+    # Set the logger level to show everything, and filter down in the handlers.
+    openaddr_logger.setLevel(logging.DEBUG)
+
+    # Set up a logger to stderr
+    handler1 = logging.StreamHandler()
+    handler1.setLevel(logging.DEBUG)
+    handler1.setFormatter(logging.Formatter(log_format))
+    openaddr_logger.addHandler(handler1)
+    logger_state['stream handler'] = handler1
 
     args = parser.parse_args()
-    setup_logger(logfile=args.logfile, log_level=args.loglevel)
+    setup_logger(logfile=args.logfile, log_level=logging.DEBUG)
 
     # Allow CSV files with very long fields
     csv.field_size_limit(sys.maxsize)
