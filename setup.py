@@ -5,7 +5,7 @@ with open(join(dirname(__file__), 'openaddr', 'VERSION')) as file:
     version = file.read().strip()
 
 setup(
-    name = 'OpenAddresses-Machine',
+    name = 'batch-machine',
     version = version,
     url = 'https://github.com/openaddresses/machine',
     author = 'Michal Migurski',
@@ -17,15 +17,10 @@ setup(
             'openaddr-render-us = openaddr.render:main',
             'openaddr-preview-source = openaddr.preview:main',
             'openaddr-process-one = openaddr.process_one:main',
-            'openaddr-ci-recreate-db = openaddr.ci.recreate_db:main',
-            'openaddr-ci-run-dequeue = openaddr.ci.run_dequeue:main',
-            'openaddr-ci-worker = openaddr.ci.worker:main',
-            'openaddr-enqueue-sources = openaddr.ci.enqueue:main',
             'openaddr-collect-extracts = openaddr.ci.collect:main',
             'openaddr-index-tiles = openaddr.ci.tileindex:main',
             'openaddr-update-dotmap = openaddr.dotmap:main',
             'openaddr-sum-up-data = openaddr.ci.sum_up:main',
-            'openaddr-calculate-coverage = openaddr.ci.coverage.calculate:main',
         ]
     ),
     package_data = {
