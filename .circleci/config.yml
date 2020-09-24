@@ -2,7 +2,7 @@ version: 2
 jobs:
 
   # Run tests inside prepared Docker container.
-  Test:
+  build:
     machine: true
     steps:
       - checkout
