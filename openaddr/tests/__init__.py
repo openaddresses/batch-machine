@@ -1619,7 +1619,7 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state["processed"])
-        self.assertEqual(state["source problem"], "Could not conform source data")
+        self.assertEqual(state["source problem"], "Found no addresses in source data")
 
     def test_single_lake_man_gdb(self):
         ''' Test complete process_one.process on data.
