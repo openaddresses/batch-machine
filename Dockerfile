@@ -3,7 +3,7 @@ FROM alpine:3.11
 RUN apk add nodejs yarn git python3 python3-dev py3-pip \
     py3-gdal gdal gdal-dev make bash sqlite-dev zlib-dev \
     postgresql-libs gcc g++ musl-dev postgresql-dev cairo \
-    py3-cairo
+    py3-cairo file
 
 # Download and install Tippecanoe
 RUN git clone -b 1.35.0 https://github.com/mapbox/tippecanoe.git /tmp/tippecanoe && \
