@@ -1578,8 +1578,8 @@ class TestConformCli (unittest.TestCase):
         self.assertEqual(0, rc)
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertAlmostEqual(float(rows[0]['LAT']), 37.802612637607439, places=5)
-            self.assertAlmostEqual(float(rows[0]['LON']), -122.259249687194824, places=5)
+            self.assertAlmostEqual(float(rows[0]['LON']), 37.802612637607439, places=5)
+            self.assertAlmostEqual(float(rows[0]['LAT']), -122.259249687194824, places=5)
             self.assertEqual(rows[0]['NUMBER'], '5')
             self.assertEqual(rows[0]['STREET'], u'PZ ESPA\u00d1A')
 
@@ -1590,8 +1590,8 @@ class TestConformCli (unittest.TestCase):
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
             self.assertEqual(6, len(rows))
-            self.assertAlmostEqual(float(rows[0]['LAT']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LON']), -122.259249687194824)
+            self.assertAlmostEqual(float(rows[0]['LON']), 37.802612637607439)
+            self.assertAlmostEqual(float(rows[0]['LAT']), -122.259249687194824)
             self.assertEqual(rows[0]['NUMBER'], '5115')
             self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
 
@@ -1933,7 +1933,7 @@ class TestConformCsv(unittest.TestCase):
              u'3203,SE WOODSTOCK BLVD,7655634.924,668868.414'.encode('ascii'))
         r = self._convert(c, d)
         self.assertEqual(r[0], u'n,s,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,-122.6308422,45.4815544')
+        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,45.4815544,-122.6308422')
 
     def test_too_many_columns(self):
         "Check that we don't barf on input with too many columns in some rows"
