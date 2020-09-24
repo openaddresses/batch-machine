@@ -337,8 +337,8 @@ class TestConformTransforms (unittest.TestCase):
         # reprojection
         d = { "conform" : { "srs": "EPSG:2913", "format": "" }, 'protocol': 'test' }
         r = row_extract_and_reproject(d, {X_FIELDNAME: "7655634.924", Y_FIELDNAME: "668868.414"})
-        self.assertAlmostEqual(-122.630842186650796, float(r[X_FIELDNAME]))
-        self.assertAlmostEqual(45.481554393851063, float(r[Y_FIELDNAME]))
+        self.assertAlmostEqual(45.481554393851063, float(r[X_FIELDNAME]))
+        self.assertAlmostEqual(-122.630842186650796, float(r[Y_FIELDNAME]))
 
         d = { "conform" : { "lon": "X", "lat": "Y", "srs": "EPSG:2913", "format": "" }, 'protocol': 'test' }
         r = row_extract_and_reproject(d, {X_FIELDNAME: "", Y_FIELDNAME: ""})

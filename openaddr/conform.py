@@ -851,6 +851,8 @@ def geojson_source_to_csv(source_path, dest_path):
 
                 try:
                     row = feature['properties']
+                    if feature['geometry'] is None:
+                        continue
                     geom = ogr.CreateGeometryFromJson(json.dumps(feature['geometry']))
                     if not geom:
                         continue

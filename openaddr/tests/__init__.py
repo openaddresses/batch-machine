@@ -1539,12 +1539,12 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[1]['STREET'], u'VIA CARLO CARRÀ')
             self.assertEqual(rows[2]['NUMBER'], u'2')
             self.assertEqual(rows[2]['STREET'], u'VIA MARINO MARINI')
-            self.assertAlmostEqual(float(rows[0]['LON']), 10.1866102, places=5)
-            self.assertAlmostEqual(float(rows[0]['LAT']), 43.9556084, places=5)
-            self.assertAlmostEqual(float(rows[1]['LON']), 10.1858962, places=5)
-            self.assertAlmostEqual(float(rows[1]['LAT']), 43.9551594, places=5)
-            self.assertAlmostEqual(float(rows[2]['LON']), 10.1863462, places=5)
-            self.assertAlmostEqual(float(rows[2]['LAT']), 43.9547064, places=5)
+            self.assertAlmostEqual(float(rows[0]['LON']), 10.1863188, places=5)
+            self.assertAlmostEqual(float(rows[0]['LAT']), 43.9562646, places=5)
+            self.assertAlmostEqual(float(rows[1]['LON']), 10.1856048, places=5)
+            self.assertAlmostEqual(float(rows[1]['LAT']), 43.9558156, places=5)
+            self.assertAlmostEqual(float(rows[2]['LON']), 10.1860548, places=5)
+            self.assertAlmostEqual(float(rows[2]['LAT']), 43.9553626, places=5)
 
     def test_single_us_nj_statewide(self):
         ''' Test complete process_one.process on data.
