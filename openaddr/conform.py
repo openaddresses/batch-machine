@@ -1224,9 +1224,12 @@ def row_convert_to_out(source_config, row):
 
     for field in source_config.SCHEMA:
         if row.get('oa:{}'.format(field.lower())):
+            # If there is an OA prefix, it is not a native field and was compiled
+            # via an attrib funciton or concatentation
             output[field] = row.get('oa:{}'.format(field.lower()))
         else:
-            output[field] = source_config.data_source['conform'].get(field.lower())
+            # Get a native field as specified in the conform object
+            output[field] = row.get(source_config.data_source['conform'].get(field.lower()).lower())
 
     return output
 
