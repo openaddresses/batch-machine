@@ -27,7 +27,7 @@ import requests
 # HTTP timeout in seconds, used in various calls to requests.get() and requests.post()
 _http_timeout = 180
 
-from .conform import X_FIELDNAME, Y_FIELDNAME, GEOM_FIELDNAME, attrib_types
+from .conform import GEOM_FIELDNAME
 from . import util
 
 def mkdirsp(path):
@@ -371,10 +371,6 @@ class EsriRestDownloadTask(DownloadTask):
             else:
                 field_names = query_fields[:]
 
-            if X_FIELDNAME not in field_names:
-                field_names.append(X_FIELDNAME)
-            if Y_FIELDNAME not in field_names:
-                field_names.append(Y_FIELDNAME)
             if GEOM_FIELDNAME not in field_names:
                 field_names.append(GEOM_FIELDNAME)
 
@@ -401,19 +397,6 @@ class EsriRestDownloadTask(DownloadTask):
 
                         shp = shape(feature['geometry'])
                         row[GEOM_FIELDNAME] = shp.wkt
-                        try:
-                            centroid = shp.centroid
-                        except RuntimeError as e:
-                            if 'Invalid number of points in LinearRing found' not in str(e):
-                                raise
-                            xmin, xmax, ymin, ymax = shp.bounds
-                            row[X_FIELDNAME] = round(xmin/2 + xmax/2, 7)
-                            row[Y_FIELDNAME] = round(ymin/2 + ymax/2, 7)
-                        else:
-                            if centroid.is_empty:
-                                raise TypeError(json.dumps(feature['geometry']))
-                            row[X_FIELDNAME] = round(centroid.x, 7)
-                            row[Y_FIELDNAME] = round(centroid.y, 7)
 
                         writer.writerow({fn: row.get(fn) for fn in field_names})
                         size += 1

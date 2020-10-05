@@ -10,7 +10,7 @@ from _thread import get_ident
 import tempfile, json, csv, sys, enum
 import threading
 
-from . import util, cache, conform, preview, slippymap, CacheResult, ConformResult, __version__
+from . import util, cache, conform, preview, slippymap, CacheResult, ConformResult, __version__, SourceConfig
 from .cache import DownloadError
 from .conform import check_source_tests
 
@@ -101,37 +101,34 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
                     raise ValueError('explicit --layersource arg is required for v2 sources')
 
                 # Only Address Layers are supported right now
-                if (layer != 'addresses'):
+                if (layer != 'addresses' and layer != 'parcels'):
                     _L.error('Nothing processed: \'{}\' layer not currently supported'.format(layer))
                     raise ValueError('Nothing processed: \'{}\' layer not currently supported')
                 elif source['layers'].get(layer, None) == None:
                     _L.error('Nothing processed: \'{}\' layer does not exist in source'.format(layer))
                     raise ValueError('Nothing processed: \'{}\' layer does not exist in source')
 
-                for ds in source['layers'][layer]:
-                    if ds.get('name', None) == layersource:
-                        data_source = ds
-                        break
+                source_config = SourceConfig(source, layer, layersource)
 
-                if data_source == False:
+                if source_config.data_source == False:
                     _L.error('Nothing processed: \'{}\' layersource not found in \'{}\' layer '.format(layersource, layer))
                     raise ValueError('Nothing processed: \'{}\' layersource not found in \'{}\' layer')
 
-                if data_source.get('skip', None):
+                if source_config.data_source.get('skip', None):
                     raise SourceSaysSkip()
 
                 # Check tests in data_source object.
-                tests_passed, failure_details = check_source_tests(data_source)
+                tests_passed, failure_details = check_source_tests(source_config.data_source)
                 if tests_passed is False:
                     raise SourceTestsFailed(failure_details)
 
-                if data_source.get('name', None) == None:
+                if source_config.data_source.get('name', None) == None:
                     _L.warning('name attribute is required on each data source')
                     raise ValueError('name attribute is required on each data source')
 
                 # Cache source data.
                 try:
-                    cache_result = cache(layer + '-' + data_source['name'], data_source, temp_dir, extras)
+                    cache_result = cache(source_config, temp_dir, extras)
                 except EsriDownloadError as e:
                     _L.warning('Could not download ESRI source data: {}'.format(e))
                     raise
@@ -145,7 +142,7 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
                     _L.info(u'Cached data in {}'.format(cache_result.cache))
 
                     # Conform cached source data.
-                    conform_result = conform(layer + '-' + data_source['name'], data_source, temp_dir, cache_result.todict())
+                    conform_result = conform(source_config, temp_dir, cache_result.todict())
 
                     if not conform_result.path:
                         _L.warning('Nothing processed')

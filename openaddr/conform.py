@@ -24,7 +24,6 @@ from .sample import sample_geojson, stream_geojson
 from osgeo import ogr, osr, gdal
 ogr.UseExceptions()
 
-
 def gdal_error_handler(err_class, err_num, err_msg):
     errtype = {
             gdal.CE_None:'None',
@@ -38,27 +37,9 @@ def gdal_error_handler(err_class, err_num, err_msg):
     _L.error("GDAL gave %s %s: %s", err_class, err_num, err_msg)
 gdal.PushErrorHandler(gdal_error_handler)
 
-
-# The canonical output schema for conform
-OPENADDR_CSV_SCHEMA = ['LON', 'LAT', 'NUMBER', 'STREET', 'UNIT', 'CITY',
-                       'DISTRICT', 'REGION', 'POSTCODE', 'ID', 'HASH']
-
 # Field names for use in cached CSV files.
 # We add columns to the extracted CSV with our own data with these names.
 GEOM_FIELDNAME = 'OA:geom'
-X_FIELDNAME, Y_FIELDNAME = 'OA:x', 'OA:y'
-attrib_types = {
-    'street':   'OA:street',
-    'number':   'OA:number',
-    'unit':     'OA:unit',
-    'city':     'OA:city',
-    'postcode': 'OA:postcode',
-    'district': 'OA:district',
-    'region':   'OA:region',
-    'id':       'OA:id'
-}
-
-var_types = attrib_types.copy()
 
 UNZIPPED_DIRNAME = 'unzipped'
 
@@ -367,7 +348,7 @@ class ExcerptDataTask(object):
         # Determine geometry_type from layer, sample, or give up.
         if layer_defn.GetGeomType() in geometry_types:
             geometry_type = geometry_types.get(layer_defn.GetGeomType(), None)
-        elif fieldnames[-3:] == [X_FIELDNAME, Y_FIELDNAME, GEOM_FIELDNAME]:
+        elif fieldnames[-1:] == [GEOM_FIELDNAME]:
             geometry = ogr.CreateGeometryFromWkt(data_sample[1][-1])
             geometry_type = geometry_types.get(geometry.GetGeometryType(), None)
         else:
@@ -481,7 +462,7 @@ def find_source_path(source_definition, source_paths):
     format_string = conform.get('format')
     protocol_string = source_definition.get('protocol')
 
-    if format_string in ("shapefile", "shapefile-polygon"):
+    if format_string in ("shapefile"):
         # TODO this code is too complicated; see XML variant below for simpler option
         # Shapefiles are named *.shp
         candidates = []
@@ -704,8 +685,7 @@ def ogr_source_to_csv(source_definition, source_path, dest_path):
     for i in range(0, in_layer_defn.GetFieldCount()):
         field_defn = in_layer_defn.GetFieldDefn(i)
         out_fieldnames.append(field_defn.GetName())
-    out_fieldnames.append(X_FIELDNAME)
-    out_fieldnames.append(Y_FIELDNAME)
+    out_fieldnames.append(GEOM_FIELDNAME)
 
     # Set up a transformation from the source SRS to EPSG:4326
     outSpatialRef = osr.SpatialReference()
@@ -735,21 +715,19 @@ def ogr_source_to_csv(source_definition, source_path, dest_path):
             geom = in_feature.GetGeometryRef()
             if geom is not None:
                 geom.Transform(coordTransform)
-                # Calculate the centroid of the geometry and write it as X and Y columns
+                # Calculate the centroid on surface of the geometry and write it as X and Y columns
                 try:
-                    centroid = geom.Centroid()
+                    centroid = geom.PointOnSurface()
                 except RuntimeError as e:
                     if 'Invalid number of points in LinearRing found' not in str(e):
                         raise
                     xmin, xmax, ymin, ymax = geom.GetEnvelope()
-                    row[X_FIELDNAME] = xmin/2 + xmax/2
-                    row[Y_FIELDNAME] = ymin/2 + ymax/2
-                else:
-                    row[X_FIELDNAME] = centroid.GetX()
-                    row[Y_FIELDNAME] = centroid.GetY()
+
+                    centroid = ogr.CreateGeometryFromWkt("POINT ({} {})".format(xmin/2 + xmax/2, ymin/2 + ymax/2))
+
+                row[GEOM_FIELDNAME] = centroid.ExportToWkt()
             else:
-                row[X_FIELDNAME] = None
-                row[Y_FIELDNAME] = None
+                row[GEOM_FIELDNAME] = None
 
             writer.writerow(row)
 
@@ -812,8 +790,7 @@ def csv_source_to_csv(source_definition, source_path, dest_path):
             old_latlon = [source_definition["conform"]["lat"], source_definition["conform"]["lon"]]
             old_latlon.extend([s.upper() for s in old_latlon])
             out_fieldnames = [fn for fn in reader.fieldnames if fn not in old_latlon]
-            out_fieldnames.append(X_FIELDNAME)
-            out_fieldnames.append(Y_FIELDNAME)
+            out_fieldnames.append(GEOM_FIELDNAME)
 
         # Write the extracted CSV file
         with open(dest_path, 'w', encoding='utf-8') as dest_fp:
@@ -845,7 +822,7 @@ def geojson_source_to_csv(source_path, dest_path):
             for (row_number, feature) in enumerate(stream_geojson(file)):
                 if writer is None:
                     out_fieldnames = list(feature['properties'].keys())
-                    out_fieldnames.extend((X_FIELDNAME, Y_FIELDNAME))
+                    out_fieldnames.extend((GEOM_FIELDNAME))
                     writer = csv.DictWriter(dest_fp, out_fieldnames)
                     writer.writeheader()
 
@@ -861,7 +838,7 @@ def geojson_source_to_csv(source_path, dest_path):
                     _L.error('Error in row {}: {}'.format(row_number, e))
                     raise
                 else:
-                    row.update({X_FIELDNAME: center.GetX(), Y_FIELDNAME: center.GetY()})
+                    row.update({GEOM_FIELDNAME: center.ExportToWkt()})
                     writer.writerow(row)
 
 _transform_cache = {}
@@ -1028,8 +1005,6 @@ def conform_smash_case(source_definition):
     new_sd = copy.deepcopy(source_definition)
     conform = new_sd["conform"]
     for k, v in conform.items():
-        if v not in (X_FIELDNAME, Y_FIELDNAME) and getattr(v, 'lower', None):
-            conform[k] = v.lower()
         if type(conform[k]) is list:
             conform[k] = [s.lower() for s in conform[k]]
         if type(conform[k]) is dict:
@@ -1053,7 +1028,7 @@ def conform_smash_case(source_definition):
 
 def row_smash_case(sd, input):
     "Convert all field names to lowercase. Slow, but necessary for imprecise conform specs."
-    output = { k if k in (X_FIELDNAME, Y_FIELDNAME) else k.lower() : v for (k, v) in input.items() }
+    output = { k.lower() : v for (k, v) in input.items() }
     return output
 
 def row_merge(sd, row, key):
@@ -1249,8 +1224,8 @@ def row_convert_to_out(sd, row):
             keys[k] = sd['conform'].get(k, False)
 
     return {
-        "LON": row.get(X_FIELDNAME, None),
-        "LAT": row.get(Y_FIELDNAME, None),
+        "LON": row.get(GEOM_FIELDNAME, None),
+        "LAT": row.get(GEOM_FIELDNAME, None),
         "UNIT": row.get(keys['unit'], None) if keys['unit'] else None,
         "NUMBER": row.get(keys['number'], None) if keys['number'] else None,
         "STREET": row.get(keys['street'], None) if keys['street'] else None,
@@ -1274,7 +1249,7 @@ def extract_to_source_csv(source_definition, source_path, extract_path):
     format_string = source_definition["conform"]['format']
     protocol_string = source_definition['protocol']
 
-    if format_string in ("shapefile", "shapefile-polygon", "xml", "gdb"):
+    if format_string in ("shapefile", "xml", "gdb"):
         ogr_source_path = normalize_ogr_filename_case(source_path)
         ogr_source_to_csv(source_definition, ogr_source_path, extract_path)
     elif format_string == "csv":
@@ -1306,7 +1281,7 @@ def transform_to_out_csv(source_definition, extract_path, dest_path):
         reader = csv.DictReader(extract_fp)
         # Write to the destination CSV
         with open(dest_path, 'w', encoding='utf-8') as dest_fp:
-            writer = csv.DictWriter(dest_fp, OPENADDR_CSV_SCHEMA)
+            writer = csv.DictWriter(dest_fp, OPENADDR_ADDR_SCHEMA)
             writer.writeheader()
             # For every row in the extract
             for extract_row in reader:
@@ -1322,7 +1297,7 @@ def conform_cli(source_definition, source_path, dest_path):
 
     format_string = source_definition["conform"].get('format')
 
-    if not format_string in ["shapefile", "shapefile-polygon", "geojson", "csv", "xml", "gdb"]:
+    if not format_string in ["shapefile", "geojson", "csv", "xml", "gdb"]:
         _L.warning("Skipping file with unknown conform: %s", source_path)
         return 1
 
