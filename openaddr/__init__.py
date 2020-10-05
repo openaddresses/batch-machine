@@ -114,7 +114,7 @@ def cache(source_config, destdir, extras):
     protocol_string = source_config.data_source.get('protocol')
 
     task = DownloadTask.from_protocol_string(protocol_string, source_config)
-    downloaded_files = task.download(source_urls, workdir, source_config.data_source.get('conform'))
+    downloaded_files = task.download(source_urls, workdir, source_config)
 
     # FIXME: I wrote the download stuff to assume multiple files because
     # sometimes a Shapefile fileset is splayed across multiple files instead

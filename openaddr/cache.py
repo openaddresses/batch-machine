@@ -141,7 +141,7 @@ class DownloadTask(object):
         else:
             raise KeyError("I don't know how to extract for protocol {}".format(protocol_string))
 
-    def download(self, source_urls, workdir, conform):
+    def download(self, source_urls, workdir, source_config):
         raise NotImplementedError()
 
 def guess_url_file_extension(url):
@@ -249,7 +249,7 @@ class URLDownloadTask(DownloadTask):
 
         return os.path.join(dir_path, name_base + path_ext)
 
-    def download(self, source_urls, workdir, conform=None):
+    def download(self, source_urls, workdir, source_config=None):
         output_files = []
         download_path = os.path.join(workdir, 'http')
         mkdirsp(download_path)
@@ -322,15 +322,18 @@ class EsriRestDownloadTask(DownloadTask):
                 return set([v.get('field')])
 
     @classmethod
-    def field_names_to_request(cls, conform):
+    def field_names_to_request(cls, source_config):
         ''' Return list of fieldnames to request based on conform, or None.
         '''
+
+        conform = source_config.data_source.get('conform')
+
         if not conform:
             return None
 
         fields = set()
         for k, v in conform.items():
-            if k in attrib_types:
+            if k.upper() in source_config.SCHEMA:
                 if isinstance(v, dict):
                     # It's a function of some sort?
                     if 'function' in v:
@@ -346,12 +349,12 @@ class EsriRestDownloadTask(DownloadTask):
         else:
             return None
 
-    def download(self, source_urls, workdir, conform=None):
+    def download(self, source_urls, workdir, source_config=None):
         output_files = []
         download_path = os.path.join(workdir, 'esri')
         mkdirsp(download_path)
 
-        query_fields = EsriRestDownloadTask.field_names_to_request(conform)
+        query_fields = EsriRestDownloadTask.field_names_to_request(source_config)
 
         for source_url in source_urls:
             size = 0
