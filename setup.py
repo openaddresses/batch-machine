@@ -86,8 +86,8 @@ setup(
         'esridump == 1.6.0',
 
         # Used in openaddr.parcels
-        'Shapely == 1.7b1',
-        'Fiona == 1.8.13',
+        'Shapely == 1.7.1',
+        'Fiona == 1.8.17',
 
         # Used in dotmaps preview to support S3-backed SQLite mbtiles
         # https://rogerbinns.github.io/apsw/

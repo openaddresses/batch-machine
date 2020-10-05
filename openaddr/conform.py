@@ -39,7 +39,7 @@ gdal.PushErrorHandler(gdal_error_handler)
 
 # Field names for use in cached CSV files.
 # We add columns to the extracted CSV with our own data with these names.
-GEOM_FIELDNAME = 'OA:geom'
+GEOM_FIELDNAME = 'OA:GEOM'
 
 UNZIPPED_DIRNAME = 'unzipped'
 
@@ -974,18 +974,15 @@ def row_transform_and_convert(source_config, row):
             "Dicts are custom processing functions"
             row = row_function(source_config.data_source, row, k, v)
 
-    if "advanced_merge" in c:
-        raise ValueError('Found unsupported "advanced_merge" option in conform')
-    if "split" in c:
-        raise ValueError('Found unsupported "split" option in conform')
-
     # Make up a random fingerprint if none exists
     cache_fingerprint = source_config.data_source.get('fingerprint', str(uuid4()))
 
     row = row_convert_to_out(source_config, row)
+
     if source_config.layer == "addresses":
         row = row_canonicalize_unit_and_number(source_config.data_source, row)
-    row = row_round_lat_lon(source_config.data_source, row)
+        row = row_round_lat_lon(source_config.data_source, row)
+
     row = row_calculate_hash(cache_fingerprint, row)
     return row
 
@@ -1198,8 +1195,13 @@ def _round_wgs84_to_7(n):
 
 def row_round_lat_lon(sd, row):
     "Round WGS84 coordinates to 1cm precision"
-    row["LON"] = _round_wgs84_to_7(row["LON"])
-    row["LAT"] = _round_wgs84_to_7(row["LAT"])
+    if 'POINT' in row['GEOM']:
+        geom = ogr.CreateGeometryFromWkt(row['GEOM'])
+        x = _round_wgs84_to_7(geom.GetX())
+        y = _round_wgs84_to_7(geom.GetY())
+
+        row['GEOM'] = ogr.CreateGeometryFromWkt('POINT ({} {})'.format(x, y))
+
     return row
 
 def row_calculate_hash(cache_fingerprint, row):
@@ -1215,14 +1217,16 @@ def row_calculate_hash(cache_fingerprint, row):
 
 def row_convert_to_out(source_config, row):
     "Convert a row from the source schema to OpenAddresses output schema"
-    # note: source_config.data_source["conform"]["lat"] and lon were already applied in the extraction from source
 
     output = {
-        "GEOM": row.get(GEOM_FIELDNAME, None),
+        "GEOM": row.get(GEOM_FIELDNAME.lower(), None),
     }
 
     for field in source_config.SCHEMA:
-        output[field] = row.get('OA:{}'.format(field), None)
+        if row.get('oa:{}'.format(field.lower())):
+            output[field] = row.get('oa:{}'.format(field.lower()))
+        else:
+            output[field] = source_config.data_source['conform'].get(field.lower())
 
     return output
 
@@ -1271,7 +1275,7 @@ def transform_to_out_csv(source_config, extract_path, dest_path):
         reader = csv.DictReader(extract_fp)
         # Write to the destination CSV
         with open(dest_path, 'w', encoding='utf-8') as dest_fp:
-            writer = csv.DictWriter(dest_fp, source_config.SCHEMA)
+            writer = csv.DictWriter(dest_fp, ['GEOM', 'HASH', *source_config.SCHEMA])
             writer.writeheader()
             # For every row in the extract
             for extract_row in reader:
