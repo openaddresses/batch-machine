@@ -639,11 +639,11 @@ def normalize_ogr_filename_case(source_path):
 
     return normal_path
 
-def ogr_source_to_csv(data_source, source_path, dest_path):
+def ogr_source_to_csv(source_config, source_path, dest_path):
     ''' Convert a single shapefile or GeoJSON in source_path and put it in dest_path
     '''
     in_datasource = ogr.Open(source_path, 0)
-    layer_id = data_source['conform'].get('layer', 0)
+    layer_id = source_config.data_source['conform'].get('layer', 0)
     if isinstance(layer_id, int):
         in_layer = in_datasource.GetLayerByIndex(layer_id)
         _L.info("Converting layer %s (%s) to CSV", layer_id, repr(in_layer.GetName()))
@@ -653,7 +653,7 @@ def ogr_source_to_csv(data_source, source_path, dest_path):
 
     # Determine the appropriate SRS
     inSpatialRef = in_layer.GetSpatialRef()
-    srs = data_source["conform"].get("srs", None)
+    srs = source_config.data_source["conform"].get("srs", None)
 
     if srs is not None:
         # OGR may have a projection, but use the explicit SRS instead
@@ -672,8 +672,8 @@ def ogr_source_to_csv(data_source, source_path, dest_path):
     if in_layer.TestCapability(ogr.OLCStringsAsUTF8):
         # OGR turned this to UTF 8 for us
         shp_encoding = 'utf-8'
-    elif "encoding" in data_source["conform"]:
-        shp_encoding = data_source["conform"]["encoding"]
+    elif "encoding" in source_config.data_source["conform"]:
+        shp_encoding = source_config.data_source["conform"]["encoding"]
     else:
         _L.warning("No encoding given and OGR couldn't guess. Trying ISO-8859-1, YOLO!")
         shp_encoding = "iso-8859-1"
@@ -715,17 +715,21 @@ def ogr_source_to_csv(data_source, source_path, dest_path):
             geom = in_feature.GetGeometryRef()
             if geom is not None:
                 geom.Transform(coordTransform)
-                # Calculate the centroid on surface of the geometry and write it as X and Y columns
-                try:
-                    centroid = geom.PointOnSurface()
-                except RuntimeError as e:
-                    if 'Invalid number of points in LinearRing found' not in str(e):
-                        raise
-                    xmin, xmax, ymin, ymax = geom.GetEnvelope()
 
-                    centroid = ogr.CreateGeometryFromWkt("POINT ({} {})".format(xmin/2 + xmax/2, ymin/2 + ymax/2))
+                if source_config.layer == "addresses":
+                    # For Addresses - Calculate the centroid on surface of the geometry and write it as X and Y columns
+                    try:
+                        centroid = geom.PointOnSurface()
+                    except RuntimeError as e:
+                        if 'Invalid number of points in LinearRing found' not in str(e):
+                            raise
+                        xmin, xmax, ymin, ymax = geom.GetEnvelope()
 
-                row[GEOM_FIELDNAME] = centroid.ExportToWkt()
+                        centroid = ogr.CreateGeometryFromWkt("POINT ({} {})".format(xmin/2 + xmax/2, ymin/2 + ymax/2))
+
+                    row[GEOM_FIELDNAME] = centroid.ExportToWkt()
+                else:
+                    row[GEOM_FIELDNAME] = geom.ExportToWkt()
             else:
                 row[GEOM_FIELDNAME] = None
 
@@ -1235,27 +1239,27 @@ def row_convert_to_out(source_config, row):
 
 ### File-level conform code. Inputs and outputs are filenames.
 
-def extract_to_source_csv(data_source, source_path, extract_path):
+def extract_to_source_csv(source_config, source_path, extract_path):
     """Extract arbitrary downloaded sources to an extracted CSV in the source schema.
-    data_source: description of the source, containing the conform object
+    source_config: description of the source, containing the conform object
     extract_path: file to write the extracted CSV file
 
     The extracted file will be in UTF-8 and will have X and Y columns corresponding
     to longitude and latitude in EPSG:4326.
     """
-    format_string = data_source["conform"]['format']
-    protocol_string = data_source['protocol']
+    format_string = source_config.data_source["conform"]['format']
+    protocol_string = source_config.data_source['protocol']
 
     if format_string in ("shapefile", "xml", "gdb"):
         ogr_source_path = normalize_ogr_filename_case(source_path)
-        ogr_source_to_csv(data_source, ogr_source_path, extract_path)
+        ogr_source_to_csv(source_config, ogr_source_path, extract_path)
     elif format_string == "csv":
-        csv_source_to_csv(data_source, source_path, extract_path)
+        csv_source_to_csv(source_config.data_source, source_path, extract_path)
     elif format_string == "geojson":
         # GeoJSON sources have some awkward legacy with ESRI, see issue #34
         if protocol_string == "ESRI":
             _L.info("ESRI GeoJSON source found; treating it as CSV")
-            csv_source_to_csv(data_source, source_path, extract_path)
+            csv_source_to_csv(source_config.data_source, source_path, extract_path)
         else:
             _L.info("Non-ESRI GeoJSON source found; converting as a stream.")
             geojson_source_path = normalize_ogr_filename_case(source_path)
@@ -1304,7 +1308,7 @@ def conform_cli(source_config, source_path, dest_path):
     _L.debug('extract temp file %s', extract_path)
 
     try:
-        extract_to_source_csv(source_config.data_source, source_path, extract_path)
+        extract_to_source_csv(source_config, source_path, extract_path)
         transform_to_out_csv(source_config, extract_path, dest_path)
     finally:
         os.remove(extract_path)
