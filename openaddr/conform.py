@@ -957,23 +957,22 @@ def row_function(sd, row, key, fxn):
 
 ### Row-level conform code. Inputs and outputs are individual rows in a CSV file.
 ### The input row may or may not be modified in place. The output row is always returned.
-
-def row_transform_and_convert(sd, row):
+def row_transform_and_convert(source_config, row):
     "Apply the full conform transform and extract operations to a row"
 
     # Some conform specs have fields named with a case different from the source
-    row = row_smash_case(sd, row)
+    row = row_smash_case(source_config.data_source, row)
 
-    c = sd["conform"]
+    c = source_config.data_source["conform"]
 
     "Attribute tags can utilize processing fxns"
     for k, v in c.items():
-        if k in attrib_types and type(v) is list:
+        if k.upper() in source_config.SCHEMA and type(v) is list:
             "Lists are a concat shortcut to concat fields with spaces"
-            row = row_merge(sd, row, k)
-        if k in attrib_types and type(v) is dict:
+            row = row_merge(source_config.data_source, row, k)
+        if k.upper() in source_config.SCHEMA and type(v) is dict:
             "Dicts are custom processing functions"
-            row = row_function(sd, row, k, v)
+            row = row_function(source_config.data_source, row, k, v)
 
     if "advanced_merge" in c:
         raise ValueError('Found unsupported "advanced_merge" option in conform')
@@ -981,13 +980,14 @@ def row_transform_and_convert(sd, row):
         raise ValueError('Found unsupported "split" option in conform')
 
     # Make up a random fingerprint if none exists
-    cache_fingerprint = sd.get('fingerprint', str(uuid4()))
+    cache_fingerprint = source_config.data_source.get('fingerprint', str(uuid4()))
 
-    row2 = row_convert_to_out(sd, row)
-    row3 = row_canonicalize_unit_and_number(sd, row2)
-    row4 = row_round_lat_lon(sd, row3)
-    row5 = row_calculate_hash(cache_fingerprint, row4)
-    return row5
+    row = row_convert_to_out(source_config, row)
+    if source_config.layer == "addresses":
+        row = row_canonicalize_unit_and_number(source_config.data_source, row)
+    row = row_round_lat_lon(source_config.data_source, row)
+    row = row_calculate_hash(cache_fingerprint, row)
+    return row
 
 def fxn_smash_case(fxn):
     if "field" in fxn:
@@ -1195,6 +1195,7 @@ def _round_wgs84_to_7(n):
         return "%.12g" % round(float(n), 7)
     except:
         return n
+
 def row_round_lat_lon(sd, row):
     "Round WGS84 coordinates to 1cm precision"
     row["LON"] = _round_wgs84_to_7(row["LON"])
@@ -1212,29 +1213,18 @@ def row_calculate_hash(cache_fingerprint, row):
 
     return row
 
-def row_convert_to_out(sd, row):
+def row_convert_to_out(source_config, row):
     "Convert a row from the source schema to OpenAddresses output schema"
-    # note: sd["conform"]["lat"] and lon were already applied in the extraction from source
+    # note: source_config.data_source["conform"]["lat"] and lon were already applied in the extraction from source
 
-    keys = {}
-    for k, v in attrib_types.items():
-        if attrib_types[k] in row:
-            keys[k] = attrib_types[k]
-        else:
-            keys[k] = sd['conform'].get(k, False)
-
-    return {
-        "LON": row.get(GEOM_FIELDNAME, None),
-        "LAT": row.get(GEOM_FIELDNAME, None),
-        "UNIT": row.get(keys['unit'], None) if keys['unit'] else None,
-        "NUMBER": row.get(keys['number'], None) if keys['number'] else None,
-        "STREET": row.get(keys['street'], None) if keys['street'] else None,
-        "CITY": row.get(keys['city'], None) if keys['city'] else None,
-        "DISTRICT": row.get(keys['district'], None) if keys['district'] else None,
-        "REGION": row.get(keys['region'], None) if keys['region'] else None,
-        "POSTCODE": row.get(keys['postcode'], None) if keys['postcode'] else None,
-        "ID": row.get(keys['id'], None) if keys['id'] else None,
+    output = {
+        "GEOM": row.get(GEOM_FIELDNAME, None),
     }
+
+    for field in source_config.SCHEMA:
+        output[field] = row.get('OA:{}'.format(field), None)
+
+    return output
 
 ### File-level conform code. Inputs and outputs are filenames.
 
@@ -1285,7 +1275,7 @@ def transform_to_out_csv(source_config, extract_path, dest_path):
             writer.writeheader()
             # For every row in the extract
             for extract_row in reader:
-                out_row = row_transform_and_convert(source_config.data_source, extract_row)
+                out_row = row_transform_and_convert(source_config, extract_row)
                 writer.writerow(out_row)
 
 def conform_cli(source_config, source_path, dest_path):
@@ -1407,17 +1397,17 @@ def conform_sharealike(license):
         if share_alike.lower() in ('y', 'yes', 't', 'true'):
             return True
 
-def check_source_tests(raw_source):
+def check_source_tests(source_config):
     ''' Return boolean status and a message if any tests failed.
     '''
     try:
         # Convert all field names in the conform spec to lower case
-        source = conform_smash_case(raw_source)
+        source_config.data_source = conform_smash_case(source_config.data_source)
     except:
         # There may be problems in the source spec - ignore them for now.
-        source = raw_source
+         source_config.data_source = raw_source
 
-    source_test = source.get('test', {})
+    source_test = source_config.data_source.get('test', {})
     tests_enabled = source_test.get('enabled', True)
     acceptance_tests = source_test.get('acceptance-tests')
 
@@ -1426,10 +1416,10 @@ def check_source_tests(raw_source):
         return None, None
 
     for (index, test) in enumerate(acceptance_tests):
-        input = row_smash_case(source, test['inputs'])
-        output = row_smash_case(source, row_transform_and_convert(source, input))
+        input = row_smash_case(source_config.data_source, test['inputs'])
+        output = row_smash_case(source_config.data_source, row_transform_and_convert(source_config, input))
         actual = {k: v for (k, v) in output.items() if k in test['expected']}
-        expected = row_smash_case(source, test['expected'])
+        expected = row_smash_case(source_config.data_source, test['expected'])
 
         if actual != expected:
             expected_json = json.dumps(expected, ensure_ascii=False)

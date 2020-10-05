@@ -118,7 +118,7 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
                     raise SourceSaysSkip()
 
                 # Check tests in data_source object.
-                tests_passed, failure_details = check_source_tests(source_config.data_source)
+                tests_passed, failure_details = check_source_tests(source_config)
                 if tests_passed is False:
                     raise SourceTestsFailed(failure_details)
 
