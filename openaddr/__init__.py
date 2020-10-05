@@ -187,7 +187,7 @@ def conform(source_config, destdir, extras):
 
     task4 = ConvertToCsvTask()
     try:
-        csv_path, addr_count = task4.convert(source_config.data_source, decompressed_paths, workdir)
+        csv_path, addr_count = task4.convert(source_config, decompressed_paths, workdir)
         if addr_count > 0:
             _L.info("Converted to %s with %d addresses", csv_path, addr_count)
         else:

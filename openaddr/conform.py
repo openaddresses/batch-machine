@@ -450,17 +450,17 @@ def guess_source_encoding(datasource, layer):
         or (is_shapefile and 'ISO-8859-1') \
         or getpreferredencoding()
 
-def find_source_path(source_definition, source_paths):
+def find_source_path(data_source, source_paths):
     ''' Figure out which of the possible paths is the actual source
     '''
     try:
-        conform = source_definition["conform"]
+        conform = data_source["conform"]
     except KeyError:
         _L.warning('Source is missing a conform object')
         raise
 
     format_string = conform.get('format')
-    protocol_string = source_definition.get('protocol')
+    protocol_string = data_source.get('protocol')
 
     if format_string in ("shapefile"):
         # TODO this code is too complicated; see XML variant below for simpler option
@@ -568,7 +568,7 @@ def find_source_path(source_definition, source_paths):
 class ConvertToCsvTask(object):
     known_types = ('.shp', '.json', '.csv', '.kml', '.gdb')
 
-    def convert(self, source_definition, source_paths, workdir):
+    def convert(self, source_config, source_paths, workdir):
         "Convert a list of source_paths and write results in workdir"
         _L.debug("Converting to %s", workdir)
 
@@ -578,11 +578,11 @@ class ConvertToCsvTask(object):
         mkdirsp(convert_path)
 
         # Find the source and convert it
-        source_path = find_source_path(source_definition, source_paths)
+        source_path = find_source_path(source_config.data_source, source_paths)
         if source_path is not None:
             basename, ext = os.path.splitext(os.path.basename(source_path))
             dest_path = os.path.join(convert_path, basename + ".csv")
-            rc = conform_cli(source_definition, source_path, dest_path)
+            rc = conform_cli(source_config, source_path, dest_path)
             if rc == 0:
                 with open(dest_path) as file:
                     addr_count = sum(1 for line in file) - 1
@@ -639,11 +639,11 @@ def normalize_ogr_filename_case(source_path):
 
     return normal_path
 
-def ogr_source_to_csv(source_definition, source_path, dest_path):
+def ogr_source_to_csv(data_source, source_path, dest_path):
     ''' Convert a single shapefile or GeoJSON in source_path and put it in dest_path
     '''
     in_datasource = ogr.Open(source_path, 0)
-    layer_id = source_definition['conform'].get('layer', 0)
+    layer_id = data_source['conform'].get('layer', 0)
     if isinstance(layer_id, int):
         in_layer = in_datasource.GetLayerByIndex(layer_id)
         _L.info("Converting layer %s (%s) to CSV", layer_id, repr(in_layer.GetName()))
@@ -653,7 +653,7 @@ def ogr_source_to_csv(source_definition, source_path, dest_path):
 
     # Determine the appropriate SRS
     inSpatialRef = in_layer.GetSpatialRef()
-    srs = source_definition["conform"].get("srs", None)
+    srs = data_source["conform"].get("srs", None)
 
     if srs is not None:
         # OGR may have a projection, but use the explicit SRS instead
@@ -672,8 +672,8 @@ def ogr_source_to_csv(source_definition, source_path, dest_path):
     if in_layer.TestCapability(ogr.OLCStringsAsUTF8):
         # OGR turned this to UTF 8 for us
         shp_encoding = 'utf-8'
-    elif "encoding" in source_definition["conform"]:
-        shp_encoding = source_definition["conform"]["encoding"]
+    elif "encoding" in data_source["conform"]:
+        shp_encoding = data_source["conform"]["encoding"]
     else:
         _L.warning("No encoding given and OGR couldn't guess. Trying ISO-8859-1, YOLO!")
         shp_encoding = "iso-8859-1"
@@ -736,15 +736,15 @@ def ogr_source_to_csv(source_definition, source_path, dest_path):
 
     in_datasource.Destroy()
 
-def csv_source_to_csv(source_definition, source_path, dest_path):
+def csv_source_to_csv(data_source, source_path, dest_path):
     "Convert a source CSV file to an intermediate form, coerced to UTF-8 and EPSG:4326"
     _L.info("Converting source CSV %s", source_path)
 
     # Encoding processing tag
-    enc = source_definition["conform"].get("encoding", "utf-8")
+    enc = data_source["conform"].get("encoding", "utf-8")
 
     # csvsplit processing tag
-    delim = source_definition["conform"].get("csvsplit", ",")
+    delim = data_source["conform"].get("csvsplit", ",")
 
     # Extract the source CSV, applying conversions to deal with oddball CSV formats
     # Also convert encoding to utf-8 and reproject to EPSG:4326 in X and Y columns
@@ -752,8 +752,8 @@ def csv_source_to_csv(source_definition, source_path, dest_path):
         in_fieldnames = None   # in most cases, we let the csv module figure these out
 
         # headers processing tag
-        if "headers" in source_definition["conform"]:
-            headers = source_definition["conform"]["headers"]
+        if "headers" in data_source["conform"]:
+            headers = data_source["conform"]["headers"]
             if (headers == -1):
                 # Read a row off the file to see how many columns it has
                 temp_reader = csv.reader(source_fp, delimiter=str(delim))
@@ -767,19 +767,19 @@ def csv_source_to_csv(source_definition, source_path, dest_path):
                 # matches the sources in our collection as of January 2015
                 # this code handles the case for Korean inputs where there are
                 # two lines of headers and we want to skip the first one
-                assert "skiplines" in source_definition["conform"]
-                assert source_definition["conform"]["skiplines"] == headers
+                assert "skiplines" in data_source["conform"]
+                assert data_source["conform"]["skiplines"] == headers
                 # Skip N lines to get to the real header. headers=2 means we skip one line
                 for n in range(1, headers):
                     next(source_fp)
         else:
             # check the source doesn't specify skiplines without headers
-            assert "skiplines" not in source_definition["conform"]
+            assert "skiplines" not in data_source["conform"]
 
         reader = csv.DictReader(source_fp, delimiter=delim, fieldnames=in_fieldnames)
         num_fields = len(reader.fieldnames)
 
-        protocol_string = source_definition['protocol']
+        protocol_string = data_source['protocol']
 
         # Construct headers for the extracted CSV file
         if protocol_string == "ESRI":
@@ -787,7 +787,7 @@ def csv_source_to_csv(source_definition, source_path, dest_path):
             out_fieldnames = list(reader.fieldnames)
         else:
             # CSV sources: replace the source's lat/lon columns with OA:x and OA:y
-            old_latlon = [source_definition["conform"]["lat"], source_definition["conform"]["lon"]]
+            old_latlon = [data_source["conform"]["lat"], data_source["conform"]["lon"]]
             old_latlon.extend([s.upper() for s in old_latlon])
             out_fieldnames = [fn for fn in reader.fieldnames if fn not in old_latlon]
             out_fieldnames.append(GEOM_FIELDNAME)
@@ -804,7 +804,7 @@ def csv_source_to_csv(source_definition, source_path, dest_path):
                     _L.debug("Skipping row. Got %d columns, expected %d", len(source_row), num_fields)
                     continue
                 try:
-                    out_row = row_extract_and_reproject(source_definition, source_row)
+                    out_row = row_extract_and_reproject(data_source, source_row)
                 except Exception as e:
                     _L.error('Error in row {}: {}'.format(row_number, e))
                     raise
@@ -854,11 +854,11 @@ def _transform_to_4326(srs):
         _transform_cache[srs] = osr.CoordinateTransformation(in_spatial_ref, out_spatial_ref)
     return _transform_cache[srs]
 
-def row_extract_and_reproject(source_definition, source_row):
+def row_extract_and_reproject(data_source, source_row):
     ''' Find lat/lon in source CSV data and store it in ESPG:4326 in X/Y in the row
     '''
-    format_string = source_definition["conform"].get('format')
-    protocol_string = source_definition['protocol']
+    format_string = data_source["conform"].get('format')
+    protocol_string = data_source['protocol']
 
     # Ignore any lat/lon names for natively geographic sources.
     ignore_conform_names = bool(format_string != 'csv')
@@ -875,8 +875,8 @@ def row_extract_and_reproject(source_definition, source_row):
         source_y = source_row[lat_name]
     else:
         # Conforms can name the lat/lon columns from the original source data
-        lat_name = source_definition["conform"]["lat"]
-        lon_name = source_definition["conform"]["lon"]
+        lat_name = data_source["conform"]["lat"]
+        lon_name = data_source["conform"]["lon"]
         if lon_name in source_row:
             source_x = source_row[lon_name]
         else:
@@ -902,12 +902,12 @@ def row_extract_and_reproject(source_definition, source_row):
         return out_row
 
     # Reproject the coordinates if necessary
-    if "srs" not in source_definition["conform"]:
+    if "srs" not in data_source["conform"]:
         out_x = source_x
         out_y = source_y
     else:
         try:
-            srs = source_definition["conform"]["srs"]
+            srs = data_source["conform"]["srs"]
             source_x = float(source_x)
             source_y = float(source_y)
             point = ogr.Geometry(ogr.wkbPoint)
@@ -1000,9 +1000,9 @@ def fxn_smash_case(fxn):
         for sub_fxn in fxn["functions"]:
             fxn_smash_case(sub_fxn)
 
-def conform_smash_case(source_definition):
-    "Convert all named fields in source_definition object to lowercase. Returns new object."
-    new_sd = copy.deepcopy(source_definition)
+def conform_smash_case(data_source):
+    "Convert all named fields in data_source object to lowercase. Returns new object."
+    new_sd = copy.deepcopy(data_source)
     conform = new_sd["conform"]
     for k, v in conform.items():
         if type(conform[k]) is list:
@@ -1238,27 +1238,27 @@ def row_convert_to_out(sd, row):
 
 ### File-level conform code. Inputs and outputs are filenames.
 
-def extract_to_source_csv(source_definition, source_path, extract_path):
+def extract_to_source_csv(data_source, source_path, extract_path):
     """Extract arbitrary downloaded sources to an extracted CSV in the source schema.
-    source_definition: description of the source, containing the conform object
+    data_source: description of the source, containing the conform object
     extract_path: file to write the extracted CSV file
 
     The extracted file will be in UTF-8 and will have X and Y columns corresponding
     to longitude and latitude in EPSG:4326.
     """
-    format_string = source_definition["conform"]['format']
-    protocol_string = source_definition['protocol']
+    format_string = data_source["conform"]['format']
+    protocol_string = data_source['protocol']
 
     if format_string in ("shapefile", "xml", "gdb"):
         ogr_source_path = normalize_ogr_filename_case(source_path)
-        ogr_source_to_csv(source_definition, ogr_source_path, extract_path)
+        ogr_source_to_csv(data_source, ogr_source_path, extract_path)
     elif format_string == "csv":
-        csv_source_to_csv(source_definition, source_path, extract_path)
+        csv_source_to_csv(data_source, source_path, extract_path)
     elif format_string == "geojson":
         # GeoJSON sources have some awkward legacy with ESRI, see issue #34
         if protocol_string == "ESRI":
             _L.info("ESRI GeoJSON source found; treating it as CSV")
-            csv_source_to_csv(source_definition, source_path, extract_path)
+            csv_source_to_csv(data_source, source_path, extract_path)
         else:
             _L.info("Non-ESRI GeoJSON source found; converting as a stream.")
             geojson_source_path = normalize_ogr_filename_case(source_path)
@@ -1266,36 +1266,36 @@ def extract_to_source_csv(source_definition, source_path, extract_path):
     else:
         raise Exception("Unsupported source format %s" % format_string)
 
-def transform_to_out_csv(source_definition, extract_path, dest_path):
+def transform_to_out_csv(source_config, extract_path, dest_path):
     ''' Transform an extracted source CSV to the OpenAddresses output CSV by applying conform rules.
 
-        source_definition: description of the source, containing the conform object
+        source_config: description of the source, containing the conform object
         extract_path: extracted CSV file to process
         dest_path: path for output file in OpenAddress CSV
     '''
     # Convert all field names in the conform spec to lower case
-    source_definition = conform_smash_case(source_definition)
+    source_config.data_source = conform_smash_case(source_config.data_source)
 
     # Read through the extract CSV
     with open(extract_path, 'r', encoding='utf-8') as extract_fp:
         reader = csv.DictReader(extract_fp)
         # Write to the destination CSV
         with open(dest_path, 'w', encoding='utf-8') as dest_fp:
-            writer = csv.DictWriter(dest_fp, OPENADDR_ADDR_SCHEMA)
+            writer = csv.DictWriter(dest_fp, source_config.SCHEMA)
             writer.writeheader()
             # For every row in the extract
             for extract_row in reader:
-                out_row = row_transform_and_convert(source_definition, extract_row)
+                out_row = row_transform_and_convert(source_config.data_source, extract_row)
                 writer.writerow(out_row)
 
-def conform_cli(source_definition, source_path, dest_path):
+def conform_cli(source_config, source_path, dest_path):
     "Command line entry point for conforming a downloaded source to an output CSV."
     # TODO: this tool only works if the source creates a single output
 
-    if "conform" not in source_definition:
+    if "conform" not in source_config.data_source:
         return 1
 
-    format_string = source_definition["conform"].get('format')
+    format_string = source_config.data_source["conform"].get('format')
 
     if not format_string in ["shapefile", "geojson", "csv", "xml", "gdb"]:
         _L.warning("Skipping file with unknown conform: %s", source_path)
@@ -1307,8 +1307,8 @@ def conform_cli(source_definition, source_path, dest_path):
     _L.debug('extract temp file %s', extract_path)
 
     try:
-        extract_to_source_csv(source_definition, source_path, extract_path)
-        transform_to_out_csv(source_definition, extract_path, dest_path)
+        extract_to_source_csv(source_config.data_source, source_path, extract_path)
+        transform_to_out_csv(source_config, extract_path, dest_path)
     finally:
         os.remove(extract_path)
 
