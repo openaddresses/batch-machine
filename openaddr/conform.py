@@ -870,65 +870,55 @@ def row_extract_and_reproject(data_source, source_row):
     # ESRI-derived source CSV is synthetic; we should ignore any lat/lon names.
     ignore_conform_names |= bool(protocol_string == 'ESRI')
 
+    # Prepare an output row
+    out_row = copy.deepcopy(source_row)
+
     # Set local variables lon_name, source_x, lat_name, source_y
     if ignore_conform_names:
-        # Use our own X_FIELDNAME convention
-        lat_name = Y_FIELDNAME
-        lon_name = X_FIELDNAME
-        source_x = source_row[lon_name]
-        source_y = source_row[lat_name]
+        source_geom = source_row[GEOM_FIELDNAME]
     else:
         # Conforms can name the lat/lon columns from the original source data
         lat_name = data_source["conform"]["lat"]
         lon_name = data_source["conform"]["lon"]
+
         if lon_name in source_row:
             source_x = source_row[lon_name]
         else:
             source_x = source_row[lon_name.upper()]
+
         if lat_name in source_row:
             source_y = source_row[lat_name]
         else:
             source_y = source_row[lat_name.upper()]
 
-    # Prepare an output row with the source lat and lon columns deleted
-    out_row = copy.deepcopy(source_row)
-    for n in lon_name, lon_name.upper(), lat_name, lat_name.upper():
-        if n in out_row: del out_row[n]
+        # Remove lat/lng name from output row
+        for n in lon_name, lon_name.upper(), lat_name, lat_name.upper():
+            if n in out_row: del out_row[n]
 
-    # Convert commas to periods for decimal numbers. (Not using locale.)
-    try:
-        source_x = source_x.replace(',', '.')
-        source_y = source_y.replace(',', '.')
-    except AttributeError:
-        # Add blank data to the output CSV and get out
-        out_row[X_FIELDNAME] = None
-        out_row[Y_FIELDNAME] = None
-        return out_row
+        # Convert commas to periods for decimal numbers. (Not using locale.)
+        try:
+            source_x = source_x.replace(',', '.')
+            source_y = source_y.replace(',', '.')
+
+            source_geom = "POINT ({} {})".format(source_x, source_y)
+        except AttributeError:
+            # Add blank data to the output CSV and get out
+            out_row[GEOM_FIELDNAME] = None
+            return out_row
 
     # Reproject the coordinates if necessary
-    if "srs" not in data_source["conform"]:
-        out_x = source_x
-        out_y = source_y
-    else:
+    if "srs" in data_source["conform"]:
         try:
             srs = data_source["conform"]["srs"]
-            source_x = float(source_x)
-            source_y = float(source_y)
-            point = ogr.Geometry(ogr.wkbPoint)
-            point.AddPoint_2D(float(source_x), float(source_y))
-
+            point = ogr.CreateGeometryFromWkt(source_geom)
             point.Transform(_transform_to_4326(srs))
-            out_x = "%.7f" % point.GetX()
-            out_y = "%.7f" % point.GetY()
+
+            out_row[GEOM_FIELDNAME] = point.ExportToWkt()
         except (TypeError, ValueError) as e:
             if not (source_x == "" or source_y == ""):
                 _L.debug("Could not reproject %s %s in SRS %s", source_x, source_y, srs)
-            out_x = ""
-            out_y = ""
 
     # Add the reprojected data to the output CSV
-    out_row[X_FIELDNAME] = out_x
-    out_row[Y_FIELDNAME] = out_y
     return out_row
 
 
@@ -1035,7 +1025,7 @@ def row_smash_case(sd, input):
 def row_merge(sd, row, key):
     "Merge multiple columns like 'Maple','St' to 'Maple St'"
     merge_data = [row[field] for field in sd["conform"][key]]
-    row[var_types[key]] = ' '.join(merge_data)
+    row["oa:{}".format(key)] = ' '.join(merge_data)
     return row
 
 def row_fxn_join(sd, row, key, fxn):
@@ -1043,7 +1033,7 @@ def row_fxn_join(sd, row, key, fxn):
     separator = fxn.get("separator", " ")
     try:
         fields = [(row[n] or u'').strip() for n in fxn["fields"]]
-        row[var_types[key]] = separator.join([f for f in fields if f])
+        row["oa:{}".format(key)] = separator.join([f for f in fields if f])
     except Exception as e:
         _L.debug("Failure to merge row %r %s", e, row)
     return row
@@ -1054,17 +1044,17 @@ def row_fxn_regexp(sd, row, key, fxn):
     replace = fxn.get('replace', False)
     if replace:
         match = re.sub(pattern, convert_regexp_replace(replace), row[fxn["field"]])
-        row[var_types[key]] = match;
+        row["oa:{}".format(key)] = match;
     else:
         match = pattern.search(row[fxn["field"]])
-        row[var_types[key]] = ''.join(match.groups()) if match else '';
+        row["oa:{}".format(key)] = ''.join(match.groups()) if match else '';
     return row
 
 def row_fxn_prefixed_number(sd, row, key, fxn):
     "Extract '123' from '123 Maple St'"
 
     match = prefixed_number_pattern.search(row[fxn["field"]])
-    row[var_types[key]] = ''.join(match.groups()) if match else '';
+    row["oa:{}".format(key)] = ''.join(match.groups()) if match else '';
 
     return row
 
@@ -1078,7 +1068,7 @@ def row_fxn_postfixed_street(sd, row, key, fxn):
     else:
         match = postfixed_street_pattern.search(row[fxn["field"]])
 
-    row[var_types[key]] = ''.join(match.groups()) if match else '';
+    row["oa:{}".format(key)] = ''.join(match.groups()) if match else '';
 
     return row
 
@@ -1086,25 +1076,25 @@ def row_fxn_postfixed_unit(sd, row, key, fxn):
     "Extract 'Suite 300' from '123 Maple St Suite 300'"
 
     match = postfixed_unit_pattern.search(row[fxn["field"]])
-    row[var_types[key]] = ''.join(match.groups()) if match else '';
+    row["oa:{}".format(key)] = ''.join(match.groups()) if match else '';
 
     return row
 
 def row_fxn_remove_prefix(sd, row, key, fxn):
     "Remove a 'field_to_remove' from the beginning of 'field' if it is a prefix"
     if row[fxn["field"]].startswith(row[fxn["field_to_remove"]]):
-        row[var_types[key]] = row[fxn["field"]][len(row[fxn["field_to_remove"]]):].lstrip(' ')
+        row["oa:{}".format(key)] = row[fxn["field"]][len(row[fxn["field_to_remove"]]):].lstrip(' ')
     else:
-        row[var_types[key]] = row[fxn["field"]]
+        row["oa:{}".format(key)] = row[fxn["field"]]
 
     return row
 
 def row_fxn_remove_postfix(sd, row, key, fxn):
     "Remove a 'field_to_remove' from the end of 'field' if it is a postfix"
     if row[fxn["field_to_remove"]] != "" and row[fxn["field"]].endswith(row[fxn["field_to_remove"]]):
-        row[var_types[key]] = row[fxn["field"]][0:len(row[fxn["field_to_remove"]])*-1].rstrip(' ')
+        row["oa:{}".format(key)] = row[fxn["field"]][0:len(row[fxn["field_to_remove"]])*-1].rstrip(' ')
     else:
-        row[var_types[key]] = row[fxn["field"]]
+        row["oa:{}".format(key)] = row[fxn["field"]]
 
     return row
 
@@ -1146,9 +1136,9 @@ def row_fxn_format(sd, row, key, fxn):
 
     if num_fields_added > 0:
         parts.append(format_str[idx:])
-        row[var_types[key]] = u''.join(parts)
+        row["oa:{}".format(key)] = u''.join(parts)
     else:
-        row[var_types[key]] = u''
+        row["oa:{}".format(key)] = u''
 
     return row
 
@@ -1176,7 +1166,7 @@ def row_fxn_first_non_empty(sd, row, key, fxn):
     "Iterate all fields looking for first that has a non-empty value"
     for field in fxn.get('fields', []):
         if row[field] and row[field].strip():
-            row[var_types[key]] = row[field]
+            row["oa:{}".format(key)] = row[field]
             break
 
     return row
@@ -1204,7 +1194,7 @@ def row_round_lat_lon(sd, row):
         x = _round_wgs84_to_7(geom.GetX())
         y = _round_wgs84_to_7(geom.GetY())
 
-        row['GEOM'] = ogr.CreateGeometryFromWkt('POINT ({} {})'.format(x, y))
+        row['GEOM'] = ogr.CreateGeometryFromWkt('POINT ({} {})'.format(x, y)).ExportToWkt()
 
     return row
 
@@ -1227,13 +1217,17 @@ def row_convert_to_out(source_config, row):
     }
 
     for field in source_config.SCHEMA:
-        if row.get('oa:{}'.format(field.lower())):
+        if row.get('oa:{}'.format(field).lower()):
             # If there is an OA prefix, it is not a native field and was compiled
             # via an attrib funciton or concatentation
-            output[field] = row.get('oa:{}'.format(field.lower()))
+            output[field] = row.get('oa:{}'.format(field).lower())
         else:
             # Get a native field as specified in the conform object
-            output[field] = row.get(source_config.data_source['conform'].get(field.lower()).lower())
+            cfield = source_config.data_source['conform'].get(field.lower())
+            if cfield:
+                output[field] = row.get(cfield.lower())
+            else:
+                output[field] = ''
 
     return output
 
