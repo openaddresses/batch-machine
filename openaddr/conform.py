@@ -815,7 +815,7 @@ def csv_source_to_csv(data_source, source_path, dest_path):
                 else:
                     writer.writerow(out_row)
 
-def geojson_source_to_csv(source_path, dest_path):
+def geojson_source_to_csv(source_config, source_path, dest_path):
     '''
     '''
     # For every row in the source GeoJSON
@@ -826,7 +826,7 @@ def geojson_source_to_csv(source_path, dest_path):
             for (row_number, feature) in enumerate(stream_geojson(file)):
                 if writer is None:
                     out_fieldnames = list(feature['properties'].keys())
-                    out_fieldnames.extend((GEOM_FIELDNAME))
+                    out_fieldnames.append(GEOM_FIELDNAME)
                     writer = csv.DictWriter(dest_fp, out_fieldnames)
                     writer.writeheader()
 
@@ -837,12 +837,16 @@ def geojson_source_to_csv(source_path, dest_path):
                     geom = ogr.CreateGeometryFromJson(json.dumps(feature['geometry']))
                     if not geom:
                         continue
-                    center = geom.Centroid()
+
+                    if source_config.layer == "addresses":
+                        # For Addresses - Calculate the centroid on surface of the geometry and write it as X and Y columns
+                        geom = geom.PointOnSurface()
+
                 except Exception as e:
                     _L.error('Error in row {}: {}'.format(row_number, e))
                     raise
                 else:
-                    row.update({GEOM_FIELDNAME: center.ExportToWkt()})
+                    row.update({GEOM_FIELDNAME: geom.ExportToWkt()})
                     writer.writerow(row)
 
 _transform_cache = {}
@@ -1257,7 +1261,7 @@ def extract_to_source_csv(source_config, source_path, extract_path):
         else:
             _L.info("Non-ESRI GeoJSON source found; converting as a stream.")
             geojson_source_path = normalize_ogr_filename_case(source_path)
-            geojson_source_to_csv(geojson_source_path, extract_path)
+            geojson_source_to_csv(source_config, geojson_source_path, extract_path)
     else:
         raise Exception("Unsupported source format %s" % format_string)
 
