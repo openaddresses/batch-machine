@@ -13,7 +13,7 @@ import tempfile
 import shutil
 
 from ..conform import (
-    GEOM_FIELDNAME, X_FIELDNAME, Y_FIELDNAME,
+    GEOM_FIELDNAME,
     csv_source_to_csv, find_source_path, row_transform_and_convert,
     row_fxn_regexp, row_smash_case, row_round_lat_lon, row_merge,
     row_extract_and_reproject, row_convert_to_out, row_fxn_join, row_fxn_format,
@@ -24,7 +24,7 @@ from ..conform import (
     row_canonicalize_unit_and_number, conform_smash_case, conform_cli,
     convert_regexp_replace, conform_license,
     conform_attribution, conform_sharealike, normalize_ogr_filename_case,
-    OPENADDR_CSV_SCHEMA, is_in, geojson_source_to_csv, check_source_tests
+    is_in, geojson_source_to_csv, check_source_tests
     )
 
 class TestConformTransforms (unittest.TestCase):
@@ -48,7 +48,7 @@ class TestConformTransforms (unittest.TestCase):
 
     def test_row_convert_to_out(self):
         d = { "conform": { "street": "s", "number": "n" } }
-        r = row_convert_to_out(d, {"s": "MAPLE LN", "n": "123", X_FIELDNAME: "-119.2", Y_FIELDNAME: "39.3"})
+        r = row_convert_to_out(d, {"s": "MAPLE LN", "n": "123", GEOM_FIELDNAME: "POINT(-119.2 39.3)"})
         self.assertEqual({"LON": "-119.2", "LAT": "39.3", "UNIT": None, "NUMBER": "123", "STREET": "MAPLE LN",
                           "CITY": None, "REGION": None, "DISTRICT": None, "POSTCODE": None, "ID": None}, r)
 
@@ -255,19 +255,19 @@ class TestConformTransforms (unittest.TestCase):
 
     def test_transform_and_convert(self):
         d = { "conform": { "street": ["s1", "s2"], "number": "n", "lon": "y", "lat": "x" }, "fingerprint": "0000" }
-        r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", X_FIELDNAME: "-119.2", Y_FIELDNAME: "39.3" })
+        r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", GEOM_FIELDNAME: "POINT(-119.2 39.3)"})
         self.assertEqual({"STREET": "MAPLE ST", "UNIT": "", "NUMBER": "123", "LON": "-119.2", "LAT": "39.3",
                           "CITY": None, "REGION": None, "DISTRICT": None, "POSTCODE": None, "ID": None,
                           'HASH': 'eee8eb535bb20a03'}, r)
 
         d = { "conform": { "street": ["s1", "s2"], "number": "n", "lon": "y", "lat": "x" }, "fingerprint": "0000" }
-        r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", X_FIELDNAME: "-119.2", Y_FIELDNAME: "39.3" })
+        r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", GEOM_FIELDNAME: "POINT(-119.2 39.3)"})
         self.assertEqual({"STREET": "MAPLE ST", "UNIT": "", "NUMBER": "123", "LON": "-119.2", "LAT": "39.3",
                           "CITY": None, "REGION": None, "DISTRICT": None, "POSTCODE": None, "ID": None,
                           'HASH': 'eee8eb535bb20a03'}, r)
 
         d = { "conform": { "number": {"function": "regexp", "field": "s", "pattern": "^(\\S+)" }, "street": { "function": "regexp", "field": "s", "pattern": "^(?:\\S+ )(.*)" }, "lon": "y", "lat": "x" }, "fingerprint": "0000" }
-        r = row_transform_and_convert(d, { "s": "123 MAPLE ST", X_FIELDNAME: "-119.2", Y_FIELDNAME: "39.3" })
+        r = row_transform_and_convert(d, { "s": "123 MAPLE ST", GEOM_FIELDNAME: "POINT(-119.2 39.3)" })
         self.assertEqual({"STREET": "MAPLE ST", "UNIT": "", "NUMBER": "123", "LON": "-119.2", "LAT": "39.3",
                           "CITY": None, "REGION": None, "DISTRICT": None, "POSTCODE": None, "ID": None,
                           'HASH': 'eee8eb535bb20a03'}, r)
@@ -1828,11 +1828,11 @@ class TestConformCsv(unittest.TestCase):
     # to convert the input to bytes with the tested encoding.
     _ascii_header_in = u'STREETNAME,NUMBER,LATITUDE,LONGITUDE'
     _ascii_row_in = u'MAPLE ST,123,39.3,-121.2'
-    _ascii_header_out = u'STREETNAME,NUMBER,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals())
+    _ascii_header_out = u'STREETNAME,NUMBER,{GEOM_FIELDNAME}'.format(**globals())
     _ascii_row_out = u'MAPLE ST,123,-121.2,39.3'
     _unicode_header_in = u'STRE\u00c9TNAME,NUMBER,\u7def\u5ea6,LONGITUDE'
     _unicode_row_in = u'\u2603 ST,123,39.3,-121.2'
-    _unicode_header_out = u'STRE\u00c9TNAME,NUMBER,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals())
+    _unicode_header_out = u'STRE\u00c9TNAME,NUMBER,{GEOM_FIELDNAME}'.format(**globals())
     _unicode_row_out = u'\u2603 ST,123,-121.2,39.3'
 
     def setUp(self):
