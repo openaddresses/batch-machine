@@ -1127,7 +1127,7 @@ class TestOA (unittest.TestCase):
             sample_data = json.load(file)
 
         self.assertEqual(len(sample_data), 6)
-        self.assertTrue('OA:geom' in sample_data[0])
+        self.assertTrue('OA:GEOM' in sample_data[0])
 
     def test_single_pa_lancaster(self):
         ''' Test complete process_one.process on data with ESRI multiPolyline geometries.
@@ -1148,7 +1148,7 @@ class TestOA (unittest.TestCase):
             sample_data = json.load(file)
 
         self.assertEqual(len(sample_data), 6)
-        self.assertIn('OA:geom', sample_data[0])
+        self.assertIn('OA:GEOM', sample_data[0])
         self.assertIn('UNITNUM', sample_data[0])
         self.assertEqual('423', sample_data[1][0])
         self.assertEqual(['W', ' ', '28TH DIVISION', 'HWY'], sample_data[1][1:5])
@@ -1191,9 +1191,9 @@ class TestOA (unittest.TestCase):
             sample_data = json.load(file)
 
         self.assertEqual(len(sample_data), 2)
-        self.assertIn('OA:geom', sample_data[0])
-        self.assertIn('FULLADDRU', sample_data[0])
-        self.assertIn('SUFIXRU', sample_data[0])
+        self.assertIn('OA:GEOM', sample_data[0])
+        self.assertIn('fulladdru', sample_data[0])
+        self.assertIn('sufixru', sample_data[0])
 
     def test_single_pa_bucks(self):
         ''' Test complete process_one.process on data with ESRI multiPolyline geometries.
@@ -1258,7 +1258,7 @@ class TestOA (unittest.TestCase):
             sample_data = json.load(file)
 
         self.assertEqual(len(sample_data), 6)
-        self.assertIn('OA:geom', sample_data[0])
+        self.assertIn('OA:GEOM', sample_data[0])
         self.assertIn('BLDG_NUM', sample_data[0])
         self.assertEqual('7710', sample_data[1][0])
         self.assertEqual([' ', 'IVERSON', 'AVE', 'S'], sample_data[1][3:7])
