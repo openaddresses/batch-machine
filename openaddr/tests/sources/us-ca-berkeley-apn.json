@@ -13,7 +13,7 @@
             "StreetSufx",
             "Direction"
         ],
-        "format": "shapefile-polygon"
+        "format": "shapefile"
     },
     "data": "http://www.ci.berkeley.ca.us/uploadedFiles/IT/GIS/Parcels.zip",
     "website": "http://www.ci.berkeley.ca.us/datacatalog/",

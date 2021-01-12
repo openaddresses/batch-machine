@@ -1673,7 +1673,7 @@ class TestConformMisc(unittest.TestCase):
         self.assertEqual("foo.shp", find_source_path(shp_file_conform, ["foo.shp", "bar.shp"]))
         self.assertEqual("xyzzy/foo.shp", find_source_path(shp_file_conform, ["xyzzy/foo.shp", "xyzzy/bar.shp"]))
 
-        shp_poly_conform = {"conform": { "format": "shapefile-polygon" } }
+        shp_poly_conform = {"conform": { "format": "shapefile" } }
         self.assertEqual("foo.shp", find_source_path(shp_poly_conform, ["foo.shp"]))
 
         broken_conform = {"conform": { "format": "broken" }}
