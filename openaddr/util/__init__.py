@@ -42,24 +42,6 @@ def prepare_db_kwargs(dsn):
 
     return kwargs
 
-def set_autoscale_capacity(autoscale, cloudwatch, cloudwatch_ns, capacity):
-    '''
-    '''
-    span, now = 60 * 60 * 3, datetime.now()
-    start, end = now - timedelta(seconds=span), now
-    args = 'tasks queue', cloudwatch_ns, 'Maximum'
-
-    (measure, ) = cloudwatch.get_metric_statistics(span, start, end, *args)
-
-    group_name = 'CI Workers {0}.x'.format(*get_version().split('.'))
-    (group, ) = autoscale.get_all_groups([group_name])
-
-    if group.desired_capacity >= capacity:
-        return
-
-    if measure['Maximum'] > .9:
-        group.set_capacity(capacity)
-
 def package_output(source, processed_path, website, license):
     ''' Write a zip archive to temp dir with processed data and optional .vrt.
     '''

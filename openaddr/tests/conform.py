@@ -138,12 +138,12 @@ class TestConformTransforms (unittest.TestCase):
         d = {"a1": "12", "a2": "34", "a3": "56 UNIT 5", "b1": "UNIT 5"}
         e = copy.deepcopy(d)
         d = row_fxn_chain(c, d, "number", c["conform"]["number"])
-        self.assertEqual(d.get("OA:number", ""), "12-34-56")
+        self.assertEqual(d.get("oa:number", ""), "12-34-56")
 
         d = copy.deepcopy(e)
         d["a2"] = None
         d = row_fxn_chain(c, d, "number", c["conform"]["number"])
-        self.assertEqual(d.get("OA:number", ""), "12-56")
+        self.assertEqual(d.get("oa:number", ""), "12-56")
 
 
     def test_row_fxn_chain_nested(self):
@@ -180,12 +180,12 @@ class TestConformTransforms (unittest.TestCase):
         d = {"a1": "12", "a2": "34", "a3": "56 UNIT 5", "b1": "UNIT 5"}
         e = copy.deepcopy(d)
         d = row_fxn_chain(c, d, "number", c["conform"]["number"])
-        self.assertEqual(d.get("OA:number", ""), "12-34-56")
+        self.assertEqual(d.get("oa:number", ""), "12-34-56")
 
         d = copy.deepcopy(e)
         d["a2"] = None
         d = row_fxn_chain(c, d, "number", c["conform"]["number"])
-        self.assertEqual(d.get("OA:number", ""), "12-56")
+        self.assertEqual(d.get("oa:number", ""), "12-56")
 
     def test_row_fxn_regexp(self):
         "Regex split - replace"
@@ -957,7 +957,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Unit 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Unit 300" })
+        e.update({ "oa:unit": "Unit 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -971,7 +971,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street runit 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "" })
+        e.update({ "oa:unit": "" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -985,7 +985,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Apartment 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Apartment 300" })
+        e.update({ "oa:unit": "Apartment 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -999,7 +999,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Apt 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Apt 300" })
+        e.update({ "oa:unit": "Apt 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1013,7 +1013,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street rapt 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "" })
+        e.update({ "oa:unit": "" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1027,7 +1027,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Apt. 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Apt. 300" })
+        e.update({ "oa:unit": "Apt. 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1041,7 +1041,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Suite 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Suite 300" })
+        e.update({ "oa:unit": "Suite 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1055,7 +1055,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Ste 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Ste 300" })
+        e.update({ "oa:unit": "Ste 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1069,7 +1069,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Haste 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "" })
+        e.update({ "oa:unit": "" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1083,7 +1083,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Ste. 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Ste. 300" })
+        e.update({ "oa:unit": "Ste. 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1097,7 +1097,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Building 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Building 300" })
+        e.update({ "oa:unit": "Building 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1111,7 +1111,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Bldg 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Bldg 300" })
+        e.update({ "oa:unit": "Bldg 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1125,7 +1125,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Bldg. 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Bldg. 300" })
+        e.update({ "oa:unit": "Bldg. 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1139,7 +1139,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Lot 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Lot 300" })
+        e.update({ "oa:unit": "Lot 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1153,7 +1153,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street alot 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "" })
+        e.update({ "oa:unit": "" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1167,7 +1167,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street # 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "# 300" })
+        e.update({ "oa:unit": "# 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1181,7 +1181,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street #300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "#300" })
+        e.update({ "oa:unit": "#300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1195,7 +1195,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "" })
+        e.update({ "oa:unit": "" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
