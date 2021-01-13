@@ -905,6 +905,8 @@ def row_extract_and_reproject(data_source, source_row):
             source_y = source_y.replace(',', '.')
 
             source_geom = "POINT ({} {})".format(source_x, source_y)
+
+            out_row[GEOM_FIELDNAME] = source_geom
         except AttributeError:
             # Add blank data to the output CSV and get out
             out_row[GEOM_FIELDNAME] = None
@@ -921,6 +923,7 @@ def row_extract_and_reproject(data_source, source_row):
         except (TypeError, ValueError) as e:
             if not (source_x == "" or source_y == ""):
                 _L.debug("Could not reproject %s %s in SRS %s", source_x, source_y, srs)
+
 
     # Add the reprojected data to the output CSV
     return out_row

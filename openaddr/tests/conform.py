@@ -62,20 +62,19 @@ class TestConformTransforms (unittest.TestCase):
         r = row_convert_to_out(d, {
             "s": "MAPLE LN",
             "n": "123",
-            GEOM_FIELDNAME: "POINT(-119.2 39.3)"
+            GEOM_FIELDNAME.lower(): "POINT (-119.2 39.3)"
         })
 
         self.assertEqual({
-            "LON": "-119.2",
-            "LAT": "39.3",
-            "UNIT": None,
+            "GEOM": "POINT (-119.2 39.3)",
+            "UNIT": "",
             "NUMBER": "123",
             "STREET": "MAPLE LN",
-            "CITY": None,
-            "REGION": None,
-            "DISTRICT": None,
-            "POSTCODE": None,
-            "ID": None
+            "CITY": "",
+            "REGION": "",
+            "DISTRICT": "",
+            "POSTCODE": "",
+            "ID": ""
         }, r)
 
     def test_row_merge(self):
@@ -222,29 +221,23 @@ class TestConformTransforms (unittest.TestCase):
                         "number": {
                             "function": "chain",
                             "variable": "foo",
-                            "functions": [
-                                {
+                            "functions": [{
+                                "function": "format",
+                                "fields": ["a1", "a2"],
+                                "format": "$1-$2"
+                            },{
+                                "function": "chain",
+                                "variable": "bar",
+                                "functions": [{
                                     "function": "format",
-                                    "fields": ["a1", "a2"],
+                                    "fields": ["foo", "a3"],
                                     "format": "$1-$2"
-                                },
-                                {
-                                    "function": "chain",
-                                    "variable": "bar",
-                                    "functions": [
-                                        {
-                                            "function": "format",
-                                            "fields": ["foo", "a3"],
-                                            "format": "$1-$2"
-                                        },
-                                        {
-                                            "function": "remove_postfix",
-                                            "field": "bar",
-                                            "field_to_remove": "b1"
-                                        }
-                                    ]
-                                }
-                            ]
+                                },{
+                                    "function": "remove_postfix",
+                                    "field": "bar",
+                                    "field_to_remove": "b1"
+                                }]
+                            }]
                         }
                     }
                 }]
@@ -369,18 +362,18 @@ class TestConformTransforms (unittest.TestCase):
             }
         }), "addresses", "default")
 
-        r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", "x": -119.2, "y": 39.3})
+        r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", "oa:geom": "POINT (-119.2 39.3)"})
         self.assertEqual({
             "STREET": "MAPLE ST",
             "UNIT": "",
             "NUMBER": "123",
-            "GEOM": "POINT(-119.2 39.3)",
+            "GEOM": "POINT (-119.2 39.3)",
             "CITY": "",
             "REGION": "",
             "DISTRICT": "",
             "POSTCODE": "",
             "ID": "",
-            'HASH': 'eee8eb535bb20a03'
+            'HASH': '9574c16dfc3cc7b1'
         }, r)
 
         d = SourceConfig(dict({
@@ -394,15 +387,55 @@ class TestConformTransforms (unittest.TestCase):
         }), "addresses", "default")
 
         r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", GEOM_FIELDNAME: "POINT(-119.2 39.3)"})
-        self.assertEqual({"STREET": "MAPLE ST", "UNIT": "", "NUMBER": "123", "LON": "-119.2", "LAT": "39.3",
-                          "CITY": None, "REGION": None, "DISTRICT": None, "POSTCODE": None, "ID": None,
-                          'HASH': 'eee8eb535bb20a03'}, r)
+        self.assertEqual({
+            "STREET": "MAPLE ST",
+            "UNIT": "",
+            "NUMBER": "123",
+            "GEOM": "POINT (-119.2 39.3)",
+            "CITY": "",
+            "REGION": "",
+            "DISTRICT": "",
+            "POSTCODE": "",
+            "ID": "",
+            'HASH': '9574c16dfc3cc7b1'
+        }, r)
 
-        d = { "conform": { "number": {"function": "regexp", "field": "s", "pattern": "^(\\S+)" }, "street": { "function": "regexp", "field": "s", "pattern": "^(?:\\S+ )(.*)" }, "lon": "y", "lat": "x" }, "fingerprint": "0000" }
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "regexp",
+                            "field": "s",
+                            "pattern": "^(\\S+)"
+                        },
+                        "street": {
+                            "function": "regexp",
+                            "field": "s",
+                            "pattern": "^(?:\\S+ )(.*)"
+                        },
+                        "lon": "y",
+                        "lat": "x"
+                    },
+                    "fingerprint": "0000"
+                }]
+            }
+        }), "addresses", "default")
         r = row_transform_and_convert(d, { "s": "123 MAPLE ST", GEOM_FIELDNAME: "POINT(-119.2 39.3)" })
-        self.assertEqual({"STREET": "MAPLE ST", "UNIT": "", "NUMBER": "123", "LON": "-119.2", "LAT": "39.3",
-                          "CITY": None, "REGION": None, "DISTRICT": None, "POSTCODE": None, "ID": None,
-                          'HASH': 'eee8eb535bb20a03'}, r)
+        self.assertEqual({
+            "STREET": "MAPLE ST",
+            "UNIT": "",
+            "NUMBER": "123",
+            "GEOM": "POINT (-119.2 39.3)",
+            "CITY": "",
+            "REGION": "",
+            "DISTRICT": "",
+            "POSTCODE": "",
+            "ID": "",
+            'HASH': '9574c16dfc3cc7b1'
+        }, r)
 
     def test_row_canonicalize_unit_and_number(self):
         r = row_canonicalize_unit_and_number({}, {"NUMBER": "324 ", "STREET": " OAK DR.", "UNIT": "1"})
@@ -457,8 +490,21 @@ class TestConformTransforms (unittest.TestCase):
 
     def test_row_extract_and_reproject(self):
         # CSV lat/lon column names
-        d = { "conform" : { "lon": "longitude", "lat": "latitude", "format": "csv" }, 'protocol': 'test' }
-        r = row_extract_and_reproject(d, {"longitude": "-122.3", "latitude": "39.1"})
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "lon": "longitude",
+                        "lat": "latitude",
+                        "format": "csv"
+                    },
+                    'protocol': 'test'
+                }]
+            }
+        }), "addresses", "default")
+        r = row_extract_and_reproject(d.data_source, {"longitude": "-122.3", "latitude": "39.1"})
         self.assertEqual({GEOM_FIELDNAME: "POINT(39.1 -122.3)"}, r)
 
         # non-CSV lat/lon column names
