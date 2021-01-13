@@ -2058,7 +2058,7 @@ class TestConformCsv(unittest.TestCase):
     _ascii_header_in = u'STREETNAME,NUMBER,LATITUDE,LONGITUDE'
     _ascii_row_in = u'MAPLE ST,123,39.3,-121.2'
     _ascii_header_out = u'STREETNAME,NUMBER,{GEOM_FIELDNAME}'.format(**globals())
-    _ascii_row_out = u'MAPLE ST,123,-121.2,39.3'
+    _ascii_row_out = u'MAPLE ST,123,POINT (-121.2 39.3)'
     _unicode_header_in = u'STRE\u00c9TNAME,NUMBER,\u7def\u5ea6,LONGITUDE'
     _unicode_row_in = u'\u2603 ST,123,39.3,-121.2'
     _unicode_header_out = u'STRE\u00c9TNAME,NUMBER,{GEOM_FIELDNAME}'.format(**globals())
@@ -2126,14 +2126,14 @@ class TestConformCsv(unittest.TestCase):
              u'\u6771 ST,123,39.3,-121.2'.encode('shift-jis'))
         r = self._convert(c, d)
         self.assertEqual(r[0], u'\u5927\u5b57\u30fb\u753a\u4e01\u76ee\u540d,NUMBER,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'\u6771 ST,123,-121.2,39.3')
+        self.assertEqual(r[1], u'\u6771 ST,123,POINT (-121.2 39.3)')
 
     def test_headers_minus_one(self):
         c = { "conform": { "headers": -1, "format": "csv", "lon": "COLUMN4", "lat": "COLUMN3" }, 'protocol': 'test' }
         d = (u'MAPLE ST,123,39.3,-121.2'.encode('ascii'),)
         r = self._convert(c, d)
         self.assertEqual(r[0], u'COLUMN1,COLUMN2,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'MAPLE ST,123,-121.2,39.3')
+        self.assertEqual(r[1], u'MAPLE ST,123,POINT (-121.2 39.3)')
 
     def test_headers_and_skiplines(self):
         c = {"conform": { "headers": 2, "skiplines": 2, "format": "csv", "lon": "LONGITUDE", "lat": "LATITUDE" }, 'protocol': 'test' }
