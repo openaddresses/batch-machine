@@ -2062,7 +2062,7 @@ class TestConformCsv(unittest.TestCase):
     _unicode_header_in = u'STRE\u00c9TNAME,NUMBER,\u7def\u5ea6,LONGITUDE'
     _unicode_row_in = u'\u2603 ST,123,39.3,-121.2'
     _unicode_header_out = u'STRE\u00c9TNAME,NUMBER,{GEOM_FIELDNAME}'.format(**globals())
-    _unicode_row_out = u'\u2603 ST,123,-121.2,39.3'
+    _unicode_row_out = u'\u2603 ST,123,POINT (-121.2 39.3)'
 
     def setUp(self):
         self.testdir = tempfile.mkdtemp(prefix='openaddr-testPyConformCsv-')
