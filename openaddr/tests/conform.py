@@ -505,28 +505,79 @@ class TestConformTransforms (unittest.TestCase):
             }
         }), "addresses", "default")
         r = row_extract_and_reproject(d.data_source, {"longitude": "-122.3", "latitude": "39.1"})
-        self.assertEqual({GEOM_FIELDNAME: "POINT(39.1 -122.3)"}, r)
+        self.assertEqual({GEOM_FIELDNAME: "POINT (-122.3 39.1)"}, r)
 
         # non-CSV lat/lon column names
-        d = { "conform" : { "lon": "x", "lat": "y", "format": "" }, 'protocol': 'test' }
-        r = row_extract_and_reproject(d, {"x": "-122.3", "y": "39.1" })
-        self.assertEqual({GEOM_FIELDNAME: "POINT(-122.3 39.1)"}, r)
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "lon": "x",
+                        "lat": "y",
+                        "format": ""
+                    },
+                    'protocol': 'test'
+                }]
+            }
+        }), "addresses", "default")
+        r = row_extract_and_reproject(d.data_source, {"OA:GEOM": "POINT (-122.3 39.1)" })
+        self.assertEqual({GEOM_FIELDNAME: "POINT (-122.3 39.1)"}, r)
 
         # reprojection
-        d = { "conform" : { "srs": "EPSG:2913", "format": "" }, 'protocol': 'test' }
-        r = row_extract_and_reproject(d, {X_FIELDNAME: "7655634.924", Y_FIELDNAME: "668868.414"})
-        self.assertAlmostEqual(45.481554393851063, float(r[X_FIELDNAME]))
-        self.assertAlmostEqual(-122.630842186650796, float(r[Y_FIELDNAME]))
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform" : {
+                        "srs": "EPSG:2913",
+                        "format": ""
+                    },
+                    'protocol': 'test'
+                }]
+            }
+        }), "addresses", "default")
+        r = row_extract_and_reproject(d.data_source, {GEOM_FIELDNAME: "POINT (7655634.924 668868.414)"})
 
-        d = { "conform" : { "lon": "X", "lat": "Y", "srs": "EPSG:2913", "format": "" }, 'protocol': 'test' }
-        r = row_extract_and_reproject(d, {X_FIELDNAME: "", Y_FIELDNAME: ""})
-        self.assertEqual("", r[X_FIELDNAME])
-        self.assertEqual("", r[Y_FIELDNAME])
+        self.assertEqual('POINT (45.4815543938511 -122.630842186651)', r[GEOM_FIELDNAME])
+
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform" : {
+                        "lon": "X",
+                        "lat": "Y",
+                        "srs": "EPSG:2913",
+                        "format": "csv"
+                    },
+                    'protocol': 'test'
+                }]
+            }
+        }), "addresses", "default")
+        r = row_extract_and_reproject(d.data_source, {"X": "", "Y": ""})
+        self.assertEqual(None, r[GEOM_FIELDNAME])
 
         # commas in lat/lon columns (eg Iceland)
-        d = { "conform" : { "lon": "LONG_WGS84", "lat": "LAT_WGS84", "format": "csv" }, 'protocol': 'test' }
-        r = row_extract_and_reproject(d, {"LONG_WGS84": "-21,77", "LAT_WGS84": "64,11"})
-        self.assertEqual({Y_FIELDNAME: "64.11", X_FIELDNAME: "-21.77"}, r)
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform" : {
+                        "lon": "LONG_WGS84",
+                        "lat": "LAT_WGS84",
+                        "format": "csv"
+                    },
+                    'protocol': 'test'
+                }]
+            }
+        }), "addresses", "default")
+        r = row_extract_and_reproject(d.data_source, {"LONG_WGS84": "-21,77", "LAT_WGS84": "64,11"})
+        self.assertEqual({GEOM_FIELDNAME: "POINT (-21.77 64.11)"}, r)
 
     def test_row_fxn_prefixed_number_and_postfixed_street_no_units(self):
         "Regex prefixed_number and postfix_street - both fields present"

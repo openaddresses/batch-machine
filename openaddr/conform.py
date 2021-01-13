@@ -906,6 +906,10 @@ def row_extract_and_reproject(data_source, source_row):
 
             source_geom = "POINT ({} {})".format(source_x, source_y)
 
+            if source_x == "" or source_y == "":
+                out_row[GEOM_FIELDNAME] = None
+                return out_row
+
             out_row[GEOM_FIELDNAME] = source_geom
         except AttributeError:
             # Add blank data to the output CSV and get out
