@@ -926,28 +926,28 @@ def row_extract_and_reproject(data_source, source_row):
     return out_row
 
 
-def row_function(sd, row, key, fxn):
+def row_function(sc, row, key, fxn):
     function = fxn["function"]
     if function == "join":
-        row = row_fxn_join(sd, row, key, fxn)
+        row = row_fxn_join(sc, row, key, fxn)
     elif function == "regexp":
-        row = row_fxn_regexp(sd, row, key, fxn)
+        row = row_fxn_regexp(sc, row, key, fxn)
     elif function == "format":
-        row = row_fxn_format(sd, row, key, fxn)
+        row = row_fxn_format(sc, row, key, fxn)
     elif function == "prefixed_number":
-        row = row_fxn_prefixed_number(sd, row, key, fxn)
+        row = row_fxn_prefixed_number(sc, row, key, fxn)
     elif function == "postfixed_street":
-        row = row_fxn_postfixed_street(sd, row, key, fxn)
+        row = row_fxn_postfixed_street(sc, row, key, fxn)
     elif function == "postfixed_unit":
-        row = row_fxn_postfixed_unit(sd, row, key, fxn)
+        row = row_fxn_postfixed_unit(sc, row, key, fxn)
     elif function == "remove_prefix":
-        row = row_fxn_remove_prefix(sd, row, key, fxn)
+        row = row_fxn_remove_prefix(sc, row, key, fxn)
     elif function == "remove_postfix":
-        row = row_fxn_remove_postfix(sd, row, key, fxn)
+        row = row_fxn_remove_postfix(sc, row, key, fxn)
     elif function == "chain":
-        row = row_fxn_chain(sd, row, key, fxn)
+        row = row_fxn_chain(sc, row, key, fxn)
     elif function == "first_non_empty":
-        row = row_fxn_first_non_empty(sd, row, key, fxn)
+        row = row_fxn_first_non_empty(sc, row, key, fxn)
 
     return row
 
@@ -967,10 +967,10 @@ def row_transform_and_convert(source_config, row):
     for k, v in c.items():
         if k.upper() in source_config.SCHEMA and type(v) is list:
             "Lists are a concat shortcut to concat fields with spaces"
-            row = row_merge(source_config.data_source, row, k)
+            row = row_merge(source_config, row, k)
         if k.upper() in source_config.SCHEMA and type(v) is dict:
             "Dicts are custom processing functions"
-            row = row_function(source_config.data_source, row, k, v)
+            row = row_function(source_config, row, k, v)
 
     # Make up a random fingerprint if none exists
     cache_fingerprint = source_config.data_source.get('fingerprint', str(uuid4()))
@@ -1021,18 +1021,18 @@ def conform_smash_case(data_source):
         raise ValueError('Found unsupported "advanced_merge" option in conform')
     return new_sd
 
-def row_smash_case(sd, input):
+def row_smash_case(sc, input):
     "Convert all field names to lowercase. Slow, but necessary for imprecise conform specs."
     output = { k.lower() : v for (k, v) in input.items() }
     return output
 
-def row_merge(sd, row, key):
+def row_merge(sc, row, key):
     "Merge multiple columns like 'Maple','St' to 'Maple St'"
-    merge_data = [row[field] for field in sd["conform"][key]]
+    merge_data = [row[field] for field in sc.data_source["conform"][key]]
     row["oa:{}".format(key)] = ' '.join(merge_data)
     return row
 
-def row_fxn_join(sd, row, key, fxn):
+def row_fxn_join(sc, row, key, fxn):
     "Create new columns by merging arbitrary other columns with a separator"
     separator = fxn.get("separator", " ")
     try:
@@ -1042,7 +1042,7 @@ def row_fxn_join(sd, row, key, fxn):
         _L.debug("Failure to merge row %r %s", e, row)
     return row
 
-def row_fxn_regexp(sd, row, key, fxn):
+def row_fxn_regexp(sc, row, key, fxn):
     "Split addresses like '123 Maple St' into '123' and 'Maple St'"
     pattern = re.compile(fxn.get("pattern", False))
     replace = fxn.get('replace', False)
@@ -1054,7 +1054,7 @@ def row_fxn_regexp(sd, row, key, fxn):
         row["oa:{}".format(key)] = ''.join(match.groups()) if match else '';
     return row
 
-def row_fxn_prefixed_number(sd, row, key, fxn):
+def row_fxn_prefixed_number(sc, row, key, fxn):
     "Extract '123' from '123 Maple St'"
 
     match = prefixed_number_pattern.search(row[fxn["field"]])
@@ -1062,7 +1062,7 @@ def row_fxn_prefixed_number(sd, row, key, fxn):
 
     return row
 
-def row_fxn_postfixed_street(sd, row, key, fxn):
+def row_fxn_postfixed_street(sc, row, key, fxn):
     "Extract 'Maple St' from '123 Maple St'"
 
     may_contain_units = fxn.get('may_contain_units', False)
@@ -1076,7 +1076,7 @@ def row_fxn_postfixed_street(sd, row, key, fxn):
 
     return row
 
-def row_fxn_postfixed_unit(sd, row, key, fxn):
+def row_fxn_postfixed_unit(sc, row, key, fxn):
     "Extract 'Suite 300' from '123 Maple St Suite 300'"
 
     match = postfixed_unit_pattern.search(row[fxn["field"]])
@@ -1084,7 +1084,7 @@ def row_fxn_postfixed_unit(sd, row, key, fxn):
 
     return row
 
-def row_fxn_remove_prefix(sd, row, key, fxn):
+def row_fxn_remove_prefix(sc, row, key, fxn):
     "Remove a 'field_to_remove' from the beginning of 'field' if it is a prefix"
     if row[fxn["field"]].startswith(row[fxn["field_to_remove"]]):
         row["oa:{}".format(key)] = row[fxn["field"]][len(row[fxn["field_to_remove"]]):].lstrip(' ')
@@ -1093,7 +1093,7 @@ def row_fxn_remove_prefix(sd, row, key, fxn):
 
     return row
 
-def row_fxn_remove_postfix(sd, row, key, fxn):
+def row_fxn_remove_postfix(sc, row, key, fxn):
     "Remove a 'field_to_remove' from the end of 'field' if it is a postfix"
     if row[fxn["field_to_remove"]] != "" and row[fxn["field"]].endswith(row[fxn["field_to_remove"]]):
         row["oa:{}".format(key)] = row[fxn["field"]][0:len(row[fxn["field_to_remove"]])*-1].rstrip(' ')
@@ -1102,7 +1102,7 @@ def row_fxn_remove_postfix(sd, row, key, fxn):
 
     return row
 
-def row_fxn_format(sd, row, key, fxn):
+def row_fxn_format(sc, row, key, fxn):
     "Format multiple fields using a user-specified format string"
     format_var_pattern = re.compile('\$([0-9]+)')
 
@@ -1146,27 +1146,26 @@ def row_fxn_format(sd, row, key, fxn):
 
     return row
 
-def row_fxn_chain(sd, row, key, fxn):
+def row_fxn_chain(sc, row, key, fxn):
     functions = fxn["functions"]
     var = fxn.get("variable")
 
     original_key = key
 
-    if var and var not in attrib_types and var.lstrip('OA:') not in attrib_types and var not in row:
-        var_types[var] = var
-        row[var_types[var]] = u''
+    if var and var not in sc.SCHEMA and var.lstrip('OA:') not in sc.SCHEMA and var not in row:
+        row[var] = u''
         key = var
     else:
         var = None
 
     for func in functions:
-        row = row_function(sd, row, key, func)
+        row = row_function(sc, row, key, func)
 
-    row[var_types[original_key]] = row[var_types[key]]
+    row[original_key] = row[key]
 
     return row
 
-def row_fxn_first_non_empty(sd, row, key, fxn):
+def row_fxn_first_non_empty(sc, row, key, fxn):
     "Iterate all fields looking for first that has a non-empty value"
     for field in fxn.get('fields', []):
         if row[field] and row[field].strip():
@@ -1175,7 +1174,7 @@ def row_fxn_first_non_empty(sd, row, key, fxn):
 
     return row
 
-def row_canonicalize_unit_and_number(sd, row):
+def row_canonicalize_unit_and_number(sc, row):
     "Canonicalize address unit and number"
     row["UNIT"] = (row["UNIT"] or '').strip()
     row["NUMBER"] = (row["NUMBER"] or '').strip()
@@ -1191,9 +1190,9 @@ def _round_wgs84_to_7(n):
     except:
         return n
 
-def row_round_lat_lon(sd, row):
+def row_round_lat_lon(sc, row):
     "Round WGS84 coordinates to 1cm precision"
-    if 'POINT' in row['GEOM']:
+    if row.get('GEOM') is not None and 'POINT' in row['GEOM']:
         geom = ogr.CreateGeometryFromWkt(row['GEOM'])
         x = _round_wgs84_to_7(geom.GetX())
         y = _round_wgs84_to_7(geom.GetY())
