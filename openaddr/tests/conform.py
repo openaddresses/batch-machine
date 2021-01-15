@@ -2045,8 +2045,7 @@ class TestConformMisc(unittest.TestCase):
 
         with open(csv_path, encoding='utf8') as file:
             row = next(csv.DictReader(file))
-            self.assertAlmostEqual(float(row[X_FIELDNAME]), -74.98335721879076)
-            self.assertAlmostEqual(float(row[Y_FIELDNAME]), 40.054962450263616)
+            self.assertEqual(row[GEOM_FIELDNAME], 'POINT (-74.98335721879076 40.054962450263616)')
             self.assertEqual(row['PARCEL_NUM'], '02-022-003')
 
 class TestConformCsv(unittest.TestCase):
@@ -2125,14 +2124,14 @@ class TestConformCsv(unittest.TestCase):
         d = (u'\u5927\u5b57\u30fb\u753a\u4e01\u76ee\u540d,NUMBER,\u7def\u5ea6,LONGITUDE'.encode('shift-jis'),
              u'\u6771 ST,123,39.3,-121.2'.encode('shift-jis'))
         r = self._convert(c, d)
-        self.assertEqual(r[0], u'\u5927\u5b57\u30fb\u753a\u4e01\u76ee\u540d,NUMBER,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
+        self.assertEqual(r[0], u'\u5927\u5b57\u30fb\u753a\u4e01\u76ee\u540d,NUMBER,{GEOM_FIELDNAME}'.format(**globals()))
         self.assertEqual(r[1], u'\u6771 ST,123,POINT (-121.2 39.3)')
 
     def test_headers_minus_one(self):
         c = { "conform": { "headers": -1, "format": "csv", "lon": "COLUMN4", "lat": "COLUMN3" }, 'protocol': 'test' }
         d = (u'MAPLE ST,123,39.3,-121.2'.encode('ascii'),)
         r = self._convert(c, d)
-        self.assertEqual(r[0], u'COLUMN1,COLUMN2,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
+        self.assertEqual(r[0], u'COLUMN1,COLUMN2,{GEOM_FIELDNAME}'.format(**globals()))
         self.assertEqual(r[1], u'MAPLE ST,123,POINT (-121.2 39.3)')
 
     def test_headers_and_skiplines(self):
@@ -2152,7 +2151,7 @@ class TestConformCsv(unittest.TestCase):
         d = (u'n,s,X,Y'.encode('ascii'),
              u'3203,SE WOODSTOCK BLVD,-122.629314,45.479425'.encode('ascii'))
         r = self._convert(c, d)
-        self.assertEqual(r[0], u'n,s,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
+        self.assertEqual(r[0], u'n,s,{GEOM_FIELDNAME}'.format(**globals()))
         self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,-122.629314,45.479425')
 
     def test_srs(self):
@@ -2161,8 +2160,8 @@ class TestConformCsv(unittest.TestCase):
         d = (u'n,s,X,Y'.encode('ascii'),
              u'3203,SE WOODSTOCK BLVD,7655634.924,668868.414'.encode('ascii'))
         r = self._convert(c, d)
-        self.assertEqual(r[0], u'n,s,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,45.4815544,-122.6308422')
+        self.assertEqual(r[0], u'n,s,{GEOM_FIELDNAME}'.format(**globals()))
+        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,POINT(45.4815544 -122.6308422)')
 
     def test_too_many_columns(self):
         "Check that we don't barf on input with too many columns in some rows"
@@ -2320,8 +2319,9 @@ class TestConformTests (unittest.TestCase):
 
         for filename in filenames:
             with open(os.path.join(os.path.dirname(__file__), 'sources', filename)) as file:
-                source = json.load(file)
+                source = SourceConfig(dict(json.load(file)), "addresses", "name")
 
             result, message = check_source_tests(source)
             self.assertIsNone(result, 'Tests should not exist in {}'.format(filename))
             self.assertIsNone(message, 'No message expected from {}'.format(filename))
+

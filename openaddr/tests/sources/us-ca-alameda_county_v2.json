@@ -1,4 +1,5 @@
 {
+    "schema": 2,
     "coverage": {
         "US Census": {
             "geoid": "06001",
@@ -11,7 +12,7 @@
     },
     "layers": {
         "addresses": [{
-            "name": "open-data",
+            "name": "default",
             "data": "https://data.acgov.org/api/geospatial/8e4s-7f4v?method=export&format=Original",
             "license": { "url": "http://www.acgov.org/acdata/terms.htm" },
             "year": "",

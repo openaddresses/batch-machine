@@ -1,23 +1,29 @@
 {
+    "schema": 2,
     "coverage": {
         "country": "us",
         "state": "ca",
         "city": "San Francisco"
     },
-    "data": "https://data.sfgov.org/download/kvej-w5kb/ZIPPED%20SHAPEFILE",
-    "license": { "text": "" },
-    "year": "",
-    "protocol": "http",
-    "compression": "zip",
-    "conform": {
-        "lon": "x",
-        "lat": "y",
-        "number": {
-            "function": "regexp",
-            "field": "address",
-            "pattern": "^(\\S+)"
-            },
-        "street": ["st_name", "st_type"],
-        "format": "shapefile"
+    "layers": {
+        "addresses": [{
+            "name": "default",
+            "data": "https://data.sfgov.org/download/kvej-w5kb/ZIPPED%20SHAPEFILE",
+            "license": { "text": "" },
+            "year": "",
+            "protocol": "http",
+            "compression": "zip",
+            "conform": {
+                "lon": "x",
+                "lat": "y",
+                "number": {
+                    "function": "regexp",
+                    "field": "address",
+                    "pattern": "^(\\S+)"
+                    },
+                "street": ["st_name", "st_type"],
+                "format": "shapefile"
+            }
+        }]
     }
 }

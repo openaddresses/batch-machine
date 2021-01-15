@@ -1420,7 +1420,7 @@ def check_source_tests(source_config):
         source_config.data_source = conform_smash_case(source_config.data_source)
     except:
         # There may be problems in the source spec - ignore them for now.
-         source_config.data_source = raw_source
+         source_config.data_source = source_config.data_source
 
     source_test = source_config.data_source.get('test', {})
     tests_enabled = source_test.get('enabled', True)

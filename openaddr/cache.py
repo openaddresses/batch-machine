@@ -249,7 +249,7 @@ class URLDownloadTask(DownloadTask):
 
         return os.path.join(dir_path, name_base + path_ext)
 
-    def download(self, source_urls, workdir, source_config=None):
+    def download(self, source_urls, workdir, source_config):
         output_files = []
         download_path = os.path.join(workdir, 'http')
         mkdirsp(download_path)
@@ -349,7 +349,7 @@ class EsriRestDownloadTask(DownloadTask):
         else:
             return None
 
-    def download(self, source_urls, workdir, source_config=None):
+    def download(self, source_urls, workdir, source_config):
         output_files = []
         download_path = os.path.join(workdir, 'esri')
         mkdirsp(download_path)
