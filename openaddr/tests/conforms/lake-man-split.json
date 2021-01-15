@@ -2,6 +2,7 @@
     "schema": 2,
     "layers": {
         "addresses": [{
+            "name": "default",
             "data": "http://fake-web/lake-man-split.zip",
             "cache": "http://fake-cache/lake-man-split.zip",
             "protocol": "http",

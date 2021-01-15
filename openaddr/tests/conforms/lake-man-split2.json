@@ -2,6 +2,7 @@
     "schema": 2,
     "layers": {
         "addresses": [{
+            "name": "default",
             "data": "http://fake-web/lake-man-split2",
             "cache": "http://fake-cache/lake-man-split2.json",
             "protocol": "ESRI",

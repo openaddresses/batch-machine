@@ -2,6 +2,7 @@
     "schema": 2,
     "layers": {
         "addresses": [{
+            "name": "default",
             "data": "http://fake-web/lake-man-merge-postcode.zip",
             "cache": "http://fake-cache/lake-man-merge-postcode.zip",
             "protocol": "http",

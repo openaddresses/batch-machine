@@ -2,6 +2,7 @@
     "schema": 2,
     "layers": {
         "addresses": [{
+            "name": "default",
             "data": "http://fake-web/lake-man-utf8",
             "cache": "http://fake-cache/lake-man-utf8.zip",
             "protocol": "http",

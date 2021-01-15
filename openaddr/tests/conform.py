@@ -1618,18 +1618,43 @@ class TestConformCli (unittest.TestCase):
     def _run_conform_on_source(self, source_name, ext):
         "Helper method to run a conform on the named source. Assumes naming convention."
         with open(os.path.join(self.conforms_dir, "%s.json" % source_name)) as file:
-            source_definition = json.load(file)
+            source_config = SourceConfig(json.load(file), "addresses", "default")
         source_path = os.path.join(self.conforms_dir, "%s.%s" % (source_name, ext))
         dest_path = os.path.join(self.testdir, '%s-conformed.csv' % source_name)
 
-        rc = conform_cli(source_definition, source_path, dest_path)
+        rc = conform_cli(source_config, source_path, dest_path)
         return rc, dest_path
 
     def test_unknown_conform(self):
         # Test that the conform tool does something reasonable with unknown conform sources
-        self.assertEqual(1, conform_cli({}, 'test', ''))
-        self.assertEqual(1, conform_cli({'conform': {}}, 'test', ''))
-        self.assertEqual(1, conform_cli({'conform': {'format': 'broken'}}, 'test', ''))
+        self.assertEqual(1, conform_cli(SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default"
+                }]
+            }
+        }), "addresses", "default"), 'test', ''))
+        self.assertEqual(1, conform_cli(SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {}
+                }]
+            }
+        }), "addresses", "default"), 'test', ''))
+        self.assertEqual(1, conform_cli(SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "format": "broken"
+                    }
+                }]
+            }
+        }), "addresses", "default"), 'test', ''))
 
     def test_lake_man(self):
         rc, dest_path = self._run_conform_on_source('lake-man', 'shp')
@@ -1637,12 +1662,13 @@ class TestConformCli (unittest.TestCase):
 
         with open(dest_path) as fp:
             reader = csv.DictReader(fp)
-            self.assertEqual(OPENADDR_CSV_SCHEMA, reader.fieldnames)
+            self.assertEqual([
+                'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID'
+            ], reader.fieldnames)
 
             rows = list(reader)
 
-            self.assertAlmostEqual(float(rows[0]['LAT']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LON']), -122.259249687194824)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
 
             self.assertEqual(6, len(rows))
             self.assertEqual(rows[0]['NUMBER'], '5115')
@@ -1664,12 +1690,13 @@ class TestConformCli (unittest.TestCase):
 
         with open(dest_path) as fp:
             reader = csv.DictReader(fp)
-            self.assertEqual(OPENADDR_CSV_SCHEMA, reader.fieldnames)
+            self.assertEqual([
+                'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID'
+            ], reader.fieldnames)
 
             rows = list(reader)
 
-            self.assertAlmostEqual(float(rows[0]['LAT']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LON']), -122.259249687194824)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
 
             self.assertEqual(6, len(rows))
             self.assertEqual(rows[0]['NUMBER'], '5115')
@@ -1755,8 +1782,7 @@ class TestConformCli (unittest.TestCase):
 
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertAlmostEqual(float(rows[0]['LAT']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LON']), -122.259249687194824)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
 
     def test_lake_man_shp_noprj_epsg26943(self):
         rc, dest_path = self._run_conform_on_source('lake-man-epsg26943-noprj', 'shp')
@@ -1764,8 +1790,7 @@ class TestConformCli (unittest.TestCase):
 
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertAlmostEqual(float(rows[0]['LAT']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LON']), -122.259249687194824)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
 
     # TODO: add tests for non-ESRI GeoJSON sources
 
@@ -1796,8 +1821,7 @@ class TestConformCli (unittest.TestCase):
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
             self.assertEqual(rows[0]['NUMBER'], '2543-6')
-            self.assertAlmostEqual(float(rows[0]['LON']), 135.955104)
-            self.assertAlmostEqual(float(rows[0]['LAT']), 34.607832)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (135.955104 34.607832)')
             self.assertEqual(rows[0]['STREET'], u'\u91dd\u753a')
             self.assertEqual(rows[1]['NUMBER'], '202-6')
 
@@ -1807,8 +1831,7 @@ class TestConformCli (unittest.TestCase):
         self.assertEqual(0, rc)
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertAlmostEqual(float(rows[0]['LON']), 37.802612637607439, places=5)
-            self.assertAlmostEqual(float(rows[0]['LAT']), -122.259249687194824, places=5)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
             self.assertEqual(rows[0]['NUMBER'], '5')
             self.assertEqual(rows[0]['STREET'], u'PZ ESPA\u00d1A')
 
@@ -1819,8 +1842,7 @@ class TestConformCli (unittest.TestCase):
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
             self.assertEqual(6, len(rows))
-            self.assertAlmostEqual(float(rows[0]['LON']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LAT']), -122.259249687194824)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
             self.assertEqual(rows[0]['NUMBER'], '5115')
             self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
 
@@ -2296,7 +2318,7 @@ class TestConformTests (unittest.TestCase):
 
         for filename in filenames:
             with open(os.path.join(os.path.dirname(__file__), 'sources', filename)) as file:
-                source = json.load(file)
+                source = SourceConfig(json.load(file), "addresses", "default")
 
             result, message = check_source_tests(source)
             self.assertIs(result, True, 'Tests should pass in {}'.format(filename))
@@ -2306,7 +2328,7 @@ class TestConformTests (unittest.TestCase):
         '''
         '''
         with open(os.path.join(os.path.dirname(__file__), 'sources', 'cz-countrywide-bad-tests.json')) as file:
-            source = json.load(file)
+            source = SourceConfig(json.load(file), "addresses", "default")
 
         result, message = check_source_tests(source)
         self.assertIs(result, False, 'Tests should fail in {}'.format(file.name))

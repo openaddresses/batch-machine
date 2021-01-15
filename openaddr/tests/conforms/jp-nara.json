@@ -2,6 +2,7 @@
     "schema": 2,
     "layers": {
         "addresses": [{
+            "name": "default",
             "protocol": "http",
             "data": "https://data.openaddresses.io/cache/jp-nara.zip",
             "website": "http://nlftp.mlit.go.jp/isj/index.html",
