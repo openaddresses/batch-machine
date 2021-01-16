@@ -879,7 +879,10 @@ def row_extract_and_reproject(data_source, source_row):
 
     # Set local variables lon_name, source_x, lat_name, source_y
     if ignore_conform_names:
-        source_geom = source_row[GEOM_FIELDNAME]
+        if source_row.get(GEOM_FIELDNAME) is not None:
+            source_geom = source_row[GEOM_FIELDNAME]
+        else:
+            source_geom = source_row[GEOM_FIELDNAME.replace('GEOM', 'geom')]
     else:
         # Conforms can name the lat/lon columns from the original source data
         lat_name = data_source["conform"]["lat"]

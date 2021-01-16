@@ -1663,12 +1663,12 @@ class TestConformCli (unittest.TestCase):
         with open(dest_path) as fp:
             reader = csv.DictReader(fp)
             self.assertEqual([
-                'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID'
+                'GEOM', 'HASH', 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID'
             ], reader.fieldnames)
 
             rows = list(reader)
 
-            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
 
             self.assertEqual(6, len(rows))
             self.assertEqual(rows[0]['NUMBER'], '5115')
