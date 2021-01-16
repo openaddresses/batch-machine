@@ -465,8 +465,8 @@ class TestConformTransforms (unittest.TestCase):
         self.assertEqual("", r["UNIT"])
 
     def test_row_round_lat_lon(self):
-        r = row_round_lat_lon({}, {"LON": "39.14285717777", "LAT": "-121.20"})
-        self.assertEqual({"LON": "39.1428572", "LAT": "-121.2"}, r)
+        r = row_round_lat_lon({}, {"GEOM": "POINT (39.14285717777 -121.20)"})
+        self.assertEqual({"GEOM": "POINT (39.1428572 -121.2)"}, r)
         for e, a in ((    ""        ,    ""),
                      (  "39.3"      ,  "39.3"),
                      (  "39.3"      ,  "39.3000000"),
@@ -482,11 +482,11 @@ class TestConformTransforms (unittest.TestCase):
                      (  "-0.1428572",  "-0.142857153"),
                      (  "39.1428572",  "39.142857153"),
                      (   "0"        ,  " 0.00"),
-                     (  "-0"        ,  "-0.00"),
+                     (  "0"        ,  "-0.00"),
                      ( "180"        ,  "180.0"),
                      ("-180"        , "-180")):
-            r = row_round_lat_lon({}, {"LAT": a, "LON": a})
-            self.assertEqual(e, r["LON"])
+            r = row_round_lat_lon({}, {"GEOM": "POINT ({} {})".format(a, a)})
+            self.assertEqual("POINT ({} {})".format(e, e), r["GEOM"])
 
     def test_row_extract_and_reproject(self):
         # CSV lat/lon column names
@@ -1691,12 +1691,12 @@ class TestConformCli (unittest.TestCase):
         with open(dest_path) as fp:
             reader = csv.DictReader(fp)
             self.assertEqual([
-                'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID'
+                'GEOM', 'HASH', 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID'
             ], reader.fieldnames)
 
             rows = list(reader)
 
-            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
 
             self.assertEqual(6, len(rows))
             self.assertEqual(rows[0]['NUMBER'], '5115')
@@ -1782,7 +1782,7 @@ class TestConformCli (unittest.TestCase):
 
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
 
     def test_lake_man_shp_noprj_epsg26943(self):
         rc, dest_path = self._run_conform_on_source('lake-man-epsg26943-noprj', 'shp')
@@ -1790,7 +1790,7 @@ class TestConformCli (unittest.TestCase):
 
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
 
     # TODO: add tests for non-ESRI GeoJSON sources
 
@@ -1831,7 +1831,7 @@ class TestConformCli (unittest.TestCase):
         self.assertEqual(0, rc)
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
+            self.assertEqual(rows[0]['GEOM'], 'POINT (37.8026123 -122.2592495)')
             self.assertEqual(rows[0]['NUMBER'], '5')
             self.assertEqual(rows[0]['STREET'], u'PZ ESPA\u00d1A')
 
@@ -1842,7 +1842,7 @@ class TestConformCli (unittest.TestCase):
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
             self.assertEqual(6, len(rows))
-            self.assertEqual(rows[0]['GEOM'], 'POINT (37.802612637607439 -122.259249687194824)')
+            self.assertEqual(rows[0]['GEOM'], 'POINT (37.8026126 -122.2592497)')
             self.assertEqual(rows[0]['NUMBER'], '5115')
             self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
 
@@ -2174,7 +2174,7 @@ class TestConformCsv(unittest.TestCase):
              u'3203,SE WOODSTOCK BLVD,-122.629314,45.479425'.encode('ascii'))
         r = self._convert(c, d)
         self.assertEqual(r[0], u'n,s,{GEOM_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,-122.629314,45.479425')
+        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,POINT (-122.629314 45.479425)')
 
     def test_srs(self):
         # This is an example inspired by the hipsters in us-or-portland
@@ -2183,7 +2183,7 @@ class TestConformCsv(unittest.TestCase):
              u'3203,SE WOODSTOCK BLVD,7655634.924,668868.414'.encode('ascii'))
         r = self._convert(c, d)
         self.assertEqual(r[0], u'n,s,{GEOM_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,POINT(45.4815544 -122.6308422)')
+        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,POINT (45.4815543938511 -122.630842186651)')
 
     def test_too_many_columns(self):
         "Check that we don't barf on input with too many columns in some rows"
@@ -2341,7 +2341,7 @@ class TestConformTests (unittest.TestCase):
 
         for filename in filenames:
             with open(os.path.join(os.path.dirname(__file__), 'sources', filename)) as file:
-                source = SourceConfig(dict(json.load(file)), "addresses", "name")
+                source = SourceConfig(dict(json.load(file)), "addresses", "default")
 
             result, message = check_source_tests(source)
             self.assertIsNone(result, 'Tests should not exist in {}'.format(filename))

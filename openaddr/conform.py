@@ -1200,11 +1200,14 @@ def _round_wgs84_to_7(n):
 def row_round_lat_lon(sc, row):
     "Round WGS84 coordinates to 1cm precision"
     if row.get('GEOM') is not None and 'POINT' in row['GEOM']:
-        geom = ogr.CreateGeometryFromWkt(row['GEOM'])
-        x = _round_wgs84_to_7(geom.GetX())
-        y = _round_wgs84_to_7(geom.GetY())
+        try:
+            geom = ogr.CreateGeometryFromWkt(row['GEOM'])
+            x = _round_wgs84_to_7(geom.GetX())
+            y = _round_wgs84_to_7(geom.GetY())
 
-        row['GEOM'] = ogr.CreateGeometryFromWkt('POINT ({} {})'.format(x, y)).ExportToWkt()
+            row['GEOM'] = ogr.CreateGeometryFromWkt('POINT ({} {})'.format(x, y)).ExportToWkt()
+        except Exception:
+            pass
 
     return row
 
