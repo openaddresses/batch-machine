@@ -167,7 +167,7 @@ def conform(source_config, destdir, extras):
         source_urls = [source_urls]
 
     task1 = URLDownloadTask(source_config.data_source_name)
-    downloaded_path = task1.download(source_urls, workdir)
+    downloaded_path = task1.download(source_urls, workdir, source_config)
     _L.info("Downloaded to %s", downloaded_path)
 
     task2 = DecompressionTask.from_format_string(source_config.data_source.get('compression'))

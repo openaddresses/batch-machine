@@ -110,7 +110,7 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
 
                 source_config = SourceConfig(source, layer, layersource)
 
-                if source_config.data_source == False:
+                if source_config.data_source == False or source_config.data_source == None:
                     _L.error('Nothing processed: \'{}\' layersource not found in \'{}\' layer '.format(layersource, layer))
                     raise ValueError('Nothing processed: \'{}\' layersource not found in \'{}\' layer')
 
