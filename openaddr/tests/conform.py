@@ -2064,6 +2064,15 @@ class TestConformMisc(unittest.TestCase):
         geojson_path = os.path.join(os.path.dirname(__file__), 'data/us-pa-bucks.geojson')
         csv_path = os.path.join(self.testdir, 'us-tx-waco.csv')
         geojson_source_to_csv(geojson_path, csv_path)
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": { }
+                }]
+            }
+        }), "addresses", "default")
 
         with open(csv_path, encoding='utf8') as file:
             row = next(csv.DictReader(file))
@@ -2199,8 +2208,12 @@ class TestConformCsv(unittest.TestCase):
     def test_esri_csv(self):
         # Test that our ESRI-emitted CSV is converted correctly.
         c = { "protocol": "ESRI", "conform": { "format": "geojson", "lat": "theseare", "lon": "ignored" } }
-        d = (u'STREETNAME,NUMBER,OA:x,OA:y'.encode('ascii'),
-             u'MAPLE ST,123,-121.2,39.3'.encode('ascii'))
+
+        d = (
+            u'STREETNAME,NUMBER,OA:GEOM'.encode('ascii'),
+            u'MAPLE ST,123,POINT (-121.2 39.3)'.encode('ascii')
+        )
+
         r = self._convert(c, d)
         self.assertEqual(self._ascii_header_out, r[0])
         self.assertEqual(self._ascii_row_out, r[1])
@@ -2208,8 +2221,10 @@ class TestConformCsv(unittest.TestCase):
     def test_esri_csv_no_lat_lon(self):
         # Test that the ESRI path works even without lat/lon tags. See issue #91
         c = { "protocol": "ESRI", "conform": { "format": "geojson" } }
-        d = (u'STREETNAME,NUMBER,OA:x,OA:y'.encode('ascii'),
-             u'MAPLE ST,123,-121.2,39.3'.encode('ascii'))
+        d = (
+            u'STREETNAME,NUMBER,OA:GEOM'.encode('ascii'),
+            u'MAPLE ST,123,POINT (-121.2 39.3)'.encode('ascii')
+        )
         r = self._convert(c, d)
         self.assertEqual(self._ascii_header_out, r[0])
         self.assertEqual(self._ascii_row_out, r[1])

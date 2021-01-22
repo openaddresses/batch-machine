@@ -868,22 +868,15 @@ def row_extract_and_reproject(data_source, source_row):
     format_string = data_source["conform"].get('format')
     protocol_string = data_source['protocol']
 
-    # Ignore any lat/lon names for natively geographic sources.
-    ignore_conform_names = bool(format_string != 'csv')
-
-    # ESRI-derived source CSV is synthetic; we should ignore any lat/lon names.
-    ignore_conform_names |= bool(protocol_string == 'ESRI')
-
     # Prepare an output row
     out_row = copy.deepcopy(source_row)
 
     # Set local variables lon_name, source_x, lat_name, source_y
-    if ignore_conform_names:
-        if source_row.get(GEOM_FIELDNAME) is not None:
-            source_geom = source_row[GEOM_FIELDNAME]
-        else:
-            source_geom = source_row[GEOM_FIELDNAME.replace('GEOM', 'geom')]
-    else:
+    if source_row.get(GEOM_FIELDNAME) is not None:
+        source_geom = source_row[GEOM_FIELDNAME]
+    elif source_row.get(GEOM_FIELDNAME.replace('GEOM', 'geom')):
+        source_geom = source_row[GEOM_FIELDNAME.replace('GEOM', 'geom')]
+    elif data_source["conform"].get('lat') is not None and data_source["conform"].get('lon') is not None:
         # Conforms can name the lat/lon columns from the original source data
         lat_name = data_source["conform"]["lat"]
         lon_name = data_source["conform"]["lon"]
@@ -918,6 +911,8 @@ def row_extract_and_reproject(data_source, source_row):
             # Add blank data to the output CSV and get out
             out_row[GEOM_FIELDNAME] = None
             return out_row
+    else:
+        return out_row
 
     # Reproject the coordinates if necessary
     if "srs" in data_source["conform"]:

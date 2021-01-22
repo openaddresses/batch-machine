@@ -987,8 +987,8 @@ class TestOA (unittest.TestCase):
 
         self.assertEqual(len(rows), 15)
         self.assertEqual(rows[0]['STREET'], u'2.Gata v/Rauðavatn')
-        self.assertEqual(rows[2]['GEOM'], -21.76846217953)
-        self.assertEqual(rows[3]['GEOM'], 64.110044369942)
+        self.assertEqual(rows[2]['GEOM'], 'POINT (-21.7684622 64.110974)')
+        self.assertEqual(rows[3]['GEOM'], 'POINT (-21.7665982 64.1100444)')
 
     def test_single_fr_paris(self):
         ''' Test complete process_one.process on data that uses conform csvsplit (issue #124)
