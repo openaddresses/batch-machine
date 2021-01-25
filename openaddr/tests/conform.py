@@ -504,7 +504,7 @@ class TestConformTransforms (unittest.TestCase):
                 }]
             }
         }), "addresses", "default")
-        r = row_extract_and_reproject(d.data_source, {"longitude": "-122.3", "latitude": "39.1"})
+        r = row_extract_and_reproject(d, {"longitude": "-122.3", "latitude": "39.1"})
         self.assertEqual({GEOM_FIELDNAME: "POINT (-122.3 39.1)"}, r)
 
         # non-CSV lat/lon column names
@@ -522,7 +522,7 @@ class TestConformTransforms (unittest.TestCase):
                 }]
             }
         }), "addresses", "default")
-        r = row_extract_and_reproject(d.data_source, {"OA:GEOM": "POINT (-122.3 39.1)" })
+        r = row_extract_and_reproject(d, {"OA:GEOM": "POINT (-122.3 39.1)" })
         self.assertEqual({GEOM_FIELDNAME: "POINT (-122.3 39.1)"}, r)
 
         # reprojection
@@ -539,7 +539,7 @@ class TestConformTransforms (unittest.TestCase):
                 }]
             }
         }), "addresses", "default")
-        r = row_extract_and_reproject(d.data_source, {GEOM_FIELDNAME: "POINT (7655634.924 668868.414)"})
+        r = row_extract_and_reproject(d, {GEOM_FIELDNAME: "POINT (7655634.924 668868.414)"})
 
         self.assertEqual('POINT (45.4815543938511 -122.630842186651)', r[GEOM_FIELDNAME])
 
@@ -558,7 +558,7 @@ class TestConformTransforms (unittest.TestCase):
                 }]
             }
         }), "addresses", "default")
-        r = row_extract_and_reproject(d.data_source, {"X": "", "Y": ""})
+        r = row_extract_and_reproject(d, {"X": "", "Y": ""})
         self.assertEqual(None, r[GEOM_FIELDNAME])
 
         # commas in lat/lon columns (eg Iceland)
@@ -576,7 +576,7 @@ class TestConformTransforms (unittest.TestCase):
                 }]
             }
         }), "addresses", "default")
-        r = row_extract_and_reproject(d.data_source, {"LONG_WGS84": "-21,77", "LAT_WGS84": "64,11"})
+        r = row_extract_and_reproject(d, {"LONG_WGS84": "-21,77", "LAT_WGS84": "64,11"})
         self.assertEqual({GEOM_FIELDNAME: "POINT (-21.77 64.11)"}, r)
 
     def test_row_fxn_prefixed_number_and_postfixed_street_no_units(self):
@@ -2061,9 +2061,6 @@ class TestConformMisc(unittest.TestCase):
     def test_geojson_source_to_csv(self):
         '''
         '''
-        geojson_path = os.path.join(os.path.dirname(__file__), 'data/us-pa-bucks.geojson')
-        csv_path = os.path.join(self.testdir, 'us-tx-waco.csv')
-        geojson_source_to_csv(geojson_path, csv_path)
         c = SourceConfig(dict({
             "schema": 2,
             "layers": {
@@ -2074,9 +2071,13 @@ class TestConformMisc(unittest.TestCase):
             }
         }), "addresses", "default")
 
+        geojson_path = os.path.join(os.path.dirname(__file__), 'data/us-pa-bucks.geojson')
+        csv_path = os.path.join(self.testdir, 'us-tx-waco.csv')
+        geojson_source_to_csv(c, geojson_path, csv_path)
+
         with open(csv_path, encoding='utf8') as file:
             row = next(csv.DictReader(file))
-            self.assertEqual(row[GEOM_FIELDNAME], 'POINT (-74.98335721879076 40.054962450263616)')
+            self.assertEqual(row[GEOM_FIELDNAME], 'POINT (-74.9833483425103 40.05498715)')
             self.assertEqual(row['PARCEL_NUM'], '02-022-003')
 
 class TestConformCsv(unittest.TestCase):
@@ -2107,6 +2108,16 @@ class TestConformCsv(unittest.TestCase):
 
         with open(src_path, "w+b") as file:
             file.write(b'\n'.join(src_bytes))
+
+        conform = {
+            "schema": 2,
+            "layers": {
+                "addresses": [ conform ]
+            }
+        }
+        conform['layers']['addresses'][0]['name'] = 'default'
+
+        conform = SourceConfig(conform, "addresses", "default")
 
         dest_path = os.path.join(self.testdir, "output.csv")
         csv_source_to_csv(conform, src_path, dest_path)

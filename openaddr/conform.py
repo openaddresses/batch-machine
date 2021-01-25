@@ -639,6 +639,7 @@ def normalize_ogr_filename_case(source_path):
 
     return normal_path
 
+# TODO rip out a bunch of this and replace with call to row_extract_and_reproject
 def ogr_source_to_csv(source_config, source_path, dest_path):
     ''' Convert a single shapefile or GeoJSON in source_path and put it in dest_path
     '''
@@ -740,15 +741,15 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
 
     in_datasource.Destroy()
 
-def csv_source_to_csv(data_source, source_path, dest_path):
+def csv_source_to_csv(source_config, source_path, dest_path):
     "Convert a source CSV file to an intermediate form, coerced to UTF-8 and EPSG:4326"
     _L.info("Converting source CSV %s", source_path)
 
     # Encoding processing tag
-    enc = data_source["conform"].get("encoding", "utf-8")
+    enc = source_config.data_source["conform"].get("encoding", "utf-8")
 
     # csvsplit processing tag
-    delim = data_source["conform"].get("csvsplit", ",")
+    delim = source_config.data_source["conform"].get("csvsplit", ",")
 
     # Extract the source CSV, applying conversions to deal with oddball CSV formats
     # Also convert encoding to utf-8 and reproject to EPSG:4326 in X and Y columns
@@ -756,8 +757,8 @@ def csv_source_to_csv(data_source, source_path, dest_path):
         in_fieldnames = None   # in most cases, we let the csv module figure these out
 
         # headers processing tag
-        if "headers" in data_source["conform"]:
-            headers = data_source["conform"]["headers"]
+        if "headers" in source_config.data_source["conform"]:
+            headers = source_config.data_source["conform"]["headers"]
             if (headers == -1):
                 # Read a row off the file to see how many columns it has
                 temp_reader = csv.reader(source_fp, delimiter=str(delim))
@@ -771,27 +772,32 @@ def csv_source_to_csv(data_source, source_path, dest_path):
                 # matches the sources in our collection as of January 2015
                 # this code handles the case for Korean inputs where there are
                 # two lines of headers and we want to skip the first one
-                assert "skiplines" in data_source["conform"]
-                assert data_source["conform"]["skiplines"] == headers
+                assert "skiplines" in source_config.data_source["conform"]
+                assert source_config.data_source["conform"]["skiplines"] == headers
                 # Skip N lines to get to the real header. headers=2 means we skip one line
                 for n in range(1, headers):
                     next(source_fp)
         else:
             # check the source doesn't specify skiplines without headers
-            assert "skiplines" not in data_source["conform"]
+            assert "skiplines" not in source_config.data_source["conform"]
 
         reader = csv.DictReader(source_fp, delimiter=delim, fieldnames=in_fieldnames)
         num_fields = len(reader.fieldnames)
 
-        protocol_string = data_source['protocol']
+        protocol_string = source_config.data_source['protocol']
 
         # Construct headers for the extracted CSV file
         if protocol_string == "ESRI":
-            # ESRI sources: just copy what the downloader gave us. (Already has OA:x and OA:y)
+            # ESRI sources: just copy what the downloader gave us. (Already has OA:GEOM)
             out_fieldnames = list(reader.fieldnames)
+
+            out_fieldnames = list(map(lambda f: (
+                GEOM_FIELDNAME if f == "OA:geom" else f
+            ), out_fieldnames))
+
         else:
             # CSV sources: replace the source's lat/lon columns with OA:x and OA:y
-            old_latlon = [data_source["conform"]["lat"], data_source["conform"]["lon"]]
+            old_latlon = [source_config.data_source["conform"]["lat"], source_config.data_source["conform"]["lon"]]
             old_latlon.extend([s.upper() for s in old_latlon])
             out_fieldnames = [fn for fn in reader.fieldnames if fn not in old_latlon]
             out_fieldnames.append(GEOM_FIELDNAME)
@@ -808,7 +814,7 @@ def csv_source_to_csv(data_source, source_path, dest_path):
                     _L.debug("Skipping row. Got %d columns, expected %d", len(source_row), num_fields)
                     continue
                 try:
-                    out_row = row_extract_and_reproject(data_source, source_row)
+                    out_row = row_extract_and_reproject(source_config, source_row)
                 except Exception as e:
                     _L.error('Error in row {}: {}'.format(row_number, e))
                     raise
@@ -862,21 +868,30 @@ def _transform_to_4326(srs):
         _transform_cache[srs] = osr.CoordinateTransformation(in_spatial_ref, out_spatial_ref)
     return _transform_cache[srs]
 
-def row_extract_and_reproject(data_source, source_row):
-    ''' Find lat/lon in source CSV data and store it in ESPG:4326 in X/Y in the row
+def row_extract_and_reproject(source_config, source_row):
+    ''' Find geometries in source CSV data and store it in ESPG:4326
     '''
+    data_source = source_config.data_source
+
     format_string = data_source["conform"].get('format')
     protocol_string = data_source['protocol']
 
     # Prepare an output row
     out_row = copy.deepcopy(source_row)
 
+    source_geom = None
+
     # Set local variables lon_name, source_x, lat_name, source_y
     if source_row.get(GEOM_FIELDNAME) is not None:
         source_geom = source_row[GEOM_FIELDNAME]
     elif source_row.get(GEOM_FIELDNAME.replace('GEOM', 'geom')):
-        source_geom = source_row[GEOM_FIELDNAME.replace('GEOM', 'geom')]
-    elif data_source["conform"].get('lat') is not None and data_source["conform"].get('lon') is not None:
+        source_row[GEOM_FIELDNAME] = source_row[GEOM_FIELDNAME.replace('GEOM', 'geom')]
+        source_geom = source_row[GEOM_FIELDNAME]
+
+    if source_row.get(GEOM_FIELDNAME.replace('GEOM', 'geom')) is not None:
+        del out_row[GEOM_FIELDNAME.replace('GEOM', 'geom')]
+
+    if source_geom is None and data_source["conform"].get('lat') is not None and data_source["conform"].get('lon') is not None:
         # Conforms can name the lat/lon columns from the original source data
         lat_name = data_source["conform"]["lat"]
         lon_name = data_source["conform"]["lon"]
@@ -905,14 +920,10 @@ def row_extract_and_reproject(data_source, source_row):
             if source_x == "" or source_y == "":
                 out_row[GEOM_FIELDNAME] = None
                 return out_row
-
-            out_row[GEOM_FIELDNAME] = source_geom
         except AttributeError:
             # Add blank data to the output CSV and get out
             out_row[GEOM_FIELDNAME] = None
             return out_row
-    else:
-        return out_row
 
     # Reproject the coordinates if necessary
     if "srs" in data_source["conform"]:
@@ -921,11 +932,27 @@ def row_extract_and_reproject(data_source, source_row):
             point = ogr.CreateGeometryFromWkt(source_geom)
             point.Transform(_transform_to_4326(srs))
 
-            out_row[GEOM_FIELDNAME] = point.ExportToWkt()
+            source_geom = point.ExportToWkt()
         except (TypeError, ValueError) as e:
             if not (source_x == "" or source_y == ""):
                 _L.debug("Could not reproject %s %s in SRS %s", source_x, source_y, srs)
 
+    # For Addresses - Calculate the centroid on surface of the geometry and write it as X and Y columns
+    if source_config.layer == "addresses":
+        geom = ogr.CreateGeometryFromWkt(source_geom)
+
+        try:
+            centroid = geom.PointOnSurface()
+        except RuntimeError as e:
+            if 'Invalid number of points in LinearRing found' not in str(e):
+                raise
+            xmin, xmax, ymin, ymax = geom.GetEnvelope()
+
+            centroid = ogr.CreateGeometryFromWkt("POINT ({} {})".format(xmin/2 + xmax/2, ymin/2 + ymax/2))
+
+        source_geom = centroid.ExportToWkt()
+
+    out_row[GEOM_FIELDNAME] = source_geom
 
     # Add the reprojected data to the output CSV
     return out_row
@@ -1004,6 +1031,7 @@ def conform_smash_case(data_source):
     "Convert all named fields in data_source object to lowercase. Returns new object."
     new_sd = copy.deepcopy(data_source)
     conform = new_sd["conform"]
+
     for k, v in conform.items():
         if type(conform[k]) is list:
             conform[k] = [s.lower() for s in conform[k]]
@@ -1022,8 +1050,6 @@ def conform_smash_case(data_source):
                         if "field_to_remove" in function:
                             function["field_to_remove"] = function["field_to_remove"].lower()
 
-    if "advanced_merge" in conform:
-        raise ValueError('Found unsupported "advanced_merge" option in conform')
     return new_sd
 
 def row_smash_case(sc, input):
@@ -1259,12 +1285,12 @@ def extract_to_source_csv(source_config, source_path, extract_path):
         ogr_source_path = normalize_ogr_filename_case(source_path)
         ogr_source_to_csv(source_config, ogr_source_path, extract_path)
     elif format_string == "csv":
-        csv_source_to_csv(source_config.data_source, source_path, extract_path)
+        csv_source_to_csv(source_config, source_path, extract_path)
     elif format_string == "geojson":
         # GeoJSON sources have some awkward legacy with ESRI, see issue #34
         if protocol_string == "ESRI":
             _L.info("ESRI GeoJSON source found; treating it as CSV")
-            csv_source_to_csv(source_config.data_source, source_path, extract_path)
+            csv_source_to_csv(source_config, source_path, extract_path)
         else:
             _L.info("Non-ESRI GeoJSON source found; converting as a stream.")
             geojson_source_path = normalize_ogr_filename_case(source_path)

@@ -377,6 +377,8 @@ class EsriRestDownloadTask(DownloadTask):
             if GEOM_FIELDNAME not in field_names:
                 field_names.append(GEOM_FIELDNAME)
 
+            field_names = list(map(lambda x: x.upper(), field_names))
+
             # Get the count of rows in the layer
             try:
                 row_count = downloader.get_feature_count()
@@ -400,6 +402,9 @@ class EsriRestDownloadTask(DownloadTask):
 
                         shp = shape(feature['geometry'])
                         row[GEOM_FIELDNAME] = shp.wkt
+
+                        for k,v in row.items():
+                            row.update({ k.upper(): v })
 
                         writer.writerow({fn: row.get(fn) for fn in field_names})
                         size += 1

@@ -854,36 +854,6 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[10]['UNIT'], u'')
             self.assertEqual(rows[100]['UNIT'], u'')
 
-    def test_single_jp_fukushima1(self):
-        ''' Test complete process_one.process on Japanese sample data.
-        '''
-        source = join(self.src_dir, 'jp-fukushima1.json')
-
-        with HTTMock(self.response_content):
-            state_path = process_one.process(source, self.testdir, "addresses", "default", False)
-
-        with open(state_path) as file:
-            state = dict(zip(*json.load(file)))
-
-        self.assertIsNotNone(state["sample"])
-        self.assertEqual(state["source problem"], "Could not conform source data")
-        self.assertIsNone(state["processed"])
-        self.assertIsNone(state["preview"])
-        self.assertIsNone(state["slippymap"])
-        self.assertEqual(state["website"], 'http://nlftp.mlit.go.jp/isj/index.html')
-        self.assertEqual(state["license"], u'http://nlftp.mlit.go.jp/ksj/other/yakkan§.html')
-        self.assertEqual(state["attribution required"], 'true')
-        self.assertIn('Ministry of Land', state["attribution name"])
-
-        with open(join(dirname(state_path), state["sample"])) as file:
-            sample_data = json.load(file)
-
-        self.assertEqual(len(sample_data), 6)
-        self.assertTrue(u'大字・町丁目名' in sample_data[0])
-        self.assertTrue(u'田沢字姥懐' in sample_data[1])
-        self.assertTrue('37.706391' in sample_data[1])
-        self.assertTrue('140.480007' in sample_data[1])
-
     def test_single_jp_fukushima2(self):
         ''' Test complete process_one.process on Japanese sample data.
         '''
@@ -1145,15 +1115,18 @@ class TestOA (unittest.TestCase):
             sample_data = json.load(file)
 
         self.assertEqual(len(sample_data), 6)
-        self.assertIn('OA:GEOM', sample_data[0])
-        self.assertIn('UNITNUM', sample_data[0])
-        self.assertEqual('423', sample_data[1][0])
-        self.assertEqual(['W', ' ', '28TH DIVISION', 'HWY'], sample_data[1][1:5])
-        self.assertEqual('1', sample_data[1][6])
-        self.assertEqual('2', sample_data[2][6])
-        self.assertEqual('3', sample_data[3][6])
-        self.assertEqual('4', sample_data[4][6])
-        self.assertEqual('5', sample_data[5][6])
+
+        self.assertEqual(['ADRNUM', 'MUNI', 'UNITNUM', 'FDPRE', 'FDSUF', 'FNAME', 'FTYPE', 'OA:GEOM'], sample_data[0])
+        self.assertEqual([
+            '423',
+            'ELIZABETH TOWNSHIP',
+            '1',
+            'W',
+            ' ',
+            '28TH DIVISION',
+            'HWY',
+            'POINT (-76.320967 40.2323465)'
+        ], sample_data[1])
 
         output_path = join(dirname(state_path), state['processed'])
 
@@ -1189,8 +1162,8 @@ class TestOA (unittest.TestCase):
 
         self.assertEqual(len(sample_data), 2)
         self.assertIn('OA:GEOM', sample_data[0])
-        self.assertIn('fulladdru', sample_data[0])
-        self.assertIn('sufixru', sample_data[0])
+        self.assertIn('FULLADDRU', sample_data[0])
+        self.assertIn('SUFIXRU', sample_data[0])
 
     def test_single_pa_bucks(self):
         ''' Test complete process_one.process on data with ESRI multiPolyline geometries.
@@ -1321,9 +1294,9 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[0]['REGION'], u'TX')
             self.assertEqual(rows[0]['ID'], u'')
             self.assertEqual(rows[0]['NUMBER'], u'308')
-            self.assertEqual(rows[0]['HASH'], u'8a7bb012b7b6f902')
+            self.assertEqual(rows[0]['HASH'], u'a36614ae20aa849f')
             self.assertEqual(rows[0]['CITY'], u'Mcgregor')
-            self.assertEqual(rows[0]['GEOM'], u'POINT (-97.3961771 31.4432703)')
+            self.assertEqual(rows[0]['GEOM'], u'POINT (-97.3961768 31.4432706)')
             self.assertEqual(rows[0]['STREET'], u'PULLEN ST')
             self.assertEqual(rows[0]['POSTCODE'], u'76657')
             self.assertEqual(rows[0]['UNIT'], u'')
