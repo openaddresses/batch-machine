@@ -7,11 +7,7 @@ from shutil import copy, move, rmtree
 from os import close, utime, remove
 from urllib.parse import urlparse
 from datetime import datetime, date
-from calendar import timegm
 import requests
-
-from boto.s3.connection import S3Connection
-from dateutil.parser import parse
 
 from .cache import (
     CacheResult,
@@ -53,41 +49,6 @@ class SourceConfig:
             self.SCHEMA = []
         elif self.layer == 'parcels':
             self.SCHEMA = [ 'PID' ]
-
-class S3:
-    _bucket = None
-
-    def __init__(self, key, secret, bucketname):
-        self._key, self._secret = key, secret
-        self.bucketname = bucketname
-
-    def _make_bucket(self):
-        if not self._bucket:
-            # see https://github.com/boto/boto/issues/2836#issuecomment-67896932
-            kwargs = dict(calling_format='boto.s3.connection.OrdinaryCallingFormat')
-            connection = S3Connection(self._key, self._secret, **kwargs)
-            self._bucket = connection.get_bucket(self.bucketname)
-
-    @property
-    def bucket(self):
-        self._make_bucket()
-        return self._bucket
-
-    def get_key(self, name):
-        return self.bucket.get_key(name)
-
-    def new_key(self, name):
-        return self.bucket.new_key(name)
-
-class LocalProcessedResult:
-    def __init__(self, source_base, filename, run_state, code_version):
-        for attr in ('attribution_name', 'attribution_flag', 'website', 'license'):
-            assert hasattr(run_state, attr), 'Run state should have {} property'.format(attr)
-
-        self.source_base = source_base
-        self.filename = filename
-        self.run_state = run_state
-        self.code_version = code_version
 
 def cache(source_config, destdir, extras):
     ''' Python wrapper for openaddress-cache.
@@ -218,55 +179,3 @@ def conform(source_config, destdir, extras):
                          sharealike_flag,
                          attr_flag,
                          attr_name)
-
-def download_processed_file(url):
-    ''' Download a URL to a local temporary file, return its path.
-
-        Local file will have an appropriate timestamp and extension.
-    '''
-    urlparts = urlparse(url)
-    _, ext = splitext(urlparts.path)
-    handle, filename = mkstemp(prefix='processed-', suffix=ext)
-    close(handle)
-
-    if urlparts.hostname.endswith('s3.amazonaws.com'):
-        # Use boto directly if it's an S3 URL
-        if urlparts.hostname == 's3.amazonaws.com':
-            # Bucket and key are in the path part of the URL
-            bucket, key = urlparts.path[1:].split('/', 1)
-        else:
-            # Bucket is part of the domain, path is the key
-            bucket = urlparts.hostname[:-17]
-            key = urlparts.path[1:]
-
-        s3 = S3(None, None, bucket)
-        k = s3.get_key(key)
-        k.get_contents_to_filename(filename)
-        last_modified = datetime.strptime(k.last_modified, '%a, %d %b %Y %H:%M:%S %Z')
-        timestamp = timegm(last_modified.utctimetuple())
-    else:
-        for i in range(3):
-            # Otherwise just download via HTTP
-            response = requests.get(url, stream=True, timeout=5)
-
-            if response.status_code == 200:
-                break
-            elif response.status_code == 404:
-                response.raise_for_status()
-            else:
-                # Retry
-                continue
-
-        # Raise an exception if we failed after retries
-        response.raise_for_status()
-
-        with open(filename, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                file.write(chunk)
-
-        last_modified = response.headers.get('Last-Modified')
-        timestamp = timegm(parse(last_modified).utctimetuple())
-
-    utime(filename, (timestamp, timestamp))
-
-    return filename

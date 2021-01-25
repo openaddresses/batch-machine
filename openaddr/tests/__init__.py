@@ -46,11 +46,7 @@ from requests import get
 from httmock import response, HTTMock
 import mock
 
-from .. import (
-    cache, conform, S3, process_one,
-    download_processed_file
-    )
-
+from .. import cache, conform, process_one
 from ..util import package_output
 from ..cache import CacheResult
 from ..conform import ConformResult
@@ -78,11 +74,8 @@ class TestOA (unittest.TestCase):
         sources_dir = join(dirname(__file__), 'sources')
         shutil.copytree(sources_dir, self.src_dir)
 
-        self.s3 = FakeS3()
-
     def tearDown(self):
         shutil.rmtree(self.testdir)
-        remove(self.s3._fake_keys)
 
     def response_content(self, url, request):
         ''' Fake HTTP responses for use with HTTMock in tests.
@@ -1863,48 +1856,6 @@ class TestPackage (unittest.TestCase):
 
         self.assertEqual(call3[0], 'close')
 
-    def test_download_processed_file_csv(self):
-        with mock.patch('openaddr.S3') as s3:
-            fake_s3 = mock.MagicMock()
-            fake_key = mock.MagicMock()
-            fake_key.get_contents_to_filename.return_value = None
-            fake_key.last_modified = "Wed, 30 Apr 2014 17:42:10 GMT"
-            fake_s3.get_key.return_value = fake_key
-            s3.return_value = fake_s3
-            filename = download_processed_file('http://s3.amazonaws.com/openaddresses/us-oh-clinton.csv')
-
-        self.assertEqual(splitext(filename)[1], '.csv')
-        self.assertEqual(os.stat(filename).st_mtime, 1398879730)
-        remove(filename)
-
-    def test_download_processed_file_zip(self):
-        with mock.patch('openaddr.S3') as s3:
-            fake_s3 = mock.MagicMock()
-            fake_key = mock.MagicMock()
-            fake_key.get_contents_to_filename.return_value = None
-            fake_key.last_modified = "Tue, 18 Aug 2015 07:10:32 GMT"
-            fake_s3.get_key.return_value = fake_key
-            s3.return_value = fake_s3
-            filename = download_processed_file('http://data.openaddresses.io.s3.amazonaws.com/runs/11170/ca-ab-strathcona-county.zip')
-
-        self.assertEqual(splitext(filename)[1], '.zip')
-        self.assertEqual(os.stat(filename).st_mtime, 1439881832)
-        remove(filename)
-
-    def test_download_processed_file_nested_zip(self):
-        with mock.patch('openaddr.S3') as s3:
-            fake_s3 = mock.MagicMock()
-            fake_key = mock.MagicMock()
-            fake_key.get_contents_to_filename.return_value = None
-            fake_key.last_modified = "Wed, 19 Aug 2015 10:35:44 GMT"
-            fake_s3.get_key.return_value = fake_key
-            s3.return_value = fake_s3
-            filename = download_processed_file('http://data.openaddresses.io.s3.amazonaws.com/runs/13616/fr/vaucluse.zip')
-
-        self.assertEqual(splitext(filename)[1], '.zip')
-        self.assertEqual(os.stat(filename).st_mtime, 1439980544)
-        remove(filename)
-
 @contextmanager
 def locked_open(filename):
     ''' Open and lock a file, for use with threads and processes.
@@ -1915,68 +1866,6 @@ def locked_open(filename):
         yield file
         if lockf:
             lockf(file, LOCK_UN)
-
-class FakeS3 (S3):
-    ''' Just enough S3 to work for tests.
-    '''
-    _fake_keys = None
-
-    def __init__(self):
-        handle, self._fake_keys = tempfile.mkstemp(prefix='fakeS3-', suffix='.pickle')
-        close(handle)
-
-        self._threadlock = Lock()
-
-        with open(self._fake_keys, 'wb') as file:
-            pickle.dump(dict(), file)
-
-        S3.__init__(self, 'Fake Key', 'Fake Secret', 'data-test.openaddresses.io')
-
-    def _write_fake_key(self, name, string):
-        with locked_open(self._fake_keys) as file, self._threadlock:
-            data = pickle.load(file)
-            data[name] = string
-
-            file.seek(0)
-            file.truncate()
-            pickle.dump(data, file)
-
-    def _read_fake_key(self, name):
-        with locked_open(self._fake_keys) as file, self._threadlock:
-            data = pickle.load(file)
-
-        return data[name]
-
-    def get_key(self, name):
-        if not name.endswith('state.txt'):
-            raise NotImplementedError()
-        # No pre-existing state for testing.
-        return None
-
-    def new_key(self, name):
-        return FakeKey(name, self)
-
-class FakeBucket:
-    '''
-    '''
-    name = 'fake-bucket'
-
-class FakeKey:
-    ''' Just enough S3 to work for tests.
-    '''
-    md5 = b'0xDEADBEEF'
-
-    def __init__(self, name, fake_s3):
-        self.bucket = FakeBucket()
-        self.name = name
-        self.s3 = fake_s3
-
-    def set_contents_from_string(self, string, **kwargs):
-        self.s3._write_fake_key(self.name, string)
-
-    def set_contents_from_filename(self, filename, **kwargs):
-        with open(filename, 'rb') as file:
-            self.s3._write_fake_key(self.name, file.read())
 
 class FakeResponse:
     def __init__(self, status_code):
