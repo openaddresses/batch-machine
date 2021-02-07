@@ -1033,6 +1033,8 @@ def conform_smash_case(data_source):
     conform = new_sd["conform"]
 
     for k, v in conform.items():
+        if type(conform[k]) is str:
+               conform[k] = v.lower()
         if type(conform[k]) is list:
             conform[k] = [s.lower() for s in conform[k]]
         if type(conform[k]) is dict:
@@ -1183,16 +1185,17 @@ def row_fxn_chain(sc, row, key, fxn):
 
     original_key = key
 
-    if var and var not in sc.SCHEMA and var.lstrip('OA:') not in sc.SCHEMA and var not in row:
-        row[var] = u''
+    if var and var.upper().lstrip('OA:') not in sc.SCHEMA and var not in row:
+        row['oa:' + var] = u''
         key = var
-    else:
-        var = None
 
     for func in functions:
         row = row_function(sc, row, key, func)
 
-    row[original_key] = row[key]
+        if row.get('oa:' + key):
+            row[key] = row['oa:' + key]
+
+    row['oa:{}'.format(original_key.lower())] = row['oa:{}'.format(key)]
 
     return row
 

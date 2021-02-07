@@ -42,6 +42,8 @@ class TestConformTransforms (unittest.TestCase):
                            "district": { "function": "regexp", "field": "ThaT", "pattern": ""},
                            "postcode": { "function": "join", "fields": ["MiXeD", "UPPER"], "separator": "-" } } }
         r = conform_smash_case(d)
+
+        self.maxDiff = None
         self.assertEqual({ "conform": { "street": [ "u", "l", "mixed" ], "number": "u", "lat": "y", "lon": "x",
                            "city": {"fields": ["this", "field"], "function": "join", "separator": "-"},
                            "district": { "field": "that", "function": "regexp", "pattern": ""},
@@ -123,17 +125,24 @@ class TestConformTransforms (unittest.TestCase):
                 }]
             }
         }), "addresses", "default")
+
         d = { "a1": "va1", "b1": "vb1", "b2": "vb2" }
         e = copy.deepcopy(d)
         e.update({ "oa:number": "va1", "oa:street": "vb1-vb2" })
+
         d = row_fxn_join(c, d, "number", c.data_source["conform"]["number"])
         d = row_fxn_join(c, d, "street", c.data_source["conform"]["street"])
         self.assertEqual(e, d)
+
+        # ---
+
         d = { "a1": "va1", "b1": "vb1", "b2": None}
         e = copy.deepcopy(d)
-        e.update({ "oa:number": "va0", "oa:street": "vb1" })
+        e.update({ "oa:number": "va1", "oa:street": "vb1" })
+
         d = row_fxn_join(c, d, "number", c.data_source["conform"]["number"])
         d = row_fxn_join(c, d, "street", c.data_source["conform"]["street"])
+
         self.assertEqual(e, d)
 
     def test_row_fxn_format(self):
