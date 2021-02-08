@@ -25,6 +25,9 @@ from .conform import (
     conform_license,
     conform_attribution,
     conform_sharealike,
+    ADDRESSES_SCHEMA,
+    BUILDINGS_SCHEMA,
+    PARCELS_SCHEMA,
 )
 
 with open(join(dirname(__file__), 'VERSION')) as file:
@@ -44,11 +47,11 @@ class SourceConfig:
                 break
 
         if self.layer == 'addresses':
-            self.SCHEMA = [ 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID' ]
+            self.SCHEMA = ADDRESSES_SCHEMA
         elif self.layer == "buildings":
-            self.SCHEMA = []
+            self.SCHEMA = BUILDINGS_SCHEMA
         elif self.layer == 'parcels':
-            self.SCHEMA = [ 'PID' ]
+            self.SCHEMA = PARCELS_SCHEMA
 
 def cache(source_config, destdir, extras):
     ''' Python wrapper for openaddress-cache.

@@ -403,8 +403,10 @@ class EsriRestDownloadTask(DownloadTask):
                         shp = shape(feature['geometry'])
                         row[GEOM_FIELDNAME] = shp.wkt
 
+                        r = dict()
                         for k,v in row.items():
-                            row.update({ k.upper(): v })
+                            r[k.upper()] =  v
+                        row = r
 
                         writer.writerow({fn: row.get(fn) for fn in field_names})
                         size += 1

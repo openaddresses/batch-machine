@@ -246,6 +246,7 @@ def get_log_handler(directory):
     return handler
 
 def find_source_problem(log_contents, source):
+    print(log_contents)
     '''
     '''
     if 'WARNING: A source test failed' in log_contents:

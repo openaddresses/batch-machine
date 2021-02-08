@@ -41,6 +41,11 @@ gdal.PushErrorHandler(gdal_error_handler)
 # We add columns to the extracted CSV with our own data with these names.
 GEOM_FIELDNAME = 'OA:GEOM'
 
+ADDRESSES_SCHEMA = [ 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID' ]
+BUILDINGS_SCHEMA = []
+PARCELS_SCHEMA = [ 'PID' ]
+RESERVED_SCHEMA = ADDRESSES_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA
+
 UNZIPPED_DIRNAME = 'unzipped'
 
 geometry_types = {
@@ -796,7 +801,7 @@ def csv_source_to_csv(source_config, source_path, dest_path):
             ), out_fieldnames))
 
         else:
-            # CSV sources: replace the source's lat/lon columns with OA:x and OA:y
+            # CSV sources: replace the source's lat/lon columns with OA:GEOM
             old_latlon = [source_config.data_source["conform"]["lat"], source_config.data_source["conform"]["lon"]]
             old_latlon.extend([s.upper() for s in old_latlon])
             out_fieldnames = [fn for fn in reader.fieldnames if fn not in old_latlon]
@@ -890,6 +895,10 @@ def row_extract_and_reproject(source_config, source_row):
 
     if source_row.get(GEOM_FIELDNAME.replace('GEOM', 'geom')) is not None:
         del out_row[GEOM_FIELDNAME.replace('GEOM', 'geom')]
+
+    if source_geom == "POINT (nan nan)":
+        out_row[GEOM_FIELDNAME] = None
+        return out_row
 
     if source_geom is None and data_source["conform"].get('lat') is not None and data_source["conform"].get('lon') is not None:
         # Conforms can name the lat/lon columns from the original source data
@@ -1033,8 +1042,8 @@ def conform_smash_case(data_source):
     conform = new_sd["conform"]
 
     for k, v in conform.items():
-        if type(conform[k]) is str:
-               conform[k] = v.lower()
+        if type(conform[k]) is str and k.upper() in RESERVED_SCHEMA:
+            conform[k] = v.lower()
         if type(conform[k]) is list:
             conform[k] = [s.lower() for s in conform[k]]
         if type(conform[k]) is dict:
