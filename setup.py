@@ -16,10 +16,6 @@ setup(
         console_scripts = [
             'openaddr-preview-source = openaddr.preview:main',
             'openaddr-process-one = openaddr.process_one:main',
-            'openaddr-collect-extracts = openaddr.ci.collect:main',
-            'openaddr-index-tiles = openaddr.ci.tileindex:main',
-            'openaddr-update-dotmap = openaddr.dotmap:main',
-            'openaddr-sum-up-data = openaddr.ci.sum_up:main'
         ]
     ),
     package_data = {
