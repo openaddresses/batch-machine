@@ -30,7 +30,7 @@ jobs:
               uses: aws-actions/amazon-ecr-login@v1
 
             - name: Docker Tag API
-              run: docker tag api ${{secrets.AWS_ACCOUNT_ID}}.dkr.ecr.us-east-1.amazonaws.com/batch-machine:${{steps.tag.outputs.tag}}
+              run: docker tag machine ${{secrets.AWS_ACCOUNT_ID}}.dkr.ecr.us-east-1.amazonaws.com/batch-machine:${{steps.tag.outputs.tag}}
 
             - name: Docker Push API
               run: docker push ${{secrets.AWS_ACCOUNT_ID}}.dkr.ecr.us-east-1.amazonaws.com/batch-machine:${{steps.tag.outputs.tag}}
