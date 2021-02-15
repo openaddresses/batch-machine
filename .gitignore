@@ -1,4 +1,5 @@
 *.pyc
+venv
 render-*.png
 testrun-20??-??-??*
 out
