@@ -16,10 +16,6 @@ setup(
         console_scripts = [
             'openaddr-preview-source = openaddr.preview:main',
             'openaddr-process-one = openaddr.process_one:main',
-            'openaddr-collect-extracts = openaddr.ci.collect:main',
-            'openaddr-index-tiles = openaddr.ci.tileindex:main',
-            'openaddr-update-dotmap = openaddr.dotmap:main',
-            'openaddr-sum-up-data = openaddr.ci.sum_up:main'
         ]
     ),
     package_data = {
@@ -86,8 +82,8 @@ setup(
         'esridump == 1.6.0',
 
         # Used in openaddr.parcels
-        'Shapely == 1.7b1',
-        'Fiona == 1.8.13',
+        'Shapely == 1.7.1',
+        'Fiona == 1.8.17',
 
         # Used in dotmaps preview to support S3-backed SQLite mbtiles
         # https://rogerbinns.github.io/apsw/

@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from .. import SourceConfig
 from urllib.parse import urlparse, parse_qs
 from os.path import join, dirname
 
@@ -76,7 +77,16 @@ class TestCacheEsriDownload (unittest.TestCase):
 
         task = EsriRestDownloadTask('us-fl-palmbeach')
         for expected, conform in conforms:
-            actual = task.field_names_to_request(conform)
+            c = SourceConfig(dict({
+                "schema": 2,
+                "layers": {
+                    "addresses": [{
+                        "name": "default",
+                        "conform": conform
+                    }]
+                }
+            }), "addresses", "default")
+            actual = task.field_names_to_request(c)
             self.assertEqual(expected, actual)
 
     def test_download_handles_no_count(self):
@@ -88,7 +98,18 @@ class TestCacheEsriDownload (unittest.TestCase):
             with patch('esridump.EsriDumper.get_feature_count') as feature_patch:
                 feature_patch.side_effect = EsriDownloadError("Server doesn't support returnCountOnly")
                 with self.assertRaises(EsriDownloadError) as e:
-                    task.download(['http://example.com/'], self.workdir)
+                    task.download(['http://example.com/'], self.workdir, SourceConfig(dict({
+                        "schema": 2,
+                        "layers": {
+                            "addresses": [{
+                                "name": "default",
+                                "conform": {
+                                    "number": "num",
+                                    "street": "str"
+                                }
+                            }]
+                        }
+                    }), "addresses", "default"))
 
                     # This is the expected exception at this point
                     self.assertEqual(e.message, "Could not find object ID field name for deduplication")
@@ -96,42 +117,180 @@ class TestCacheEsriDownload (unittest.TestCase):
     def test_field_names_to_request(self):
         '''
         '''
-        conform1 = dict(number='Number', street='Street')
+        conform1 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": "Number",
+                        "street": "Street"
+                    }
+                }]
+            }
+        }), "addresses", "default")
+
         fields1 = EsriRestDownloadTask.field_names_to_request(conform1)
         self.assertEqual(fields1, ['Number', 'Street'])
 
-        conform2 = dict(number='Number', street=dict(function='regexp', field='Street'))
+        conform2 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": "Number",
+                        "street": {
+                            "function": "regexp",
+                            "field": "Street"
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
         fields2 = EsriRestDownloadTask.field_names_to_request(conform2)
         self.assertEqual(fields2, ['Number', 'Street'])
 
-        conform3 = dict(number='Number', street=dict(function='prefixed_number', field='Street'))
+        conform3 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": "Number",
+                        "street": {
+                            "function": "prefixed_number",
+                            "field": "Street"
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
         fields3 = EsriRestDownloadTask.field_names_to_request(conform3)
         self.assertEqual(fields3, ['Number', 'Street'])
 
-        conform4 = dict(number='Number', street=dict(function='postfixed_street', field='Street'))
+        conform4 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": "Number",
+                        "street": {
+                            "function": "postfixed_street",
+                            "field": "Street"
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
         fields4 = EsriRestDownloadTask.field_names_to_request(conform4)
         self.assertEqual(fields4, ['Number', 'Street'])
 
-        conform5 = dict(number='Number', street=dict(function='remove_prefix', field='Street'))
+        conform5 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": "Number",
+                        "street": {
+                            "function": "remove_prefix",
+                            "field": "Street"
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
         fields5 = EsriRestDownloadTask.field_names_to_request(conform5)
         self.assertEqual(fields5, ['Number', 'Street'])
 
-        conform6 = dict(number='Number', street=dict(function='remove_postfix', field='Street'))
+        conform6 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": "Number",
+                        "street": {
+                            "function": "remove_postfix",
+                            "field": "Street"
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
         fields6 = EsriRestDownloadTask.field_names_to_request(conform6)
         self.assertEqual(fields6, ['Number', 'Street'])
 
-        conform7 = dict(street=dict(function='join', fields=['Number', 'Street']))
+        conform7 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "street": {
+                            "function": "join",
+                            "fields": ["Number", "Street"]
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
         fields7 = EsriRestDownloadTask.field_names_to_request(conform7)
         self.assertEqual(fields7, ['Number', 'Street'])
 
-        conform8 = dict(street=dict(function='format', fields=['Number', 'Street']))
+        conform8 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "street": {
+                            "function": "format",
+                            "fields": ["Number", "Street"]
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
         fields8 = EsriRestDownloadTask.field_names_to_request(conform8)
         self.assertEqual(fields8, ['Number', 'Street'])
 
-        conform9 = dict(street=['Number', 'Street'])
+        conform9 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "street": ["Number", "Street"]
+                    }
+                }]
+            }
+        }), "addresses", "default")
         fields9 = EsriRestDownloadTask.field_names_to_request(conform9)
         self.assertEqual(fields9, ['Number', 'Street'])
 
-        conform10 = dict(street=dict(function='chain', variable='foo', functions=[dict(function='postfixed_street', field='Street'), dict(function='remove_postfix', field='foo')]))
+        conform10 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "street": {
+                            "function": "chain",
+                            "variable": "foo",
+                            "functions": [{
+                                "function": "postfixed_street",
+                                "field": "Street"
+                            },{
+                                "function": "remove_postfix",
+                                "field": "foo"
+                            }]
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
         fields10 = EsriRestDownloadTask.field_names_to_request(conform10)
         self.assertEqual(fields10, ['Street'])

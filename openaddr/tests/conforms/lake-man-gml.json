@@ -1,14 +1,20 @@
 {
-    "data": "http://fake-web/lake-man.zip",
-    "cache": "http://fake-cache/lake-man.zip",
-    "protocol": "http",
-    "compression": "zip",
-    "conform": {
-        "lon": "X",
-        "lat": "Y",
-        "number": "NUMBER",
-        "street": "STRNAME",
-        "format": "xml",
-        "srs": "EPSG:4326"
+    "schema": 2,
+    "layers": {
+        "addresses": [{
+            "name": "default",
+            "data": "http://fake-web/lake-man.zip",
+            "cache": "http://fake-cache/lake-man.zip",
+            "protocol": "http",
+            "compression": "zip",
+            "conform": {
+                "lon": "X",
+                "lat": "Y",
+                "number": "NUMBER",
+                "street": "STRNAME",
+                "format": "xml",
+                "srs": "EPSG:4326"
+            }
+        }]
     }
 }

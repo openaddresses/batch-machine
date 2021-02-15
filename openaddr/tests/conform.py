@@ -12,8 +12,10 @@ import unittest
 import tempfile
 import shutil
 
+from .. import SourceConfig
+
 from ..conform import (
-    GEOM_FIELDNAME, X_FIELDNAME, Y_FIELDNAME,
+    GEOM_FIELDNAME,
     csv_source_to_csv, find_source_path, row_transform_and_convert,
     row_fxn_regexp, row_smash_case, row_round_lat_lon, row_merge,
     row_extract_and_reproject, row_convert_to_out, row_fxn_join, row_fxn_format,
@@ -24,7 +26,7 @@ from ..conform import (
     row_canonicalize_unit_and_number, conform_smash_case, conform_cli,
     convert_regexp_replace, conform_license,
     conform_attribution, conform_sharealike, normalize_ogr_filename_case,
-    OPENADDR_CSV_SCHEMA, is_in, geojson_source_to_csv, check_source_tests
+    is_in, geojson_source_to_csv, check_source_tests
     )
 
 class TestConformTransforms (unittest.TestCase):
@@ -40,6 +42,8 @@ class TestConformTransforms (unittest.TestCase):
                            "district": { "function": "regexp", "field": "ThaT", "pattern": ""},
                            "postcode": { "function": "join", "fields": ["MiXeD", "UPPER"], "separator": "-" } } }
         r = conform_smash_case(d)
+
+        self.maxDiff = None
         self.assertEqual({ "conform": { "street": [ "u", "l", "mixed" ], "number": "u", "lat": "y", "lon": "x",
                            "city": {"fields": ["this", "field"], "function": "join", "separator": "-"},
                            "district": { "field": "that", "function": "regexp", "pattern": ""},
@@ -47,230 +51,400 @@ class TestConformTransforms (unittest.TestCase):
                          r)
 
     def test_row_convert_to_out(self):
-        d = { "conform": { "street": "s", "number": "n" } }
-        r = row_convert_to_out(d, {"s": "MAPLE LN", "n": "123", X_FIELDNAME: "-119.2", Y_FIELDNAME: "39.3"})
-        self.assertEqual({"LON": "-119.2", "LAT": "39.3", "UNIT": None, "NUMBER": "123", "STREET": "MAPLE LN",
-                          "CITY": None, "REGION": None, "DISTRICT": None, "POSTCODE": None, "ID": None}, r)
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": { "street": "s", "number": "n" }
+                }]
+            }
+        }), "addresses", "default")
+
+        r = row_convert_to_out(d, {
+            "s": "MAPLE LN",
+            "n": "123",
+            GEOM_FIELDNAME.lower(): "POINT (-119.2 39.3)"
+        })
+
+        self.assertEqual({
+            "GEOM": "POINT (-119.2 39.3)",
+            "UNIT": "",
+            "NUMBER": "123",
+            "STREET": "MAPLE LN",
+            "CITY": "",
+            "REGION": "",
+            "DISTRICT": "",
+            "POSTCODE": "",
+            "ID": ""
+        }, r)
 
     def test_row_merge(self):
-        d = { "conform": { "street": [ "n", "t" ] } }
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": { "street": [ "n", "t" ] }
+                }]
+            }
+        }), "addresses", "default")
         r = row_merge(d, {"n": "MAPLE", "t": "ST", "x": "foo"}, 'street')
-        self.assertEqual({"OA:street": "MAPLE ST", "x": "foo", "t": "ST", "n": "MAPLE"}, r)
+        self.assertEqual({"oa:street": "MAPLE ST", "x": "foo", "t": "ST", "n": "MAPLE"}, r)
 
-        d = { "conform": { "city": [ "n", "t" ] } }
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": { "city": [ "n", "t" ] }
+                }]
+            }
+        }), "addresses", "default")
         r = row_merge(d, {"n": "Village of", "t": "Stanley", "x": "foo"}, 'city')
-        self.assertEqual({"OA:city": "Village of Stanley", "x": "foo", "t": "Stanley", "n": "Village of"}, r)
+        self.assertEqual({"oa:city": "Village of Stanley", "x": "foo", "t": "Stanley", "n": "Village of"}, r)
 
     def test_row_fxn_join(self):
         "New fxn join"
-        c = { "conform": {
-            "number": {
-                "function": "join",
-                "fields": ["a1"]
-            },
-            "street": {
-                "function": "join",
-                "fields": ["b1","b2"],
-                "separator": "-"
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "join",
+                            "fields": ["a1"]
+                        },
+                        "street": {
+                            "function": "join",
+                            "fields": ["b1","b2"],
+                            "separator": "-"
+                        }
+                    }
+                }]
             }
-        } }
+        }), "addresses", "default")
+
         d = { "a1": "va1", "b1": "vb1", "b2": "vb2" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "va1", "OA:street": "vb1-vb2" })
-        d = row_fxn_join(c, d, "number", c["conform"]["number"])
-        d = row_fxn_join(c, d, "street", c["conform"]["street"])
+        e.update({ "oa:number": "va1", "oa:street": "vb1-vb2" })
+
+        d = row_fxn_join(c, d, "number", c.data_source["conform"]["number"])
+        d = row_fxn_join(c, d, "street", c.data_source["conform"]["street"])
         self.assertEqual(e, d)
+
+        # ---
+
         d = { "a1": "va1", "b1": "vb1", "b2": None}
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "va1", "OA:street": "vb1" })
-        d = row_fxn_join(c, d, "number", c["conform"]["number"])
-        d = row_fxn_join(c, d, "street", c["conform"]["street"])
+        e.update({ "oa:number": "va1", "oa:street": "vb1" })
+
+        d = row_fxn_join(c, d, "number", c.data_source["conform"]["number"])
+        d = row_fxn_join(c, d, "street", c.data_source["conform"]["street"])
+
         self.assertEqual(e, d)
 
     def test_row_fxn_format(self):
-        c = { "conform": {
-            "number": {
-                "function": "format",
-                "fields": ["a1", "a2", "a3"],
-                "format": "$1-$2-$3"
-            },
-            "street": {
-                "function": "format",
-                "fields": ["b1", "b2", "b3"],
-                "format": "foo $1$2-$3 bar"
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "format",
+                            "fields": ["a1", "a2", "a3"],
+                            "format": "$1-$2-$3"
+                        },
+                        "street": {
+                            "function": "format",
+                            "fields": ["b1", "b2", "b3"],
+                            "format": "foo $1$2-$3 bar"
+                        }
+                    }
+                }]
             }
-        } }
+        }), "addresses", "default")
 
         d = {"a1": "12.0", "a2": "34", "a3": "56", "b1": "1", "b2": "B", "b3": "3"}
         e = copy.deepcopy(d)
-        d = row_fxn_format(c, d, "number", c["conform"]["number"])
-        d = row_fxn_format(c, d, "street", c["conform"]["street"])
-        self.assertEqual(d.get("OA:number", ""), "12-34-56")
-        self.assertEqual(d.get("OA:street", ""), "foo 1B-3 bar")
+        d = row_fxn_format(c, d, "number", c.data_source["conform"]["number"])
+        d = row_fxn_format(c, d, "street", c.data_source["conform"]["street"])
+        self.assertEqual(d.get("oa:number", ""), "12-34-56")
+        self.assertEqual(d.get("oa:street", ""), "foo 1B-3 bar")
 
         d = copy.deepcopy(e)
         d["a2"] = None
         d["b3"] = None
-        d = row_fxn_format(c, d, "number", c["conform"]["number"])
-        d = row_fxn_format(c, d, "street", c["conform"]["street"])
-        self.assertEqual(d.get("OA:number", ""), "12-56")
-        self.assertEqual(d.get("OA:street", ""), "foo 1B bar")
+        d = row_fxn_format(c, d, "number", c.data_source["conform"]["number"])
+        d = row_fxn_format(c, d, "street", c.data_source["conform"]["street"])
+        self.assertEqual(d.get("oa:number", ""), "12-56")
+        self.assertEqual(d.get("oa:street", ""), "foo 1B bar")
 
     def test_row_fxn_chain(self):
-        c = { "conform": {
-            "number": {
-                "function": "chain",
-                "functions": [
-                    {
-                        "function": "format",
-                        "fields": ["a1", "a2", "a3"],
-                        "format": "$1-$2-$3"
-                    },
-                    {
-                        "function": "remove_postfix",
-                        "field": "OA:number",
-                        "field_to_remove": "b1"
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "chain",
+                            "functions": [
+                                {
+                                    "function": "format",
+                                    "fields": ["a1", "a2", "a3"],
+                                    "format": "$1-$2-$3"
+                                },
+                                {
+                                    "function": "remove_postfix",
+                                    "field": "oa:number",
+                                    "field_to_remove": "b1"
+                                }
+                            ]
+                        }
                     }
-                ]
+                }]
             }
-        } }
+        }), "addresses", "default")
 
         d = {"a1": "12", "a2": "34", "a3": "56 UNIT 5", "b1": "UNIT 5"}
         e = copy.deepcopy(d)
-        d = row_fxn_chain(c, d, "number", c["conform"]["number"])
-        self.assertEqual(d.get("OA:number", ""), "12-34-56")
+        d = row_fxn_chain(c, d, "number", c.data_source["conform"]["number"])
+        self.assertEqual(d.get("oa:number", ""), "12-34-56")
 
         d = copy.deepcopy(e)
         d["a2"] = None
-        d = row_fxn_chain(c, d, "number", c["conform"]["number"])
-        self.assertEqual(d.get("OA:number", ""), "12-56")
+        d = row_fxn_chain(c, d, "number", c.data_source["conform"]["number"])
+        self.assertEqual(d.get("oa:number", ""), "12-56")
 
 
     def test_row_fxn_chain_nested(self):
-        c = { "conform": {
-            "number": {
-                "function": "chain",
-                "variable": "foo",
-                "functions": [
-                    {
-                        "function": "format",
-                        "fields": ["a1", "a2"],
-                        "format": "$1-$2"
-                    },
-                    {
-                        "function": "chain",
-                        "variable": "bar",
-                        "functions": [
-                            {
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "chain",
+                            "variable": "foo",
+                            "functions": [{
                                 "function": "format",
-                                "fields": ["foo", "a3"],
+                                "fields": ["a1", "a2"],
                                 "format": "$1-$2"
-                            },
-                            {
-                                "function": "remove_postfix",
-                                "field": "bar",
-                                "field_to_remove": "b1"
-                            }
-                        ]
+                            },{
+                                "function": "chain",
+                                "variable": "bar",
+                                "functions": [{
+                                    "function": "format",
+                                    "fields": ["foo", "a3"],
+                                    "format": "$1-$2"
+                                },{
+                                    "function": "remove_postfix",
+                                    "field": "bar",
+                                    "field_to_remove": "b1"
+                                }]
+                            }]
+                        }
                     }
-                ]
+                }]
             }
-        } }
+        }), "addresses", "default")
 
         d = {"a1": "12", "a2": "34", "a3": "56 UNIT 5", "b1": "UNIT 5"}
         e = copy.deepcopy(d)
-        d = row_fxn_chain(c, d, "number", c["conform"]["number"])
-        self.assertEqual(d.get("OA:number", ""), "12-34-56")
+        d = row_fxn_chain(c, d, "number", c.data_source["conform"]["number"])
+        self.assertEqual(d.get("oa:number", ""), "12-34-56")
 
         d = copy.deepcopy(e)
         d["a2"] = None
-        d = row_fxn_chain(c, d, "number", c["conform"]["number"])
-        self.assertEqual(d.get("OA:number", ""), "12-56")
+        d = row_fxn_chain(c, d, "number", c.data_source["conform"]["number"])
+        self.assertEqual(d.get("oa:number", ""), "12-56")
 
     def test_row_fxn_regexp(self):
         "Regex split - replace"
-        c = { "conform": {
-            "number": {
-                "function": "regexp",
-                "field": "ADDRESS",
-                "pattern": "^([0-9]+)(?:.*)",
-                "replace": "$1"
-            },
-            "street": {
-                "function": "regexp",
-                "field": "ADDRESS",
-                "pattern": "(?:[0-9]+ )(.*)",
-                "replace": "$1"
+
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "regexp",
+                            "field": "ADDRESS",
+                            "pattern": "^([0-9]+)(?:.*)",
+                            "replace": "$1"
+                        },
+                        "street": {
+                            "function": "regexp",
+                            "field": "ADDRESS",
+                            "pattern": "(?:[0-9]+ )(.*)",
+                            "replace": "$1"
+                        }
+                    }
+                }]
             }
-        } }
+        }), "addresses", "default")
         d = { "ADDRESS": "123 MAPLE ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123", "OA:street": "MAPLE ST" })
+        e.update({ "oa:number": "123", "oa:street": "MAPLE ST" })
 
-        d = row_fxn_regexp(c, d, "number", c["conform"]["number"])
-        d = row_fxn_regexp(c, d, "street", c["conform"]["street"])
+        d = row_fxn_regexp(c, d, "number", c.data_source["conform"]["number"])
+        d = row_fxn_regexp(c, d, "street", c.data_source["conform"]["street"])
         self.assertEqual(e, d)
 
         "Regex split - no replace - good match"
-        c = { "conform": {
-            "number": {
-                "function": "regexp",
-                "field": "ADDRESS",
-                "pattern": "^([0-9]+)"
-            },
-            "street": {
-                "function": "regexp",
-                "field": "ADDRESS",
-                "pattern": "(?:[0-9]+ )(.*)"
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "regexp",
+                            "field": "ADDRESS",
+                            "pattern": "^([0-9]+)"
+                        },
+                        "street": {
+                            "function": "regexp",
+                            "field": "ADDRESS",
+                            "pattern": "(?:[0-9]+ )(.*)"
+                        }
+                    }
+                }]
             }
-        } }
+        }), "addresses", "default")
         d = { "ADDRESS": "123 MAPLE ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123", "OA:street": "MAPLE ST" })
+        e.update({ "oa:number": "123", "oa:street": "MAPLE ST" })
 
-        d = row_fxn_regexp(c, d, "number", c["conform"]["number"])
-        d = row_fxn_regexp(c, d, "street", c["conform"]["street"])
+        d = row_fxn_regexp(c, d, "number", c.data_source["conform"]["number"])
+        d = row_fxn_regexp(c, d, "street", c.data_source["conform"]["street"])
         self.assertEqual(e, d)
 
         "regex split - no replace - bad match"
-        c = { "conform": {
-            "number": {
-                "function": "regexp",
-                "field": "ADDRESS",
-                "pattern": "^([0-9]+)"
-            },
-            "street": {
-                "function": "regexp",
-                "field": "ADDRESS",
-                "pattern": "(fake)"
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "regexp",
+                            "field": "ADDRESS",
+                            "pattern": "^([0-9]+)"
+                        },
+                        "street": {
+                            "function": "regexp",
+                            "field": "ADDRESS",
+                            "pattern": "(fake)"
+                        }
+                    }
+                }]
             }
-        } }
+        }), "addresses", "default")
         d = { "ADDRESS": "123 MAPLE ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123", "OA:street": "" })
+        e.update({ "oa:number": "123", "oa:street": "" })
 
-        d = row_fxn_regexp(c, d, "number", c["conform"]["number"])
-        d = row_fxn_regexp(c, d, "street", c["conform"]["street"])
+        d = row_fxn_regexp(c, d, "number", c.data_source["conform"]["number"])
+        d = row_fxn_regexp(c, d, "street", c.data_source["conform"]["street"])
         self.assertEqual(e, d)
 
     def test_transform_and_convert(self):
-        d = { "conform": { "street": ["s1", "s2"], "number": "n", "lon": "y", "lat": "x" }, "fingerprint": "0000" }
-        r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", X_FIELDNAME: "-119.2", Y_FIELDNAME: "39.3" })
-        self.assertEqual({"STREET": "MAPLE ST", "UNIT": "", "NUMBER": "123", "LON": "-119.2", "LAT": "39.3",
-                          "CITY": None, "REGION": None, "DISTRICT": None, "POSTCODE": None, "ID": None,
-                          'HASH': 'eee8eb535bb20a03'}, r)
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "street": ["s1", "s2"],
+                        "number": "n",
+                        "lon": "y",
+                        "lat": "x"
+                    },
+                    "fingerprint": "0000"
+                }]
+            }
+        }), "addresses", "default")
 
-        d = { "conform": { "street": ["s1", "s2"], "number": "n", "lon": "y", "lat": "x" }, "fingerprint": "0000" }
-        r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", X_FIELDNAME: "-119.2", Y_FIELDNAME: "39.3" })
-        self.assertEqual({"STREET": "MAPLE ST", "UNIT": "", "NUMBER": "123", "LON": "-119.2", "LAT": "39.3",
-                          "CITY": None, "REGION": None, "DISTRICT": None, "POSTCODE": None, "ID": None,
-                          'HASH': 'eee8eb535bb20a03'}, r)
+        r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", "oa:geom": "POINT (-119.2 39.3)"})
+        self.assertEqual({
+            "STREET": "MAPLE ST",
+            "UNIT": "",
+            "NUMBER": "123",
+            "GEOM": "POINT (-119.2 39.3)",
+            "CITY": "",
+            "REGION": "",
+            "DISTRICT": "",
+            "POSTCODE": "",
+            "ID": "",
+            'HASH': '9574c16dfc3cc7b1'
+        }, r)
 
-        d = { "conform": { "number": {"function": "regexp", "field": "s", "pattern": "^(\\S+)" }, "street": { "function": "regexp", "field": "s", "pattern": "^(?:\\S+ )(.*)" }, "lon": "y", "lat": "x" }, "fingerprint": "0000" }
-        r = row_transform_and_convert(d, { "s": "123 MAPLE ST", X_FIELDNAME: "-119.2", Y_FIELDNAME: "39.3" })
-        self.assertEqual({"STREET": "MAPLE ST", "UNIT": "", "NUMBER": "123", "LON": "-119.2", "LAT": "39.3",
-                          "CITY": None, "REGION": None, "DISTRICT": None, "POSTCODE": None, "ID": None,
-                          'HASH': 'eee8eb535bb20a03'}, r)
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": { "street": ["s1", "s2"], "number": "n", "lon": "y", "lat": "x" }, "fingerprint": "0000"
+                }]
+            }
+        }), "addresses", "default")
+
+        r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", GEOM_FIELDNAME: "POINT(-119.2 39.3)"})
+        self.assertEqual({
+            "STREET": "MAPLE ST",
+            "UNIT": "",
+            "NUMBER": "123",
+            "GEOM": "POINT (-119.2 39.3)",
+            "CITY": "",
+            "REGION": "",
+            "DISTRICT": "",
+            "POSTCODE": "",
+            "ID": "",
+            'HASH': '9574c16dfc3cc7b1'
+        }, r)
+
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "regexp",
+                            "field": "s",
+                            "pattern": "^(\\S+)"
+                        },
+                        "street": {
+                            "function": "regexp",
+                            "field": "s",
+                            "pattern": "^(?:\\S+ )(.*)"
+                        },
+                        "lon": "y",
+                        "lat": "x"
+                    },
+                    "fingerprint": "0000"
+                }]
+            }
+        }), "addresses", "default")
+        r = row_transform_and_convert(d, { "s": "123 MAPLE ST", GEOM_FIELDNAME: "POINT(-119.2 39.3)" })
+        self.assertEqual({
+            "STREET": "MAPLE ST",
+            "UNIT": "",
+            "NUMBER": "123",
+            "GEOM": "POINT (-119.2 39.3)",
+            "CITY": "",
+            "REGION": "",
+            "DISTRICT": "",
+            "POSTCODE": "",
+            "ID": "",
+            'HASH': '9574c16dfc3cc7b1'
+        }, r)
 
     def test_row_canonicalize_unit_and_number(self):
         r = row_canonicalize_unit_and_number({}, {"NUMBER": "324 ", "STREET": " OAK DR.", "UNIT": "1"})
@@ -300,8 +474,8 @@ class TestConformTransforms (unittest.TestCase):
         self.assertEqual("", r["UNIT"])
 
     def test_row_round_lat_lon(self):
-        r = row_round_lat_lon({}, {"LON": "39.14285717777", "LAT": "-121.20"})
-        self.assertEqual({"LON": "39.1428572", "LAT": "-121.2"}, r)
+        r = row_round_lat_lon({}, {"GEOM": "POINT (39.14285717777 -121.20)"})
+        self.assertEqual({"GEOM": "POINT (39.1428572 -121.2)"}, r)
         for e, a in ((    ""        ,    ""),
                      (  "39.3"      ,  "39.3"),
                      (  "39.3"      ,  "39.3000000"),
@@ -317,38 +491,102 @@ class TestConformTransforms (unittest.TestCase):
                      (  "-0.1428572",  "-0.142857153"),
                      (  "39.1428572",  "39.142857153"),
                      (   "0"        ,  " 0.00"),
-                     (  "-0"        ,  "-0.00"),
+                     (  "0"        ,  "-0.00"),
                      ( "180"        ,  "180.0"),
                      ("-180"        , "-180")):
-            r = row_round_lat_lon({}, {"LAT": a, "LON": a})
-            self.assertEqual(e, r["LON"])
+            r = row_round_lat_lon({}, {"GEOM": "POINT ({} {})".format(a, a)})
+            self.assertEqual("POINT ({} {})".format(e, e), r["GEOM"])
 
     def test_row_extract_and_reproject(self):
         # CSV lat/lon column names
-        d = { "conform" : { "lon": "longitude", "lat": "latitude", "format": "csv" }, 'protocol': 'test' }
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "lon": "longitude",
+                        "lat": "latitude",
+                        "format": "csv"
+                    },
+                    'protocol': 'test'
+                }]
+            }
+        }), "addresses", "default")
         r = row_extract_and_reproject(d, {"longitude": "-122.3", "latitude": "39.1"})
-        self.assertEqual({Y_FIELDNAME: "39.1", X_FIELDNAME: "-122.3"}, r)
+        self.assertEqual({GEOM_FIELDNAME: "POINT (-122.3 39.1)"}, r)
 
         # non-CSV lat/lon column names
-        d = { "conform" : { "lon": "x", "lat": "y", "format": "" }, 'protocol': 'test' }
-        r = row_extract_and_reproject(d, {X_FIELDNAME: "-122.3", Y_FIELDNAME: "39.1" })
-        self.assertEqual({X_FIELDNAME: "-122.3", Y_FIELDNAME: "39.1"}, r)
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "lon": "x",
+                        "lat": "y",
+                        "format": ""
+                    },
+                    'protocol': 'test'
+                }]
+            }
+        }), "addresses", "default")
+        r = row_extract_and_reproject(d, {"OA:GEOM": "POINT (-122.3 39.1)" })
+        self.assertEqual({GEOM_FIELDNAME: "POINT (-122.3 39.1)"}, r)
 
         # reprojection
-        d = { "conform" : { "srs": "EPSG:2913", "format": "" }, 'protocol': 'test' }
-        r = row_extract_and_reproject(d, {X_FIELDNAME: "7655634.924", Y_FIELDNAME: "668868.414"})
-        self.assertAlmostEqual(45.481554393851063, float(r[X_FIELDNAME]))
-        self.assertAlmostEqual(-122.630842186650796, float(r[Y_FIELDNAME]))
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform" : {
+                        "srs": "EPSG:2913",
+                        "format": ""
+                    },
+                    'protocol': 'test'
+                }]
+            }
+        }), "addresses", "default")
+        r = row_extract_and_reproject(d, {GEOM_FIELDNAME: "POINT (7655634.924 668868.414)"})
 
-        d = { "conform" : { "lon": "X", "lat": "Y", "srs": "EPSG:2913", "format": "" }, 'protocol': 'test' }
-        r = row_extract_and_reproject(d, {X_FIELDNAME: "", Y_FIELDNAME: ""})
-        self.assertEqual("", r[X_FIELDNAME])
-        self.assertEqual("", r[Y_FIELDNAME])
+        self.assertEqual('POINT (45.4815543938511 -122.630842186651)', r[GEOM_FIELDNAME])
+
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform" : {
+                        "lon": "X",
+                        "lat": "Y",
+                        "srs": "EPSG:2913",
+                        "format": "csv"
+                    },
+                    'protocol': 'test'
+                }]
+            }
+        }), "addresses", "default")
+        r = row_extract_and_reproject(d, {"X": "", "Y": ""})
+        self.assertEqual(None, r[GEOM_FIELDNAME])
 
         # commas in lat/lon columns (eg Iceland)
-        d = { "conform" : { "lon": "LONG_WGS84", "lat": "LAT_WGS84", "format": "csv" }, 'protocol': 'test' }
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform" : {
+                        "lon": "LONG_WGS84",
+                        "lat": "LAT_WGS84",
+                        "format": "csv"
+                    },
+                    'protocol': 'test'
+                }]
+            }
+        }), "addresses", "default")
         r = row_extract_and_reproject(d, {"LONG_WGS84": "-21,77", "LAT_WGS84": "64,11"})
-        self.assertEqual({Y_FIELDNAME: "64.11", X_FIELDNAME: "-21.77"}, r)
+        self.assertEqual({GEOM_FIELDNAME: "POINT (-21.77 64.11)"}, r)
 
     def test_row_fxn_prefixed_number_and_postfixed_street_no_units(self):
         "Regex prefixed_number and postfix_street - both fields present"
@@ -364,7 +602,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123", "OA:street": "MAPLE ST" })
+        e.update({ "oa:number": "123", "oa:street": "MAPLE ST" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -383,7 +621,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "MAPLE ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "", "OA:street": "MAPLE ST" })
+        e.update({ "oa:number": "", "oa:street": "MAPLE ST" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -402,7 +640,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "", "OA:street": "" })
+        e.update({ "oa:number": "", "oa:street": "" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -421,7 +659,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123MAPLE ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "", "OA:street": "123MAPLE ST" })
+        e.update({ "oa:number": "", "oa:street": "123MAPLE ST" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -440,7 +678,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": " \t 123 \t MAPLE ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123", "OA:street": "MAPLE ST" })
+        e.update({ "oa:number": "123", "oa:street": "MAPLE ST" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -459,7 +697,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "12 3RD ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "12", "OA:street": "3RD ST" })
+        e.update({ "oa:number": "12", "oa:street": "3RD ST" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -478,7 +716,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "3RD ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "", "OA:street": "3RD ST" })
+        e.update({ "oa:number": "", "oa:street": "3RD ST" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -497,7 +735,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123A 3RD ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123A", "OA:street": "3RD ST" })
+        e.update({ "oa:number": "123A", "oa:street": "3RD ST" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -516,7 +754,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123-A 3RD ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123-A", "OA:street": "3RD ST" })
+        e.update({ "oa:number": "123-A", "oa:street": "3RD ST" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -535,7 +773,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123-45 3RD ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123-45", "OA:street": "3RD ST" })
+        e.update({ "oa:number": "123-45", "oa:street": "3RD ST" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -554,7 +792,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123-a 3rD St" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123-a", "OA:street": "3rD St" })
+        e.update({ "oa:number": "123-a", "oa:street": "3rD St" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -573,7 +811,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 1/2 3rD St" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123 1/2", "OA:street": "3rD St" })
+        e.update({ "oa:number": "123 1/2", "oa:street": "3rD St" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -592,7 +830,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123-1/2 3rD St" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123-1/2", "OA:street": "3rD St" })
+        e.update({ "oa:number": "123-1/2", "oa:street": "3rD St" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -611,7 +849,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 1/3 3rD St" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123 1/3", "OA:street": "3rD St" })
+        e.update({ "oa:number": "123 1/3", "oa:street": "3rD St" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -630,7 +868,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123-1/3 3rD St" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123-1/3", "OA:street": "3rD St" })
+        e.update({ "oa:number": "123-1/3", "oa:street": "3rD St" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -649,7 +887,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 1/4 3rD St" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123 1/4", "OA:street": "3rD St" })
+        e.update({ "oa:number": "123 1/4", "oa:street": "3rD St" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -668,7 +906,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123-1/4 3rD St" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123-1/4", "OA:street": "3rD St" })
+        e.update({ "oa:number": "123-1/4", "oa:street": "3rD St" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -687,7 +925,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 3/4 3rD St" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123 3/4", "OA:street": "3rD St" })
+        e.update({ "oa:number": "123 3/4", "oa:street": "3rD St" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -706,7 +944,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123-3/4 3rD St" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123-3/4", "OA:street": "3rD St" })
+        e.update({ "oa:number": "123-3/4", "oa:street": "3rD St" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -725,7 +963,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST UNIT 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123", "OA:street": "MAPLE ST UNIT 3" })
+        e.update({ "oa:number": "123", "oa:street": "MAPLE ST UNIT 3" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -745,7 +983,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST UNIT 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:number": "123", "OA:street": "MAPLE ST UNIT 3" })
+        e.update({ "oa:number": "123", "oa:street": "MAPLE ST UNIT 3" })
 
         d = row_fxn_prefixed_number(c, d, "number", c["conform"]["number"])
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
@@ -762,7 +1000,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST UNIT 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -777,7 +1015,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST APARTMENT 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -792,7 +1030,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST APT 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -807,7 +1045,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST APT. 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -822,7 +1060,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST SUITE 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -837,7 +1075,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST STE 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -852,7 +1090,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST STE. 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -867,7 +1105,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST BUILDING 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -882,7 +1120,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST BLDG 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -897,7 +1135,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST BLDG. 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -912,7 +1150,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST LOT 3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -927,7 +1165,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST #3" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -942,7 +1180,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_postfixed_street(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -957,7 +1195,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Unit 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Unit 300" })
+        e.update({ "oa:unit": "Unit 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -971,7 +1209,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street runit 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "" })
+        e.update({ "oa:unit": "" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -985,7 +1223,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Apartment 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Apartment 300" })
+        e.update({ "oa:unit": "Apartment 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -999,7 +1237,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Apt 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Apt 300" })
+        e.update({ "oa:unit": "Apt 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1013,7 +1251,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street rapt 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "" })
+        e.update({ "oa:unit": "" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1027,7 +1265,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Apt. 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Apt. 300" })
+        e.update({ "oa:unit": "Apt. 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1041,7 +1279,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Suite 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Suite 300" })
+        e.update({ "oa:unit": "Suite 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1055,7 +1293,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Ste 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Ste 300" })
+        e.update({ "oa:unit": "Ste 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1069,7 +1307,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Haste 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "" })
+        e.update({ "oa:unit": "" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1083,7 +1321,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Ste. 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Ste. 300" })
+        e.update({ "oa:unit": "Ste. 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1097,7 +1335,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Building 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Building 300" })
+        e.update({ "oa:unit": "Building 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1111,7 +1349,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Bldg 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Bldg 300" })
+        e.update({ "oa:unit": "Bldg 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1125,7 +1363,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Bldg. 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Bldg. 300" })
+        e.update({ "oa:unit": "Bldg. 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1139,7 +1377,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street Lot 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "Lot 300" })
+        e.update({ "oa:unit": "Lot 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1153,7 +1391,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street alot 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "" })
+        e.update({ "oa:unit": "" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1167,7 +1405,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street # 300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "# 300" })
+        e.update({ "oa:unit": "# 300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1181,7 +1419,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street #300" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "#300" })
+        e.update({ "oa:unit": "#300" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1195,7 +1433,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "Main Street" }
         e = copy.deepcopy(d)
-        e.update({ "OA:unit": "" })
+        e.update({ "oa:unit": "" })
 
         d = row_fxn_postfixed_unit(c, d, "unit", c["conform"]["unit"])
         self.assertEqual(e, d)
@@ -1211,7 +1449,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST", "PREFIX": "123" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_remove_prefix(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -1226,7 +1464,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST", "PREFIX": "NOT THE PREFIX VALUE" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "123 MAPLE ST" })
+        e.update({ "oa:street": "123 MAPLE ST" })
 
         d = row_fxn_remove_prefix(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -1241,7 +1479,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST", "PREFIX": "" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "123 MAPLE ST" })
+        e.update({ "oa:street": "123 MAPLE ST" })
 
         d = row_fxn_remove_prefix(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -1257,7 +1495,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "MAPLE ST UNIT 5", "POSTFIX": "UNIT 5" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "MAPLE ST" })
+        e.update({ "oa:street": "MAPLE ST" })
 
         d = row_fxn_remove_postfix(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -1272,7 +1510,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST", "POSTFIX": "NOT THE POSTFIX VALUE" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "123 MAPLE ST" })
+        e.update({ "oa:street": "123 MAPLE ST" })
 
         d = row_fxn_remove_postfix(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -1287,7 +1525,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "ADDRESS": "123 MAPLE ST", "POSTFIX": "" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "123 MAPLE ST" })
+        e.update({ "oa:street": "123 MAPLE ST" })
 
         d = row_fxn_remove_postfix(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -1316,7 +1554,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "FIELD1": "field1 value", "FIELD2": "field2 value" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "field1 value" })
+        e.update({ "oa:street": "field1 value" })
 
         d = row_fxn_first_non_empty(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -1330,7 +1568,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "FIELD1": None, "FIELD2": "field2 value" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "field2 value" })
+        e.update({ "oa:street": "field2 value" })
 
         d = row_fxn_first_non_empty(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -1344,7 +1582,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "FIELD1": "", "FIELD2": "field2 value" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "field2 value" })
+        e.update({ "oa:street": "field2 value" })
 
         d = row_fxn_first_non_empty(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -1358,7 +1596,7 @@ class TestConformTransforms (unittest.TestCase):
         } }
         d = { "FIELD1": " \t ", "FIELD2": "field2 value" }
         e = copy.deepcopy(d)
-        e.update({ "OA:street": "field2 value" })
+        e.update({ "oa:street": "field2 value" })
 
         d = row_fxn_first_non_empty(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
@@ -1389,18 +1627,43 @@ class TestConformCli (unittest.TestCase):
     def _run_conform_on_source(self, source_name, ext):
         "Helper method to run a conform on the named source. Assumes naming convention."
         with open(os.path.join(self.conforms_dir, "%s.json" % source_name)) as file:
-            source_definition = json.load(file)
+            source_config = SourceConfig(json.load(file), "addresses", "default")
         source_path = os.path.join(self.conforms_dir, "%s.%s" % (source_name, ext))
         dest_path = os.path.join(self.testdir, '%s-conformed.csv' % source_name)
 
-        rc = conform_cli(source_definition, source_path, dest_path)
+        rc = conform_cli(source_config, source_path, dest_path)
         return rc, dest_path
 
     def test_unknown_conform(self):
         # Test that the conform tool does something reasonable with unknown conform sources
-        self.assertEqual(1, conform_cli({}, 'test', ''))
-        self.assertEqual(1, conform_cli({'conform': {}}, 'test', ''))
-        self.assertEqual(1, conform_cli({'conform': {'format': 'broken'}}, 'test', ''))
+        self.assertEqual(1, conform_cli(SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default"
+                }]
+            }
+        }), "addresses", "default"), 'test', ''))
+        self.assertEqual(1, conform_cli(SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {}
+                }]
+            }
+        }), "addresses", "default"), 'test', ''))
+        self.assertEqual(1, conform_cli(SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "format": "broken"
+                    }
+                }]
+            }
+        }), "addresses", "default"), 'test', ''))
 
     def test_lake_man(self):
         rc, dest_path = self._run_conform_on_source('lake-man', 'shp')
@@ -1408,12 +1671,13 @@ class TestConformCli (unittest.TestCase):
 
         with open(dest_path) as fp:
             reader = csv.DictReader(fp)
-            self.assertEqual(OPENADDR_CSV_SCHEMA, reader.fieldnames)
+            self.assertEqual([
+                'GEOM', 'HASH', 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID'
+            ], reader.fieldnames)
 
             rows = list(reader)
 
-            self.assertAlmostEqual(float(rows[0]['LAT']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LON']), -122.259249687194824)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
 
             self.assertEqual(6, len(rows))
             self.assertEqual(rows[0]['NUMBER'], '5115')
@@ -1435,12 +1699,13 @@ class TestConformCli (unittest.TestCase):
 
         with open(dest_path) as fp:
             reader = csv.DictReader(fp)
-            self.assertEqual(OPENADDR_CSV_SCHEMA, reader.fieldnames)
+            self.assertEqual([
+                'GEOM', 'HASH', 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID'
+            ], reader.fieldnames)
 
             rows = list(reader)
 
-            self.assertAlmostEqual(float(rows[0]['LAT']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LON']), -122.259249687194824)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
 
             self.assertEqual(6, len(rows))
             self.assertEqual(rows[0]['NUMBER'], '5115')
@@ -1526,8 +1791,7 @@ class TestConformCli (unittest.TestCase):
 
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertAlmostEqual(float(rows[0]['LAT']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LON']), -122.259249687194824)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
 
     def test_lake_man_shp_noprj_epsg26943(self):
         rc, dest_path = self._run_conform_on_source('lake-man-epsg26943-noprj', 'shp')
@@ -1535,8 +1799,7 @@ class TestConformCli (unittest.TestCase):
 
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertAlmostEqual(float(rows[0]['LAT']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LON']), -122.259249687194824)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
 
     # TODO: add tests for non-ESRI GeoJSON sources
 
@@ -1567,8 +1830,7 @@ class TestConformCli (unittest.TestCase):
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
             self.assertEqual(rows[0]['NUMBER'], '2543-6')
-            self.assertAlmostEqual(float(rows[0]['LON']), 135.955104)
-            self.assertAlmostEqual(float(rows[0]['LAT']), 34.607832)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (135.955104 34.607832)')
             self.assertEqual(rows[0]['STREET'], u'\u91dd\u753a')
             self.assertEqual(rows[1]['NUMBER'], '202-6')
 
@@ -1578,8 +1840,7 @@ class TestConformCli (unittest.TestCase):
         self.assertEqual(0, rc)
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertAlmostEqual(float(rows[0]['LON']), 37.802612637607439, places=5)
-            self.assertAlmostEqual(float(rows[0]['LAT']), -122.259249687194824, places=5)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (37.8026123 -122.2592495)')
             self.assertEqual(rows[0]['NUMBER'], '5')
             self.assertEqual(rows[0]['STREET'], u'PZ ESPA\u00d1A')
 
@@ -1590,8 +1851,7 @@ class TestConformCli (unittest.TestCase):
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
             self.assertEqual(6, len(rows))
-            self.assertAlmostEqual(float(rows[0]['LON']), 37.802612637607439)
-            self.assertAlmostEqual(float(rows[0]['LAT']), -122.259249687194824)
+            self.assertEqual(rows[0]['GEOM'], 'POINT (37.8026126 -122.2592497)')
             self.assertEqual(rows[0]['NUMBER'], '5115')
             self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
 
@@ -1673,7 +1933,7 @@ class TestConformMisc(unittest.TestCase):
         self.assertEqual("foo.shp", find_source_path(shp_file_conform, ["foo.shp", "bar.shp"]))
         self.assertEqual("xyzzy/foo.shp", find_source_path(shp_file_conform, ["xyzzy/foo.shp", "xyzzy/bar.shp"]))
 
-        shp_poly_conform = {"conform": { "format": "shapefile-polygon" } }
+        shp_poly_conform = {"conform": { "format": "shapefile" } }
         self.assertEqual("foo.shp", find_source_path(shp_poly_conform, ["foo.shp"]))
 
         broken_conform = {"conform": { "format": "broken" }}
@@ -1810,14 +2070,23 @@ class TestConformMisc(unittest.TestCase):
     def test_geojson_source_to_csv(self):
         '''
         '''
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": { }
+                }]
+            }
+        }), "addresses", "default")
+
         geojson_path = os.path.join(os.path.dirname(__file__), 'data/us-pa-bucks.geojson')
         csv_path = os.path.join(self.testdir, 'us-tx-waco.csv')
-        geojson_source_to_csv(geojson_path, csv_path)
+        geojson_source_to_csv(c, geojson_path, csv_path)
 
         with open(csv_path, encoding='utf8') as file:
             row = next(csv.DictReader(file))
-            self.assertAlmostEqual(float(row[X_FIELDNAME]), -74.98335721879076)
-            self.assertAlmostEqual(float(row[Y_FIELDNAME]), 40.054962450263616)
+            self.assertEqual(row[GEOM_FIELDNAME], 'POINT (-74.9833483425103 40.05498715)')
             self.assertEqual(row['PARCEL_NUM'], '02-022-003')
 
 class TestConformCsv(unittest.TestCase):
@@ -1828,12 +2097,12 @@ class TestConformCsv(unittest.TestCase):
     # to convert the input to bytes with the tested encoding.
     _ascii_header_in = u'STREETNAME,NUMBER,LATITUDE,LONGITUDE'
     _ascii_row_in = u'MAPLE ST,123,39.3,-121.2'
-    _ascii_header_out = u'STREETNAME,NUMBER,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals())
-    _ascii_row_out = u'MAPLE ST,123,-121.2,39.3'
+    _ascii_header_out = u'STREETNAME,NUMBER,{GEOM_FIELDNAME}'.format(**globals())
+    _ascii_row_out = u'MAPLE ST,123,POINT (-121.2 39.3)'
     _unicode_header_in = u'STRE\u00c9TNAME,NUMBER,\u7def\u5ea6,LONGITUDE'
     _unicode_row_in = u'\u2603 ST,123,39.3,-121.2'
-    _unicode_header_out = u'STRE\u00c9TNAME,NUMBER,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals())
-    _unicode_row_out = u'\u2603 ST,123,-121.2,39.3'
+    _unicode_header_out = u'STRE\u00c9TNAME,NUMBER,{GEOM_FIELDNAME}'.format(**globals())
+    _unicode_row_out = u'\u2603 ST,123,POINT (-121.2 39.3)'
 
     def setUp(self):
         self.testdir = tempfile.mkdtemp(prefix='openaddr-testPyConformCsv-')
@@ -1848,6 +2117,16 @@ class TestConformCsv(unittest.TestCase):
 
         with open(src_path, "w+b") as file:
             file.write(b'\n'.join(src_bytes))
+
+        conform = {
+            "schema": 2,
+            "layers": {
+                "addresses": [ conform ]
+            }
+        }
+        conform['layers']['addresses'][0]['name'] = 'default'
+
+        conform = SourceConfig(conform, "addresses", "default")
 
         dest_path = os.path.join(self.testdir, "output.csv")
         csv_source_to_csv(conform, src_path, dest_path)
@@ -1896,15 +2175,15 @@ class TestConformCsv(unittest.TestCase):
         d = (u'\u5927\u5b57\u30fb\u753a\u4e01\u76ee\u540d,NUMBER,\u7def\u5ea6,LONGITUDE'.encode('shift-jis'),
              u'\u6771 ST,123,39.3,-121.2'.encode('shift-jis'))
         r = self._convert(c, d)
-        self.assertEqual(r[0], u'\u5927\u5b57\u30fb\u753a\u4e01\u76ee\u540d,NUMBER,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'\u6771 ST,123,-121.2,39.3')
+        self.assertEqual(r[0], u'\u5927\u5b57\u30fb\u753a\u4e01\u76ee\u540d,NUMBER,{GEOM_FIELDNAME}'.format(**globals()))
+        self.assertEqual(r[1], u'\u6771 ST,123,POINT (-121.2 39.3)')
 
     def test_headers_minus_one(self):
         c = { "conform": { "headers": -1, "format": "csv", "lon": "COLUMN4", "lat": "COLUMN3" }, 'protocol': 'test' }
         d = (u'MAPLE ST,123,39.3,-121.2'.encode('ascii'),)
         r = self._convert(c, d)
-        self.assertEqual(r[0], u'COLUMN1,COLUMN2,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'MAPLE ST,123,-121.2,39.3')
+        self.assertEqual(r[0], u'COLUMN1,COLUMN2,{GEOM_FIELDNAME}'.format(**globals()))
+        self.assertEqual(r[1], u'MAPLE ST,123,POINT (-121.2 39.3)')
 
     def test_headers_and_skiplines(self):
         c = {"conform": { "headers": 2, "skiplines": 2, "format": "csv", "lon": "LONGITUDE", "lat": "LATITUDE" }, 'protocol': 'test' }
@@ -1923,8 +2202,8 @@ class TestConformCsv(unittest.TestCase):
         d = (u'n,s,X,Y'.encode('ascii'),
              u'3203,SE WOODSTOCK BLVD,-122.629314,45.479425'.encode('ascii'))
         r = self._convert(c, d)
-        self.assertEqual(r[0], u'n,s,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,-122.629314,45.479425')
+        self.assertEqual(r[0], u'n,s,{GEOM_FIELDNAME}'.format(**globals()))
+        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,POINT (-122.629314 45.479425)')
 
     def test_srs(self):
         # This is an example inspired by the hipsters in us-or-portland
@@ -1932,8 +2211,8 @@ class TestConformCsv(unittest.TestCase):
         d = (u'n,s,X,Y'.encode('ascii'),
              u'3203,SE WOODSTOCK BLVD,7655634.924,668868.414'.encode('ascii'))
         r = self._convert(c, d)
-        self.assertEqual(r[0], u'n,s,{X_FIELDNAME},{Y_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,45.4815544,-122.6308422')
+        self.assertEqual(r[0], u'n,s,{GEOM_FIELDNAME}'.format(**globals()))
+        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,POINT (45.4815543938511 -122.630842186651)')
 
     def test_too_many_columns(self):
         "Check that we don't barf on input with too many columns in some rows"
@@ -1949,8 +2228,12 @@ class TestConformCsv(unittest.TestCase):
     def test_esri_csv(self):
         # Test that our ESRI-emitted CSV is converted correctly.
         c = { "protocol": "ESRI", "conform": { "format": "geojson", "lat": "theseare", "lon": "ignored" } }
-        d = (u'STREETNAME,NUMBER,OA:x,OA:y'.encode('ascii'),
-             u'MAPLE ST,123,-121.2,39.3'.encode('ascii'))
+
+        d = (
+            u'STREETNAME,NUMBER,OA:GEOM'.encode('ascii'),
+            u'MAPLE ST,123,POINT (-121.2 39.3)'.encode('ascii')
+        )
+
         r = self._convert(c, d)
         self.assertEqual(self._ascii_header_out, r[0])
         self.assertEqual(self._ascii_row_out, r[1])
@@ -1958,8 +2241,10 @@ class TestConformCsv(unittest.TestCase):
     def test_esri_csv_no_lat_lon(self):
         # Test that the ESRI path works even without lat/lon tags. See issue #91
         c = { "protocol": "ESRI", "conform": { "format": "geojson" } }
-        d = (u'STREETNAME,NUMBER,OA:x,OA:y'.encode('ascii'),
-             u'MAPLE ST,123,-121.2,39.3'.encode('ascii'))
+        d = (
+            u'STREETNAME,NUMBER,OA:GEOM'.encode('ascii'),
+            u'MAPLE ST,123,POINT (-121.2 39.3)'.encode('ascii')
+        )
         r = self._convert(c, d)
         self.assertEqual(self._ascii_header_out, r[0])
         self.assertEqual(self._ascii_row_out, r[1])
@@ -2068,7 +2353,7 @@ class TestConformTests (unittest.TestCase):
 
         for filename in filenames:
             with open(os.path.join(os.path.dirname(__file__), 'sources', filename)) as file:
-                source = json.load(file)
+                source = SourceConfig(json.load(file), "addresses", "default")
 
             result, message = check_source_tests(source)
             self.assertIs(result, True, 'Tests should pass in {}'.format(filename))
@@ -2078,7 +2363,7 @@ class TestConformTests (unittest.TestCase):
         '''
         '''
         with open(os.path.join(os.path.dirname(__file__), 'sources', 'cz-countrywide-bad-tests.json')) as file:
-            source = json.load(file)
+            source = SourceConfig(json.load(file), "addresses", "default")
 
         result, message = check_source_tests(source)
         self.assertIs(result, False, 'Tests should fail in {}'.format(file.name))
@@ -2091,8 +2376,9 @@ class TestConformTests (unittest.TestCase):
 
         for filename in filenames:
             with open(os.path.join(os.path.dirname(__file__), 'sources', filename)) as file:
-                source = json.load(file)
+                source = SourceConfig(dict(json.load(file)), "addresses", "default")
 
             result, message = check_source_tests(source)
             self.assertIsNone(result, 'Tests should not exist in {}'.format(filename))
             self.assertIsNone(message, 'No message expected from {}'.format(filename))
+

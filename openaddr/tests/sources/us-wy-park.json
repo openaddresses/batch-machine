@@ -1,4 +1,5 @@
 {
+    "schema": 2,
     "coverage": {
         "US Census": {
             "geoid": "56029",
@@ -9,17 +10,22 @@
         "state": "wy",
         "county": "Park"
     },
-    "data": "https://data.openaddresses.io/cache/uploads/nvkelso/5a5bf6/ParkCountyADDRESS_POINTS_point.zip",
-    "protocol": "http",
-    "conform": {
-        "format": "shapefile",
-        "number": {
-            "function": "prefixed_number",
-            "field": "DLVRY_ADD"
-        },
-        "street": {
-            "function": "postfixed_street",
-            "field": "DLVRY_ADD"
-        }
+    "layers": {
+        "addresses": [{
+            "name": "default",
+            "data": "https://data.openaddresses.io/cache/uploads/nvkelso/5a5bf6/ParkCountyADDRESS_POINTS_point.zip",
+            "protocol": "http",
+            "conform": {
+                "format": "shapefile",
+                "number": {
+                    "function": "prefixed_number",
+                    "field": "DLVRY_ADD"
+                },
+                "street": {
+                    "function": "postfixed_street",
+                    "field": "DLVRY_ADD"
+                }
+            }
+        }]
     }
 }

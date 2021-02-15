@@ -1,23 +1,29 @@
 {
+    "schema": 2,
     "coverage": {
         "country": "UA",
         "state": "UA-63",
         "city": "Kharkiv"
     },
-    "data": "http://cdr.citynet.kharkov.ua/arcgis/rest/services/gis_ort_stat_general/MapServer/1",
-    "protocol": "ESRI",
-    "conform": {
-        "format": "geojson",
-        "number": {
-          "function": "join",
-          "fields": ["PREFIX", "SUFIXRU"],
-          "separator": "-"
-        },
-        "street": {
-            "function": "regexp",
-            "field": "FULLADDRU",
-            "pattern": "^([^,]+)"
-        },
-        "srs": "EPSG:28467"
+    "layers": {
+        "addresses": [{
+            "name": "default",
+            "data": "http://cdr.citynet.kharkov.ua/arcgis/rest/services/gis_ort_stat_general/MapServer/1",
+            "protocol": "ESRI",
+            "conform": {
+                "format": "geojson",
+                "number": {
+                  "function": "join",
+                  "fields": ["PREFIX", "SUFIXRU"],
+                  "separator": "-"
+                },
+                "street": {
+                    "function": "regexp",
+                    "field": "FULLADDRU",
+                    "pattern": "^([^,]+)"
+                },
+                "srs": "EPSG:28467"
+            }
+        }]
     }
 }

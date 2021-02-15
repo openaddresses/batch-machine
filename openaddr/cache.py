@@ -27,7 +27,7 @@ import requests
 # HTTP timeout in seconds, used in various calls to requests.get() and requests.post()
 _http_timeout = 180
 
-from .conform import X_FIELDNAME, Y_FIELDNAME, GEOM_FIELDNAME, attrib_types
+from .conform import GEOM_FIELDNAME
 from . import util
 
 def mkdirsp(path):
@@ -141,7 +141,7 @@ class DownloadTask(object):
         else:
             raise KeyError("I don't know how to extract for protocol {}".format(protocol_string))
 
-    def download(self, source_urls, workdir, conform):
+    def download(self, source_urls, workdir, source_config):
         raise NotImplementedError()
 
 def guess_url_file_extension(url):
@@ -249,7 +249,7 @@ class URLDownloadTask(DownloadTask):
 
         return os.path.join(dir_path, name_base + path_ext)
 
-    def download(self, source_urls, workdir, conform=None):
+    def download(self, source_urls, workdir, source_config):
         output_files = []
         download_path = os.path.join(workdir, 'http')
         mkdirsp(download_path)
@@ -322,15 +322,18 @@ class EsriRestDownloadTask(DownloadTask):
                 return set([v.get('field')])
 
     @classmethod
-    def field_names_to_request(cls, conform):
+    def field_names_to_request(cls, source_config):
         ''' Return list of fieldnames to request based on conform, or None.
         '''
+
+        conform = source_config.data_source.get('conform')
+
         if not conform:
             return None
 
         fields = set()
         for k, v in conform.items():
-            if k in attrib_types:
+            if k.upper() in source_config.SCHEMA:
                 if isinstance(v, dict):
                     # It's a function of some sort?
                     if 'function' in v:
@@ -346,12 +349,12 @@ class EsriRestDownloadTask(DownloadTask):
         else:
             return None
 
-    def download(self, source_urls, workdir, conform=None):
+    def download(self, source_urls, workdir, source_config):
         output_files = []
         download_path = os.path.join(workdir, 'esri')
         mkdirsp(download_path)
 
-        query_fields = EsriRestDownloadTask.field_names_to_request(conform)
+        query_fields = EsriRestDownloadTask.field_names_to_request(source_config)
 
         for source_url in source_urls:
             size = 0
@@ -371,12 +374,10 @@ class EsriRestDownloadTask(DownloadTask):
             else:
                 field_names = query_fields[:]
 
-            if X_FIELDNAME not in field_names:
-                field_names.append(X_FIELDNAME)
-            if Y_FIELDNAME not in field_names:
-                field_names.append(Y_FIELDNAME)
             if GEOM_FIELDNAME not in field_names:
                 field_names.append(GEOM_FIELDNAME)
+
+            field_names = list(map(lambda x: x.upper(), field_names))
 
             # Get the count of rows in the layer
             try:
@@ -401,19 +402,11 @@ class EsriRestDownloadTask(DownloadTask):
 
                         shp = shape(feature['geometry'])
                         row[GEOM_FIELDNAME] = shp.wkt
-                        try:
-                            centroid = shp.centroid
-                        except RuntimeError as e:
-                            if 'Invalid number of points in LinearRing found' not in str(e):
-                                raise
-                            xmin, xmax, ymin, ymax = shp.bounds
-                            row[X_FIELDNAME] = round(xmin/2 + xmax/2, 7)
-                            row[Y_FIELDNAME] = round(ymin/2 + ymax/2, 7)
-                        else:
-                            if centroid.is_empty:
-                                raise TypeError(json.dumps(feature['geometry']))
-                            row[X_FIELDNAME] = round(centroid.x, 7)
-                            row[Y_FIELDNAME] = round(centroid.y, 7)
+
+                        r = dict()
+                        for k,v in row.items():
+                            r[k.upper()] =  v
+                        row = r
 
                         writer.writerow({fn: row.get(fn) for fn in field_names})
                         size += 1

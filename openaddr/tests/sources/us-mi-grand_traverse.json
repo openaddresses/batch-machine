@@ -1,4 +1,5 @@
 {
+    "schema": 2,
     "coverage": {
         "US Census": {
             "geoid": "26055",
@@ -9,15 +10,20 @@
         "state": "mi",
         "county": "Grand Traverse"
     },
-    "data": "https://data.openaddresses.io/cache/uploads/trescube/f5df2e/us-mi-grand-traverse.geojson.zip",
-    "note": "querying Esri source in machine results in errors, exported via pyesridump: https://s3.amazonaws.com/data.openaddresses.io/runs/159143/output.txt",
-    "protocol": "http",
-    "compression": "zip",
-    "conform": {
-        "format": "geojson",
-        "number": "ADDNUMB",
-        "street": "FULLNAME",
-        "city": "VENUE",
-        "postcode": "ZIP"
+    "layers": {
+        "addresses": [{
+            "name": "default",
+            "data": "https://data.openaddresses.io/cache/uploads/trescube/f5df2e/us-mi-grand-traverse.geojson.zip",
+            "note": "querying Esri source in machine results in errors, exported via pyesridump: https://s3.amazonaws.com/data.openaddresses.io/runs/159143/output.txt",
+            "protocol": "http",
+            "compression": "zip",
+            "conform": {
+                "format": "geojson",
+                "number": "ADDNUMB",
+                "street": "FULLNAME",
+                "city": "VENUE",
+                "postcode": "ZIP"
+            }
+        }]
     }
 }
