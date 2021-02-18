@@ -1,3 +1,6 @@
+2021-02-15 7.6.4
+- Tag bumps to get automated docker images building and pushed to ECR
+
 2021-02-15: 7.6.0
 - Add the ability to run building, parcel, & address sources. (#1)
 
