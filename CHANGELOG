@@ -1,3 +1,6 @@
+2021-02-17 7.6.5
+- Fix Preview Script with support for new WKT Geoms & add Centroid calculation for visualizing polygons
+
 2021-02-15 7.6.4
 - Tag bumps to get automated docker images building and pushed to ECR
 
