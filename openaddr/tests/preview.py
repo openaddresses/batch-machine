@@ -52,7 +52,7 @@ class TestPreview (unittest.TestCase):
                 return response(200, data, headers={'Content-Type': 'application/vnd.mapbox-vector-tile'})
             raise Exception("Uknown URL")
 
-        zip_filename = join(dirname(__file__), 'outputs', 'alameda.zip')
+        zip_filename = join(dirname(__file__), 'outputs', 'alameda_geom.zip')
         handle, png_filename = tempfile.mkstemp(prefix='render-', suffix='.png')
         os.close(handle)
 
@@ -78,7 +78,7 @@ class TestPreview (unittest.TestCase):
                 return response(200, data, headers={'Content-Type': 'application/vnd.mapbox-vector-tile'})
             raise Exception("Uknown URL")
 
-        zip_filename = join(dirname(__file__), 'outputs', 'portland_metro.zip')
+        zip_filename = join(dirname(__file__), 'outputs', 'portland_metro_geom.zip')
         handle, png_filename = tempfile.mkstemp(prefix='render-', suffix='.png')
         os.close(handle)
 
