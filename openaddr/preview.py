@@ -133,7 +133,7 @@ def iterate_file_lonlats(filename):
 
         for row in DictReader(csv_file):
             try:
-                lon, lat = float(row['LON']), float(row['LAT'])
+                lon, lat, x = ogr.CreateGeometryFromWkt(row['GEOM']).PointOnSurface().GetPoint()
             except:
                 continue
 
@@ -438,8 +438,6 @@ parser.add_argument('-q', '--quiet', help='Turn off most logging',
 
 def main():
     args = parser.parse_args()
-    from .ci import setup_logger
-    setup_logger(None, None, log_level=args.loglevel)
     render(args.src_filename, args.png_filename, args.width, args.resolution, args.mapbox_key)
 
 if __name__ == '__main__':
