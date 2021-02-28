@@ -1,3 +1,6 @@
+2021-02-27 7.7.0
+- Add process-one support for buildings
+
 2021-02-17 7.6.5
 - Fix Preview Script with support for new WKT Geoms & add Centroid calculation for visualizing polygons
 
