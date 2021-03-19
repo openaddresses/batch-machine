@@ -236,6 +236,8 @@ class TestOA (unittest.TestCase):
             qs = parse_qs(query)
             body_data = parse_qs(request.body) if request.body else {}
 
+            if qs.get('returnIdsOnly') == ['true']:
+                local_path = join(data_dirname, 'ua-kharkiv-ids-only.json')
             if qs.get('returnCountOnly') == ['true']:
                 local_path = join(data_dirname, 'ua-kharkiv-count-only.json')
             elif 'outStatistics' in qs:
