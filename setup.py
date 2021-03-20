@@ -60,7 +60,7 @@ setup(
         'boto3 == 1.11.5',
 
         # https://github.com/openaddresses/pyesridump
-        'esridump == 1.9.3',
+        'esridump == 1.10.1',
 
         # Used in openaddr.parcels
         'Shapely == 1.7.1',
