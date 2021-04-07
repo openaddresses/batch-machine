@@ -134,6 +134,8 @@ class DownloadTask(object):
     def from_protocol_string(clz, protocol_string, source_prefix=None):
         if protocol_string.lower() == 'http':
             return URLDownloadTask(source_prefix)
+        elif protocol_string.lower() == 'file':
+            return URLDownloadTask(source_prefix)
         elif protocol_string.lower() == 'ftp':
             return URLDownloadTask(source_prefix)
         elif protocol_string.lower() == 'esri':

@@ -326,6 +326,63 @@ class TestOA (unittest.TestCase):
 
         raise NotImplementedError(url)
 
+    def test_single_ac_local(self):
+        ''' Test complete process_one.process on Alameda County sample data with a local filepath
+        '''
+        data_dirname = join(dirname(__file__), 'data')
+        local_path = join(data_dirname, 'us-ca-alameda_county-excerpt.zip')
+        shutil.copy(local_path, '/tmp/us-ca-alameda.zip')
+        source = join(self.src_dir, 'us-ca-alameda_county-local.json')
+
+        with HTTMock(self.response_content), \
+             mock.patch('openaddr.preview.render') as preview_ren, \
+             mock.patch('openaddr.slippymap.generate') as slippymap_gen:
+            preview_ren.side_effect = touch_second_arg_file
+            slippymap_gen.side_effect = touch_first_arg_file
+            state_path = process_one.process(source, self.testdir, "addresses", "default", True, mapbox_key='mapbox-XXXX')
+
+        self.assertTrue(slippymap_gen.mock_calls[0][1][0].endswith('.mbtiles'))
+        self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.csv'))
+
+        with open(state_path) as file:
+            state = dict(zip(*json.load(file)))
+
+        self.assertIsNotNone(state['cache'])
+        self.assertIsNotNone(state['processed'])
+        self.assertIsNotNone(state['sample'])
+        self.assertIsNotNone(state['preview'])
+        self.assertIsNotNone(state['slippymap'])
+        self.assertEqual(state['geometry type'], 'Point')
+        self.assertIsNone(state['website'])
+        self.assertEqual(state['license'], 'http://www.acgov.org/acdata/terms.htm')
+        with open(join(dirname(state_path), state['sample'])) as file:
+            sample_data = json.load(file)
+
+        self.assertEqual(len(sample_data), 6)
+        self.assertTrue('ZIPCODE' in sample_data[0])
+        self.assertTrue('OAKLAND' in sample_data[1])
+        self.assertTrue('94612' in sample_data[1])
+
+        output_path = join(dirname(state_path), state['processed'])
+        with open(output_path, encoding='utf8') as input:
+            rows = list(csv.DictReader(input))
+            self.assertEqual(rows[1]['ID'], '')
+            self.assertEqual(rows[10]['ID'], '')
+            self.assertEqual(rows[100]['ID'], '')
+            self.assertEqual(rows[1000]['ID'], '')
+            self.assertEqual(rows[1]['NUMBER'], '2147')
+            self.assertEqual(rows[10]['NUMBER'], '605')
+            self.assertEqual(rows[100]['NUMBER'], '167')
+            self.assertEqual(rows[1000]['NUMBER'], '322')
+            self.assertEqual(rows[1]['STREET'], 'BROADWAY')
+            self.assertEqual(rows[10]['STREET'], 'HILLSBOROUGH ST')
+            self.assertEqual(rows[100]['STREET'], '8TH ST')
+            self.assertEqual(rows[1000]['STREET'], 'HANOVER AV')
+            self.assertEqual(rows[1]['UNIT'], '')
+            self.assertEqual(rows[10]['UNIT'], '')
+            self.assertEqual(rows[100]['UNIT'], '')
+            self.assertEqual(rows[1000]['UNIT'], '')
+
     def test_single_ac(self):
         ''' Test complete process_one.process on Alameda County sample data.
         '''
