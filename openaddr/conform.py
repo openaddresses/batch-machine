@@ -22,6 +22,8 @@ from uuid import uuid4
 from .sample import sample_geojson, stream_geojson
 
 from osgeo import ogr, osr, gdal
+from shapely.wkt import loads
+from shapely.ops import polylabel
 ogr.UseExceptions()
 
 def gdal_error_handler(err_class, err_num, err_msg):
@@ -728,15 +730,16 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
                 if source_config.layer == "addresses":
                     # For Addresses - Calculate the centroid on surface of the geometry and write it as X and Y columns
                     try:
-                        centroid = geom.PointOnSurface()
+                        shapely_geom = loads(geom.ExportToWkt())
+                        centroid_wkt = polylabel(shapely_geom).wkt
                     except RuntimeError as e:
                         if 'Invalid number of points in LinearRing found' not in str(e):
                             raise
                         xmin, xmax, ymin, ymax = geom.GetEnvelope()
 
-                        centroid = ogr.CreateGeometryFromWkt("POINT ({} {})".format(xmin/2 + xmax/2, ymin/2 + ymax/2))
+                        centroid_wkt = "POINT ({} {})".format(xmin/2 + xmax/2, ymin/2 + ymax/2)
 
-                    row[GEOM_FIELDNAME] = centroid.ExportToWkt()
+                    row[GEOM_FIELDNAME] = centroid_wkt
                 else:
                     row[GEOM_FIELDNAME] = geom.ExportToWkt()
             else:
