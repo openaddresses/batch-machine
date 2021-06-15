@@ -948,8 +948,6 @@ def row_extract_and_reproject(source_config, source_row):
             point.Transform(_transform_to_4326(srs))
 
             source_geom = point.ExportToWkt()
-            print(source_geom)
-            print('----')
         except (TypeError, ValueError) as e:
             if not (source_x == "" or source_y == ""):
                 _L.debug("Could not reproject %s %s in SRS %s", source_x, source_y, srs)
