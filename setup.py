@@ -7,7 +7,7 @@ with open(join(dirname(__file__), 'openaddr', 'VERSION')) as file:
 setup(
     name = 'batch-machine',
     version = version,
-    url = 'https://github.com/openaddresses/machine',
+    url = 'https://github.com/openaddresses/batch-machine',
     author = 'Michal Migurski',
     author_email = 'mike-pypi@teczno.com',
     description = 'In-progress scripts for running OpenAddresses on a complete data set and publishing the results.',
