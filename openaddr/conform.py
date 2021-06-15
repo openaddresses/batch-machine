@@ -869,10 +869,13 @@ def _transform_to_4326(srs):
     if srs not in _transform_cache:
         epsg_id = int(srs[5:]) if srs.startswith("EPSG:") else int(srs)
         # Manufacture a transform object if it's not in the cache
+
         in_spatial_ref = osr.SpatialReference()
         in_spatial_ref.ImportFromEPSG(epsg_id)
         out_spatial_ref = osr.SpatialReference()
         out_spatial_ref.ImportFromEPSG(4326)
+
+        # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
         out_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
 
         _transform_cache[srs] = osr.CoordinateTransformation(in_spatial_ref, out_spatial_ref)
