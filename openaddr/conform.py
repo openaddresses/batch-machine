@@ -873,6 +873,8 @@ def _transform_to_4326(srs):
         in_spatial_ref.ImportFromEPSG(epsg_id)
         out_spatial_ref = osr.SpatialReference()
         out_spatial_ref.ImportFromEPSG(4326)
+        out_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+
         _transform_cache[srs] = osr.CoordinateTransformation(in_spatial_ref, out_spatial_ref)
     return _transform_cache[srs]
 
@@ -937,6 +939,7 @@ def row_extract_and_reproject(source_config, source_row):
             out_row[GEOM_FIELDNAME] = None
             return out_row
 
+
     # Reproject the coordinates if necessary
     if "srs" in data_source["conform"]:
         try:
@@ -945,6 +948,8 @@ def row_extract_and_reproject(source_config, source_row):
             point.Transform(_transform_to_4326(srs))
 
             source_geom = point.ExportToWkt()
+            print(source_geom)
+            print('----')
         except (TypeError, ValueError) as e:
             if not (source_x == "" or source_y == ""):
                 _L.debug("Could not reproject %s %s in SRS %s", source_x, source_y, srs)

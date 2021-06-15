@@ -64,7 +64,6 @@ setup(
 
         # Used in openaddr.parcels
         'Shapely == 1.7.1',
-        'Fiona == 1.8.17',
 
         # Used in dotmaps preview to support S3-backed SQLite mbtiles
         # https://rogerbinns.github.io/apsw/
@@ -77,6 +76,5 @@ setup(
         'mapbox-vector-tile==1.2.0',
         'future==0.16.0',
         'protobuf==3.5.1',
-        'pyclipper==1.1.0'
         ]
 )
