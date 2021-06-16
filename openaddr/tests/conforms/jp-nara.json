@@ -15,7 +15,7 @@
             },
             "conform": {
                 "format": "csv",
-                "lat": "\u7def\u5ea6",
+                "lon": "\u7def\u5ea6",
                 "srs": "EPSG:4612",
                 "number": "auto_number",
                 "number": {
@@ -27,7 +27,7 @@
                     "separator": "-"
                 },
                 "street": "\u5927\u5b57\u30fb\u753a\u4e01\u76ee\u540d",
-                "lon": "\u7d4c\u5ea6",
+                "lat": "\u7d4c\u5ea6",
                 "encoding": "SHIFT_JISX0213"
             },
             "license": "http://nlftp.mlit.go.jp/ksj/other/yakkan.html"
