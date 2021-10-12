@@ -1,3 +1,7 @@
+2021-10-11 7.10.0
+- Upate to latest alpine version
+- Download entire file as a final backup to determining mime-type due to new way `file` command works
+
 2021-06-15 7.9.0
 - Update python deps
 - Fix CSV reprojection bug
