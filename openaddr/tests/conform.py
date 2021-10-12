@@ -550,7 +550,7 @@ class TestConformTransforms (unittest.TestCase):
         }), "addresses", "default")
         r = row_extract_and_reproject(d, {GEOM_FIELDNAME: "POINT (7655634.924 668868.414)"})
 
-        self.assertEqual('POINT (-122.630842186651 45.4815543938511)', r[GEOM_FIELDNAME])
+        self.assertEqual('POINT (-122.630856593698 45.4815599174473)', r[GEOM_FIELDNAME])
 
         d = SourceConfig(dict({
             "schema": 2,
@@ -1840,7 +1840,7 @@ class TestConformCli (unittest.TestCase):
         self.assertEqual(0, rc)
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592495 37.8026123)')
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592627 37.8026173)')
             self.assertEqual(rows[0]['NUMBER'], '5')
             self.assertEqual(rows[0]['STREET'], u'PZ ESPA\u00d1A')
 
