@@ -216,21 +216,17 @@ def guess_url_file_extension(url):
             # Headers didn't clearly define a known extension.
             # Instead, shell out to `file` to peek at the content.
             #
-            mime_type = get_content_mimetype(content_chunk)
+            mime_type = get_content_mimetype(content_path)
             _L.debug('file says "{}" for {}'.format(mime_type, url))
             path_ext = mimetypes.guess_extension(mime_type, False)
 
     return path_ext
 
-def get_content_mimetype(chunk):
+def get_content_mimetype(path):
     ''' Get a mime-type for a short length of file content.
     '''
-    handle, file = mkstemp()
-    os.write(handle, chunk)
-    os.close(handle)
-
-    mime_type = check_output(('file', '--mime-type', '-b', file)).strip()
-    os.remove(file)
+    mime_type = check_output(('file', '--mime-type', '-b', path)).strip()
+    os.remove(path)
 
     return mime_type.decode('utf-8')
 
