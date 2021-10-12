@@ -1,4 +1,4 @@
-FROM alpine:3.11
+FROM alpine:3.14
 
 RUN apk add nodejs yarn git python3 python3-dev py3-pip \
     py3-gdal gdal gdal-dev make bash sqlite-dev zlib-dev \

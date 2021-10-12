@@ -169,13 +169,20 @@ def guess_url_file_extension(url):
         #
         if scheme in ('http', 'https'):
             response = request('GET', url, stream=True)
-            content_chunk = next(response.iter_content(99))
+            handle, file = mkstemp()
+
+            for chunk in response.iter_content(chunk_size=8192):
+                os.write(handle, chunk)
+
+            os.close(handle)
+
+            content_path = file
             headers = response.headers
             response.close()
+
         elif scheme in ('file', ''):
             headers = dict()
-            with open(path) as file:
-                content_chunk = file.read(99)
+            content_path = path
         else:
             raise ValueError('Unknown scheme "{}": {}'.format(scheme, url))
 
@@ -209,21 +216,17 @@ def guess_url_file_extension(url):
             # Headers didn't clearly define a known extension.
             # Instead, shell out to `file` to peek at the content.
             #
-            mime_type = get_content_mimetype(content_chunk)
+            mime_type = get_content_mimetype(content_path)
             _L.debug('file says "{}" for {}'.format(mime_type, url))
             path_ext = mimetypes.guess_extension(mime_type, False)
 
     return path_ext
 
-def get_content_mimetype(chunk):
+def get_content_mimetype(path):
     ''' Get a mime-type for a short length of file content.
     '''
-    handle, file = mkstemp()
-    os.write(handle, chunk)
-    os.close(handle)
-
-    mime_type = check_output(('file', '--mime-type', '-b', file)).strip()
-    os.remove(file)
+    mime_type = check_output(('file', '--mime-type', '-b', path)).strip()
+    os.remove(path)
 
     return mime_type.decode('utf-8')
 
