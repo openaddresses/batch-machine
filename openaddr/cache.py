@@ -169,13 +169,20 @@ def guess_url_file_extension(url):
         #
         if scheme in ('http', 'https'):
             response = request('GET', url, stream=True)
-            content_chunk = next(response.iter_content(99))
+            handle, file = mkstemp()
+
+            for chunk in response.iter_content(chunk_size=8192):
+                os.write(handle, chunk)
+
+            os.close(handle)
+
+            content_path = file
             headers = response.headers
             response.close()
+
         elif scheme in ('file', ''):
             headers = dict()
-            with open(path) as file:
-                content_chunk = file.read(99)
+            content_path = path
         else:
             raise ValueError('Unknown scheme "{}": {}'.format(scheme, url))
 
