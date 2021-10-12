@@ -1479,7 +1479,7 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[3]['NUMBER'], u'2')
             self.assertEqual(rows[3]['STREET'], u"Rue de l'Eglise Saint-Gilles")
 
-            self.assertEqual(rows[0]['GEOM'], 'POINT (4.3458216 50.8324706)')
+            self.assertEqual(rows[0]['GEOM'], 'POINT (4.3458219 50.8324703)')
             self.assertEqual(rows[1]['GEOM'], 'POINT (4.3412631 50.8330868)')
             self.assertEqual(rows[2]['GEOM'], 'POINT (4.3410663 50.8334315)')
             self.assertEqual(rows[3]['GEOM'], 'POINT (4.3421632 50.8322201)')

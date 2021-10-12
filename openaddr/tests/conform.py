@@ -2212,7 +2212,7 @@ class TestConformCsv(unittest.TestCase):
              u'3203,SE WOODSTOCK BLVD,7655634.924,668868.414'.encode('ascii'))
         r = self._convert(c, d)
         self.assertEqual(r[0], u'n,s,{GEOM_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,POINT (-122.630842186651 45.4815543938511)')
+        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,POINT (-122.630856593698 45.4815599174473)')
 
     def test_too_many_columns(self):
         "Check that we don't barf on input with too many columns in some rows"
