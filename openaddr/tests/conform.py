@@ -1840,7 +1840,7 @@ class TestConformCli (unittest.TestCase):
         self.assertEqual(0, rc)
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592627 37.8026173)')
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592495 37.8026123)')
             self.assertEqual(rows[0]['NUMBER'], '5')
             self.assertEqual(rows[0]['STREET'], u'PZ ESPA\u00d1A')
 
