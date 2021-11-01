@@ -19,23 +19,13 @@ setup(
         ]
     ),
     package_data = {
-        'openaddr': [
-            'geodata/*.shp', 'geodata/*.shx', 'geodata/*.prj', 'geodata/*.dbf',
-            'geodata/*.cpg', 'VERSION',
-        ],
         'openaddr.tests': [
             'data/*.*', 'outputs/*.*', 'sources/*.*', 'sources/fr/*.*',
             'sources/us/*/*.*', 'sources/de/*.*', 'sources/nl/*.*',
             'sources/be/*/*.json', 'conforms/lake-man-gdb.gdb/*',
             'conforms/*.csv', 'conforms/*.dbf', 'conforms/*.zip', 'conforms/*.gfs',
             'conforms/*.gml', 'conforms/*.json', 'conforms/*.prj', 'conforms/*.shp',
-            'conforms/*.shx', 'conforms/*.vrt',
-            'parcels/sources/us/ca/*.*', 'parcels/sources/us/id/*.*',
-            'parcels/data/*.*', 'parcels/data/us/ca/*.*',
-            'parcels/data/us/ca/berkeley/*.*'
-        ],
-        'openaddr.util': [
-            'templates/*.*'
+            'conforms/*.shx', 'conforms/*.vrt'
         ]
     },
     test_suite = 'openaddr.tests',

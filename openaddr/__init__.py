@@ -19,12 +19,8 @@ from .cache import (
 from .conform import (
     ConformResult,
     DecompressionTask,
-    ExcerptDataTask,
     ConvertToCsvTask,
     elaborate_filenames,
-    conform_license,
-    conform_attribution,
-    conform_sharealike,
     ADDRESSES_SCHEMA,
     BUILDINGS_SCHEMA,
     PARCELS_SCHEMA,
@@ -108,7 +104,6 @@ def conform(source_config, destdir, extras):
 
           processed: URL of processed data CSV
           path: local path to CSV of processed data
-          geometry_type: typically Point or Polygon
           elapsed: elapsed time as timedelta object
           output: subprocess output as string
 
@@ -139,27 +134,17 @@ def conform(source_config, destdir, extras):
     decompressed_paths = task2.decompress(downloaded_path, workdir, names)
     _L.info("Decompressed to %d files", len(decompressed_paths))
 
-    task3 = ExcerptDataTask()
-    try:
-        conform = source_config.data_source.get('conform', {})
-        data_sample, geometry_type = task3.excerpt(decompressed_paths, workdir, conform)
-        _L.info("Sampled %d records", len(data_sample))
-    except Exception as e:
-        _L.warning("Error doing excerpt; skipping", exc_info=True)
-        data_sample = None
-        geometry_type = None
-
     task4 = ConvertToCsvTask()
     try:
-        csv_path, addr_count = task4.convert(source_config, decompressed_paths, workdir)
-        if addr_count > 0:
-            _L.info("Converted to %s with %d addresses", csv_path, addr_count)
+        csv_path, feat_count = task4.convert(source_config, decompressed_paths, workdir)
+        if feat_count > 0:
+            _L.info("Converted to %s with %d features", csv_path, feat_count)
         else:
-            _L.warning('Found no addresses in source data')
+            _L.warning('Found no features in source data')
             csv_path = None
     except Exception as e:
         _L.warning("Error doing conform; skipping", exc_info=True)
-        csv_path, addr_count = None, 0
+        csv_path, feat_count = None, 0
 
     out_path = None
     if csv_path is not None and exists(csv_path):
@@ -168,17 +153,7 @@ def conform(source_config, destdir, extras):
 
     rmtree(workdir)
 
-    sharealike_flag = conform_sharealike(source_config.data_source.get('license'))
-    attr_flag, attr_name = conform_attribution(source_config.data_source.get('license'), source_config.data_source.get('attribution'))
-
     return ConformResult(source_config.data_source.get('processed', None),
-                         data_sample,
-                         source_config.data_source.get('website'),
-                         conform_license(source_config.data_source.get('license')),
-                         geometry_type,
-                         addr_count,
+                         feat_count,
                          out_path,
-                         datetime.now() - start,
-                         sharealike_flag,
-                         attr_flag,
-                         attr_name)
+                         datetime.now() - start)

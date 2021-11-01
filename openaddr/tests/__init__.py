@@ -1736,7 +1736,7 @@ class TestState (unittest.TestCase):
 
         conform_result = ConformResult(processed=None, sample='/tmp/sample.json',
                                        website='http://example.com', license='ODbL',
-                                       geometry_type='Point', address_count=999,
+                                       geometry_type='Point', feat_count=999,
                                        path=processed_path, elapsed=timedelta(seconds=1),
                                        attribution_flag=True, attribution_name='Example',
                                        sharealike_flag=True)
