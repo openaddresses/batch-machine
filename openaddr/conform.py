@@ -13,6 +13,8 @@ import csv
 import re
 import osgeo
 
+from .geojson import stream_geojson
+
 from zipfile import ZipFile
 from locale import getpreferredencoding
 from os.path import splitext
