@@ -92,8 +92,8 @@ def compare_cache_details(filepath, resultdir, data):
     fingerprint = md5()
 
     with open(filepath, 'rb') as file:
-        for line in file:
-            fingerprint.update(line)
+        while chunk := file.read(8192):
+            fingerprint.update(chunk)
 
     # Determine if anything needs to be done at all.
     if urlparse(data.get('cache', '')).scheme == 'http' and 'fingerprint' in data:
