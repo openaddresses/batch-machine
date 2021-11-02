@@ -4,6 +4,9 @@
 - Remove unused geodata dir
 - Remove .travis testing (We use CircleCI)
 
+2021-10-19 7.10.1
+- Use base image with `ogr2ogr` CLI installed
+
 2021-10-11 7.10.0
 - Upate to latest alpine version
 - Download entire file as a final backup to determining mime-type due to new way `file` command works

@@ -13,13 +13,13 @@ import csv
 import re
 import osgeo
 
+from .geojson import stream_geojson
+
 from zipfile import ZipFile
 from locale import getpreferredencoding
 from os.path import splitext
 from hashlib import sha1
 from uuid import uuid4
-
-from .sample import sample_geojson, stream_geojson
 
 from osgeo import ogr, osr, gdal
 ogr.UseExceptions()
@@ -144,33 +144,19 @@ def mkdirsp(path):
 class ConformResult:
     processed = None
     sample = None
-    license = None
-    geometry_type = None
-    address_count = None
+    feat_count = None
     path = None
     elapsed = None
-    sharealike_flag = None
-    attribution_flag = None
-    attribution_name = None
 
-    def __init__(self, processed, sample, website, license, geometry_type,
-                 address_count, path, elapsed, sharealike_flag,
-                 attribution_flag, attribution_name):
+    def __init__(self, processed, feat_count, path, elapsed):
         self.processed = processed
-        self.sample = sample
-        self.website = website
-        self.license = license
-        self.geometry_type = geometry_type
-        self.address_count = address_count
+        self.feat_count = feat_count
         self.path = path
         self.elapsed = elapsed
-        self.sharealike_flag = sharealike_flag
-        self.attribution_flag = attribution_flag
-        self.attribution_name = attribution_name
 
     @staticmethod
     def empty():
-        return ConformResult(None, None, None, None, None, None, None, None, None, None, None)
+        return ConformResult(None, None, None, None)
 
     def todict(self):
         return dict(processed=self.processed, sample=self.sample)
@@ -250,181 +236,6 @@ class ZipDecompressTask(DecompressionTask):
                 _L.debug("Expanded file {}".format(output_files[-1]))
 
         return output_files
-
-class ExcerptDataTask(object):
-    ''' Task for sampling three rows of data from datasource.
-    '''
-    known_types = ('.shp', '.json', '.geojson', '.csv', '.kml', '.gml', '.gdb')
-
-    def excerpt(self, source_paths, workdir, conform):
-        '''
-
-            Tested version from openaddr.excerpt() on master branch:
-
-            if ext == '.zip':
-                _L.debug('Downloading all of {cache}'.format(**extras))
-
-                with open(cachefile, 'w') as file:
-                    for chunk in got.iter_content(1024**2):
-                        file.write(chunk)
-
-                zf = ZipFile(cachefile, 'r')
-
-                for name in zf.namelist():
-                    _, ext = splitext(name)
-
-                    if ext in ('.shp', '.shx', '.dbf'):
-                        with open(join(workdir, 'cache'+ext), 'w') as file:
-                            file.write(zf.read(name))
-
-                if exists(join(workdir, 'cache.shp')):
-                    ds = ogr.Open(join(workdir, 'cache.shp'))
-                else:
-                    ds = None
-
-            elif ext == '.json':
-                _L.debug('Downloading part of {cache}'.format(**extras))
-
-                scheme, host, path, query, _, _ = urlparse(got.url)
-
-                if scheme in ('http', 'https'):
-                    conn = HTTPConnection(host, 80)
-                    conn.request('GET', path + ('?' if query else '') + query)
-                    resp = conn.getresponse()
-                elif scheme == 'file':
-                    with open(path) as rawfile:
-                        resp = StringIO(rawfile.read(1024*1024))
-                else:
-                    raise RuntimeError('Unsure what to do with {}'.format(got.url))
-
-                with open(cachefile, 'w') as file:
-                    file.write(sample_geojson(resp, 10))
-
-                ds = ogr.Open(cachefile)
-
-            else:
-                ds = None
-        '''
-        encoding = conform.get('encoding')
-        csvsplit = conform.get('csvsplit', ',')
-
-        known_paths = ExcerptDataTask._get_known_paths(source_paths, workdir, conform, self.known_types)
-
-        if not known_paths:
-            # we know nothing.
-            return None, None
-
-        data_path = known_paths[0]
-        _, data_ext = os.path.splitext(data_path.lower())
-
-        # Sample a few GeoJSON features to save on memory for large datasets.
-        if data_ext in ('.geojson', '.json'):
-            data_path = ExcerptDataTask._sample_geojson_file(data_path)
-
-        format_string = conform.get('format')
-
-        # GDAL has issues with weird input CSV data, so use Python instead.
-        if format_string == 'csv':
-            return ExcerptDataTask._excerpt_csv_file(data_path, encoding, csvsplit)
-
-        ogr_data_path = normalize_ogr_filename_case(data_path)
-        datasource = ogr.Open(ogr_data_path, 0)
-        layer = datasource.GetLayer()
-
-        if not encoding:
-            encoding = guess_source_encoding(datasource, layer)
-
-        # GDAL has issues with non-UTF8 input CSV data, so use Python instead.
-        if data_ext == '.csv' and encoding not in ('utf8', 'utf-8'):
-            return ExcerptDataTask._excerpt_csv_file(data_path, encoding, csvsplit)
-
-        layer_defn = layer.GetLayerDefn()
-        fieldcount = layer_defn.GetFieldCount()
-        fieldnames = [layer_defn.GetFieldDefn(i).GetName() for i in range(fieldcount)]
-        fieldnames = [f.decode(encoding) if hasattr(f, 'decode') else f for f in fieldnames]
-
-        data_sample = [fieldnames]
-
-        for (feature, _) in zip(layer, range(5)):
-            row = [feature.GetField(i) for i in range(fieldcount)]
-            row = [v.decode(encoding) if hasattr(v, 'decode') else v for v in row]
-            data_sample.append(row)
-
-        if len(data_sample) < 2:
-            raise ValueError('Not enough rows in data source')
-
-        # Determine geometry_type from layer, sample, or give up.
-        if layer_defn.GetGeomType() in geometry_types:
-            geometry_type = geometry_types.get(layer_defn.GetGeomType(), None)
-        elif fieldnames[-1:] == [GEOM_FIELDNAME]:
-            geometry = ogr.CreateGeometryFromWkt(data_sample[1][-1])
-            geometry_type = geometry_types.get(geometry.GetGeometryType(), None)
-        else:
-            geometry_type = None
-
-        return data_sample, geometry_type
-
-    @staticmethod
-    def _get_known_paths(source_paths, workdir, conform, known_types):
-        format_string = conform.get('format')
-
-        if format_string != 'csv' or 'file' not in conform:
-            paths = [source_path for source_path in source_paths
-                     if os.path.splitext(source_path)[1].lower() in known_types]
-
-            # If nothing was found or named but we expect a CSV, return first file.
-            if not paths and format_string == 'csv' and 'file' not in conform:
-                return source_paths[:1]
-
-            return paths
-
-        unzipped_base = os.path.join(workdir, UNZIPPED_DIRNAME)
-        unzipped_paths = dict([(os.path.relpath(source_path, unzipped_base), source_path)
-                               for source_path in source_paths])
-
-        if conform['file'] not in unzipped_paths:
-            return []
-
-        csv_path = ExcerptDataTask._make_csv_path(unzipped_paths.get(conform['file']))
-        return [csv_path]
-
-    @staticmethod
-    def _make_csv_path(csv_path):
-        _, csv_ext = os.path.splitext(csv_path.lower())
-
-        if csv_ext != '.csv':
-            # Convince OGR it's looking at a CSV file.
-            new_path = csv_path + '.csv'
-            os.link(csv_path, new_path)
-            csv_path = new_path
-
-        return csv_path
-
-    @staticmethod
-    def _sample_geojson_file(data_path):
-        # Sample a few GeoJSON features to save on memory for large datasets.
-        with open(data_path, 'r') as complete_layer:
-            temp_dir = os.path.dirname(data_path)
-            _, temp_path = tempfile.mkstemp(dir=temp_dir, suffix='.json')
-
-            with open(temp_path, 'w') as temp_file:
-                temp_file.write(sample_geojson(complete_layer, 10))
-                return temp_path
-
-    @staticmethod
-    def _excerpt_csv_file(data_path, encoding, csvsplit):
-        with open(data_path, 'r', encoding=encoding) as file:
-            input = csv.reader(file, delimiter=csvsplit)
-            data_sample = [row for (row, _) in zip(input, range(6))]
-
-            if len(data_sample) >= 2 and GEOM_FIELDNAME in data_sample[0]:
-                geom_index = data_sample[0].index(GEOM_FIELDNAME)
-                geometry = ogr.CreateGeometryFromWkt(data_sample[1][geom_index])
-                geometry_type = geometry_types.get(geometry.GetGeometryType(), None)
-            else:
-                geometry_type = None
-
-        return data_sample, geometry_type
 
 def elaborate_filenames(filename):
     ''' Return a list of filenames for a single name from conform file tag.
@@ -1366,99 +1177,6 @@ def conform_cli(source_config, source_path, dest_path):
         os.remove(extract_path)
 
     return 0
-
-def conform_license(license):
-    ''' Convert optional license tag.
-    '''
-    if license is None:
-        return None
-
-    if not hasattr(license, 'get'):
-        # Old behavior: treat it like a string instead of a dictionary
-        return license if hasattr(license, 'encode') else str(license)
-
-    if 'url' in license and 'text' in license:
-        return '{text} ({url})'.format(**license)
-    elif 'url' in license:
-        url = license['url']
-        return url if hasattr(url, 'encode') else str(url)
-    elif 'text' in license:
-        text = license['text']
-        return text if hasattr(text, 'encode') else str(text)
-    else:
-        return None
-
-    raise ValueError('Unknown license format "{}"'.format(repr(license)))
-
-def conform_attribution(license, attribution):
-    ''' Convert optional license and attribution tags.
-
-        Return tuple with attribution-required flag and attribution name.
-    '''
-    # Initially guess based on old attribution tag.
-    if attribution in (None, False, ''):
-        attr_flag = False
-        attr_name = None
-    elif not hasattr(attribution, 'encode'):
-        attr_flag = True
-        attr_name = str(attribution)
-    else:
-        attr_flag = True
-        attr_name = attribution
-
-    is_dict = license is not None and hasattr(license, 'get')
-
-    # Look for an attribution name inside license dictionary
-    if is_dict and 'attribution name' in license:
-        if not hasattr(license['attribution name'], 'encode'):
-            attr_flag = True
-            attr_name = str(license['attribution name'])
-        elif license['attribution name']:
-            attr_flag = True
-            attr_name = license['attribution name']
-
-    # Look for an explicit flag inside license dictionary.
-    if is_dict and 'attribution' in license:
-        attr_flag = license['attribution']
-
-    # Override null flag if name has been defined.
-    if attr_flag is None and attr_name:
-        attr_flag = True
-
-    # Blank name if flag is not true.
-    if not attr_flag:
-        attr_name = None
-
-    return attr_flag, attr_name
-
-def conform_sharealike(license):
-    ''' Convert optional license share-alike tags.
-
-        Return boolean share-alike flag.
-    '''
-    is_dict = license is not None and hasattr(license, 'get')
-
-    if not is_dict or 'share-alike' not in license:
-        return None
-
-    share_alike = license.get('share-alike')
-
-    if share_alike is None:
-        return False
-
-    if share_alike is False:
-        return False
-
-    if share_alike is True:
-        return True
-
-    if hasattr(share_alike, 'lower'):
-        if share_alike.lower() in ('n', 'no', 'f', 'false', ''):
-            return False
-
-    if hasattr(share_alike, 'lower'):
-        if share_alike.lower() in ('y', 'yes', 't', 'true'):
-            return True
 
 def check_source_tests(source_config):
     ''' Return boolean status and a message if any tests failed.

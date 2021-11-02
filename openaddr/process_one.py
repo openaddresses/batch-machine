@@ -32,7 +32,7 @@ class SourceProblem (enum.Enum):
     no_coverage = 'Missing or incomplete coverage'
     no_esri_token = 'Missing required ESRI token'
     test_failed = 'An acceptance test failed'
-    no_addresses_found = 'Found no addresses in source data'
+    no_features_found = 'Found no features in source data'
 
     # Old tag naming; replaced with "format" or "protocol"
     unknown_conform_type = 'Unknown source conform type'
@@ -264,8 +264,8 @@ def find_source_problem(log_contents, source):
     if 'WARNING: Unknown source conform type' in log_contents:
         return SourceProblem.unknown_conform_type
 
-    if 'WARNING: Found no addresses in source data' in log_contents:
-        return SourceProblem.no_addresses_found
+    if 'WARNING: Found no features in source data' in log_contents:
+        return SourceProblem.no_features_found
 
     if 'WARNING: Could not download source data' in log_contents:
         return SourceProblem.download_source_failed
@@ -358,10 +358,7 @@ def write_state(source, layer, data_source_name, skipped, destination, log_handl
         ('skipped', bool(skipped)),
         ('cache', state_cache),
         ('sample', conform_result.sample and relpath(sample_path, statedir)),
-        ('website', conform_result.website),
-        ('license', conform_result.license),
-        ('geometry type', conform_result.geometry_type),
-        ('address count', conform_result.address_count),
+        ('feat count', conform_result.feat_count),
         ('version', cache_result.version),
         ('fingerprint', cache_result.fingerprint),
         ('cache time', cache_result.elapsed and str(cache_result.elapsed)),
@@ -370,9 +367,6 @@ def write_state(source, layer, data_source_name, skipped, destination, log_handl
         ('output', relpath(output_path, statedir)),
         ('preview', preview_path and relpath(preview_path2, statedir)),
         ('slippymap', slippymap_path and relpath(slippymap_path2, statedir)),
-        ('attribution required', boolstr(conform_result.attribution_flag)),
-        ('attribution name', conform_result.attribution_name),
-        ('share-alike', boolstr(conform_result.sharealike_flag)),
         ('source problem', getattr(source_problem, 'value', None)),
         ('code version', __version__),
         ('tests passed', tests_passed),

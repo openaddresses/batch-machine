@@ -16,27 +16,6 @@ from .. import util, __version__
 
 class TestUtilities (unittest.TestCase):
 
-    def test_db_kwargs(self):
-        '''
-        '''
-        dsn1 = 'postgres://who@where.kitchen/what'
-        kwargs1 = util.prepare_db_kwargs(dsn1)
-        self.assertEqual(kwargs1['user'], 'who')
-        self.assertIsNone(kwargs1['password'])
-        self.assertEqual(kwargs1['host'], 'where.kitchen')
-        self.assertIsNone(kwargs1['port'])
-        self.assertEqual(kwargs1['database'], 'what')
-        self.assertNotIn('sslmode', kwargs1)
-
-        dsn2 = 'postgres://who:open-sesame@where.kitchen:5432/what?sslmode=require'
-        kwargs2 = util.prepare_db_kwargs(dsn2)
-        self.assertEqual(kwargs2['user'], 'who')
-        self.assertEqual(kwargs2['password'], 'open-sesame')
-        self.assertEqual(kwargs2['host'], 'where.kitchen')
-        self.assertEqual(kwargs2['port'], 5432)
-        self.assertEqual(kwargs2['database'], 'what')
-        self.assertEqual(kwargs2['sslmode'], 'require')
-
     def test_request_ftp_file(self):
         '''
         '''
@@ -76,33 +55,6 @@ class TestUtilities (unittest.TestCase):
                 else:
                     self.assertEqual(resp.status_code, 200)
                     self.assertEqual(resp.content, zip_bytes, 'Expected number of bytes')
-
-    def test_s3_key_url(self):
-        '''
-        '''
-        key1 = Mock()
-        key1.name, key1.bucket.name = 'key1', 'bucket1'
-        self.assertEqual(util.s3_key_url(key1), 'https://s3.amazonaws.com/bucket1/key1')
-
-        key2 = Mock()
-        key2.name, key2.bucket.name = '/key2', 'bucket2'
-        self.assertEqual(util.s3_key_url(key2), 'https://s3.amazonaws.com/bucket2/key2')
-
-        key3 = Mock()
-        key3.name, key3.bucket.name = 'key/3', 'bucket3'
-        self.assertEqual(util.s3_key_url(key3), 'https://s3.amazonaws.com/bucket3/key/3')
-
-        key4 = Mock()
-        key4.name, key4.bucket.name = '/key/4', 'bucket4'
-        self.assertEqual(util.s3_key_url(key4), 'https://s3.amazonaws.com/bucket4/key/4')
-
-        key5 = Mock()
-        key5.name, key5.bucket.name = u'kéy5', 'bucket5'
-        self.assertEqual(util.s3_key_url(key5), u'https://s3.amazonaws.com/bucket5/kéy5')
-
-        key6 = Mock()
-        key6.name, key6.bucket.name = u'/kéy6', 'bucket6'
-        self.assertEqual(util.s3_key_url(key6), u'https://s3.amazonaws.com/bucket6/kéy6')
 
     def test_log_current_usage(self):
         '''
