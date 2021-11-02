@@ -1,3 +1,9 @@
+2021-11-02 7.11.0
+- Remove Sampling Code (handled upstream in batch)
+- Remove License Tracking (handled upstream handled upstream in batch)
+- Remove unused geodata dir
+- Remove .travis testing (We use CircleCI)
+
 2021-10-19 7.10.1
 - Use base image with `ogr2ogr` CLI installed
 
