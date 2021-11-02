@@ -1,3 +1,9 @@
+2021-11-02 7.11.0
+- Remove Sampling Code (handled upstream in batch)
+- Remove License Tracking (handled upstream handled upstream in batch)
+- Remove unused geodata dir
+- Remove .travis testing (We use CircleCI)
+
 2021-10-11 7.10.0
 - Upate to latest alpine version
 - Download entire file as a final backup to determining mime-type due to new way `file` command works
