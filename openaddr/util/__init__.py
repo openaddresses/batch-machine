@@ -21,33 +21,6 @@ RESOURCE_LOG_FORMAT = 'Resource usage: {{ user: {user:.0f}%, system: {system:.0f
     'sent: {sent:.0f}KB, received: {received:.0f}KB, period: {period:.0f}sec, ' \
     'procs: {procs:.0f} }}'
 
-def package_output(source, processed_path, website, license):
-    ''' Write a zip archive to temp dir with processed data and optional .vrt.
-    '''
-    _, ext = splitext(processed_path)
-    handle, zip_path = mkstemp(prefix='util-package_output-', suffix='.zip')
-    close(handle)
-
-    zip_file = zipfile.ZipFile(zip_path, mode='w', compression=zipfile.ZIP_DEFLATED)
-
-    template = join(dirname(__file__), 'templates', 'README.txt')
-    with io.open(template, encoding='utf8') as file:
-        content = file.read().format(website=website, license=license, date=date.today())
-        zip_file.writestr('README.txt', content.encode('utf8'))
-
-    if ext == '.csv':
-        # Add virtual format to make CSV readable by QGIS, OGR, etc.
-        # More information: http://www.gdal.org/drv_vrt.html
-        template = join(dirname(__file__), 'templates', 'conform-result.vrt')
-        with io.open(template, encoding='utf8') as file:
-            content = file.read().format(source=basename(source))
-            zip_file.writestr(source + '.vrt', content.encode('utf8'))
-
-    zip_file.write(processed_path, source + ext)
-    zip_file.close()
-
-    return zip_path
-
 def build_request_ftp_file_callback():
     '''
     '''

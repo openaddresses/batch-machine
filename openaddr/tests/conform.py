@@ -24,8 +24,7 @@ from ..conform import (
     row_fxn_remove_prefix, row_fxn_remove_postfix, row_fxn_chain,
     row_fxn_first_non_empty,
     row_canonicalize_unit_and_number, conform_smash_case, conform_cli,
-    convert_regexp_replace, conform_license,
-    conform_attribution, conform_sharealike, normalize_ogr_filename_case,
+    convert_regexp_replace, normalize_ogr_filename_case,
     is_in, geojson_source_to_csv, check_source_tests
     )
 
@@ -2249,100 +2248,6 @@ class TestConformCsv(unittest.TestCase):
         self.assertEqual(self._ascii_header_out, r[0])
         self.assertEqual(self._ascii_row_out, r[1])
 
-class TestConformLicense (unittest.TestCase):
-
-    def test_license_string(self):
-        ''' Test that simple license strings are converted correctly.
-        '''
-        self.assertIsNone(conform_license(None))
-        self.assertEqual(conform_license('CC-BY-SA'), 'CC-BY-SA')
-        self.assertEqual(conform_license('http://example.com'), 'http://example.com')
-        self.assertEqual(conform_license(u'\xa7 unicode \xa7'), u'\xa7 unicode \xa7')
-
-    def test_license_dictionary(self):
-        ''' Test that simple license strings are converted correctly.
-        '''
-        self.assertIsNone(conform_license({}))
-        self.assertEqual(conform_license({'text': 'CC-BY-SA'}), 'CC-BY-SA')
-        self.assertEqual(conform_license({'url': 'http://example.com'}), 'http://example.com')
-        self.assertEqual(conform_license({'text': u'\xa7 unicode \xa7'}), u'\xa7 unicode \xa7')
-
-        license = {'text': 'CC-BY-SA', 'url': 'http://example.com'}
-        self.assertIn(license['text'], conform_license(license))
-        self.assertIn(license['url'], conform_license(license))
-
-    def test_attribution(self):
-        ''' Test combinations of attribution data.
-        '''
-        attr_flag1, attr_name1 = conform_attribution(None, None)
-        self.assertIs(attr_flag1, False)
-        self.assertIsNone(attr_name1)
-
-        attr_flag2, attr_name2 = conform_attribution({}, None)
-        self.assertIs(attr_flag2, False)
-        self.assertIsNone(attr_name2)
-
-        attr_flag3, attr_name3 = conform_attribution(None, '')
-        self.assertIs(attr_flag3, False)
-        self.assertIsNone(attr_name3)
-
-        attr_flag4, attr_name4 = conform_attribution({}, '')
-        self.assertIs(attr_flag4, False)
-        self.assertIsNone(attr_name4)
-
-        attr_flag5, attr_name5 = conform_attribution(None, u'Joe Bl\xf6')
-        self.assertIs(attr_flag5, True)
-        self.assertEqual(attr_name5, u'Joe Bl\xf6')
-
-        attr_flag6, attr_name6 = conform_attribution({}, u'Joe Bl\xf6')
-        self.assertIs(attr_flag6, True)
-        self.assertEqual(attr_name6, u'Joe Bl\xf6')
-
-        attr_flag7, attr_name7 = conform_attribution({'attribution': False}, u'Joe Bl\xf6')
-        self.assertIs(attr_flag7, False)
-        self.assertEqual(attr_name7, None)
-
-        attr_flag8, attr_name8 = conform_attribution({'attribution': True}, u'Joe Bl\xf6')
-        self.assertIs(attr_flag8, True)
-        self.assertEqual(attr_name8, u'Joe Bl\xf6')
-
-        attr_flag9, attr_name9 = conform_attribution({'attribution': None}, u'Joe Bl\xf6')
-        self.assertIs(attr_flag9, True)
-        self.assertEqual(attr_name9, u'Joe Bl\xf6')
-
-        attr_flag10, attr_name10 = conform_attribution({'attribution': False, 'attribution name': u'Joe Bl\xf6'}, None)
-        self.assertIs(attr_flag10, False)
-        self.assertEqual(attr_name10, None)
-
-        attr_flag11, attr_name11 = conform_attribution({'attribution': True, 'attribution name': u'Joe Bl\xf6'}, None)
-        self.assertIs(attr_flag11, True)
-        self.assertEqual(attr_name11, u'Joe Bl\xf6')
-
-        attr_flag12, attr_name12 = conform_attribution({'attribution': None, 'attribution name': u'Joe Bl\xf6'}, None)
-        self.assertIs(attr_flag12, True)
-        self.assertEqual(attr_name12, u'Joe Bl\xf6')
-
-        attr_flag13, attr_name13 = conform_attribution({'attribution': None, 'attribution name': u'Joe Bl\xf6'}, 'Jon Snow')
-        self.assertIs(attr_flag13, True)
-        self.assertEqual(attr_name13, u'Joe Bl\xf6')
-
-        attr_flag14, attr_name14 = conform_attribution({'attribution': None, 'attribution name': False}, None)
-        self.assertIs(attr_flag14, True)
-        self.assertEqual(attr_name14, 'False')
-
-    def test_sharealike(self):
-        ''' Test combinations of share=alike data.
-        '''
-        for undict in (None, False, True, 'this', 'that'):
-            self.assertIs(conform_sharealike(undict), None, '{} should be None'.format(undict))
-
-        for value1 in (False, 'No', 'no', 'false', 'False', 'n', 'f', None, ''):
-            dict1 = {'share-alike': value1}
-            self.assertIs(conform_sharealike(dict1), False, 'sa:{} should be False'.format(repr(value1)))
-
-        for value2 in (True, 'Yes', 'yes', 'true', 'True', 'y', 't'):
-            dict2 = {'share-alike': value2}
-            self.assertIs(conform_sharealike(dict2), True, 'sa:{} should be True'.format(repr(value2)))
 
 class TestConformTests (unittest.TestCase):
 

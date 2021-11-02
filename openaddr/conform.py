@@ -154,7 +154,7 @@ class ConformResult:
 
     @staticmethod
     def empty():
-        return ConformResult(None, None, None, None, None, None, None, None, None, None, None)
+        return ConformResult(None, None, None, None)
 
     def todict(self):
         return dict(processed=self.processed, sample=self.sample)

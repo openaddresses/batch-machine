@@ -47,7 +47,6 @@ from httmock import response, HTTMock
 import mock
 
 from .. import cache, conform, process_one
-from ..util import package_output
 from ..cache import CacheResult
 from ..conform import ConformResult
 from ..process_one import find_source_problem, SourceProblem
@@ -351,7 +350,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNotNone(state['processed'])
         self.assertIsNotNone(state['preview'])
         self.assertIsNotNone(state['slippymap'])
-        self.assertEqual(state['license'], 'http://www.acgov.org/acdata/terms.htm')
 
         output_path = join(dirname(state_path), state['processed'])
         with open(output_path, encoding='utf8') as input:
@@ -1469,7 +1467,6 @@ class TestState (unittest.TestCase):
         #
         # Tweak a few values, try process_one.write_state() again.
         #
-        conform_result.attribution_flag = False
 
         args.update(source='sources/foo/bar.json', skipped=True)
         path2 = process_one.write_state(**args)
@@ -1479,7 +1476,6 @@ class TestState (unittest.TestCase):
 
         self.assertEqual(state2['source'], 'bar.json')
         self.assertEqual(state2['skipped'], True)
-        self.assertEqual(state2['attribution required'], 'false')
 
     def test_find_source_problem(self):
         '''
@@ -1498,62 +1494,6 @@ class TestState (unittest.TestCase):
         self.assertIs({'source problem': find_source_problem('WARNING: A source test failed', {})}["source problem"], SourceProblem.test_failed)
         self.assertIs({'source problem': find_source_problem('WARNING: Found no addresses in source data', {})}["source problem"], SourceProblem.no_addresses_found)
 
-class TestPackage (unittest.TestCase):
-
-    def test_package_output_csv(self):
-        '''
-        '''
-        processed_csv = '/tmp/stuff.csv'
-        website, license = 'http://ci.carson.ca.us/', 'Public domain'
-
-        with mock.patch('zipfile.ZipFile') as ZipFile:
-            package_output('us-ca-carson', processed_csv, website, license)
-
-            self.assertEqual(len(ZipFile.return_value.mock_calls), 4)
-            call1, call2, call3, call4 = ZipFile.return_value.mock_calls
-
-        self.assertEqual(call1[0], 'writestr')
-        self.assertEqual(call1[1][0], 'README.txt')
-        readme_text = call1[1][1].decode('utf8')
-        self.assertTrue(website in readme_text)
-        self.assertTrue(license in readme_text)
-
-        self.assertEqual(call2[0], 'writestr')
-        self.assertEqual(call2[1][0], 'us-ca-carson.vrt')
-        vrt_content = call2[1][1].decode('utf8')
-        self.assertTrue('<OGRVRTLayer name="us-ca-carson">' in vrt_content)
-        self.assertTrue('<SrcDataSource relativeToVRT="1">' in vrt_content)
-        self.assertTrue('us-ca-carson.csv' in vrt_content)
-
-        self.assertEqual(call3[0], 'write')
-        self.assertEqual(call3[1][0], processed_csv)
-        self.assertEqual(call3[1][1], 'us-ca-carson.csv')
-
-        self.assertEqual(call4[0], 'close')
-
-    def test_package_output_txt(self):
-        '''
-        '''
-        processed_txt = '/tmp/stuff.txt'
-        website, license = 'http://ci.carson.ca.us/', 'Public domain'
-
-        with mock.patch('zipfile.ZipFile') as ZipFile:
-            package_output('us-ca-carson', processed_txt, website, license)
-
-            self.assertEqual(len(ZipFile.return_value.mock_calls), 3)
-            call1, call2, call3 = ZipFile.return_value.mock_calls
-
-        self.assertEqual(call1[0], 'writestr')
-        self.assertEqual(call1[1][0], 'README.txt')
-        readme_text = call1[1][1].decode('utf8')
-        self.assertTrue(website in readme_text)
-        self.assertTrue(license in readme_text)
-
-        self.assertEqual(call2[0], 'write')
-        self.assertEqual(call2[1][0], processed_txt)
-        self.assertEqual(call2[1][1], 'us-ca-carson.txt')
-
-        self.assertEqual(call3[0], 'close')
 
 @contextmanager
 def locked_open(filename):
