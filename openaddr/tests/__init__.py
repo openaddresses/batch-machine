@@ -51,6 +51,11 @@ from ..cache import CacheResult
 from ..conform import ConformResult
 from ..process_one import find_source_problem, SourceProblem
 
+" Return an x,y array given a wkt point string"
+def wkt_pt(pt_str):
+    pt = pt_str.strip().replace('POINT', '').replace('(', '').replace(')', '').strip().split(' ')
+    return float(pt[0]), float(pt[1])
+
 def touch_first_arg_file(path, *args, **kwargs):
     ''' Write a short dummy file for the first argument.
     '''
@@ -1200,10 +1205,21 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[3]['NUMBER'], u'2')
             self.assertEqual(rows[3]['STREET'], u"Rue de l'Eglise Saint-Gilles")
 
-            self.assertEqual(rows[0]['GEOM'], 'POINT (4.3458216 50.8324706)')
-            self.assertEqual(rows[1]['GEOM'], 'POINT (4.3412631 50.8330868)')
-            self.assertEqual(rows[2]['GEOM'], 'POINT (4.3410663 50.8334315)')
-            self.assertEqual(rows[3]['GEOM'], 'POINT (4.3421632 50.8322201)')
+            x,y = wkt_pt(rows[0]['GEOM'])
+            self.assertAlmostEqual(4.3458216, x, places=4)
+            self.assertAlmostEqual(50.8324706, y, places=4)
+
+            x,y = wkt_pt(rows[1]['GEOM'])
+            self.assertAlmostEqual(4.3412631, x, places=4)
+            self.assertAlmostEqual(50.8330868, y, places=4)
+
+            x,y = wkt_pt(rows[2]['GEOM'])
+            self.assertAlmostEqual(4.3410663, x, places=4)
+            self.assertAlmostEqual(50.8334315, y, places=4)
+
+            x,y = wkt_pt(rows[3]['GEOM'])
+            self.assertAlmostEqual(4.3421632, x, places=4)
+            self.assertAlmostEqual(50.8322201, y, places=4)
 
     def test_single_it_52_statewide(self):
         ''' Test complete process_one.process on data.
