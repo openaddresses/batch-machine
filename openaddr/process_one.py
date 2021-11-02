@@ -32,7 +32,7 @@ class SourceProblem (enum.Enum):
     no_coverage = 'Missing or incomplete coverage'
     no_esri_token = 'Missing required ESRI token'
     test_failed = 'An acceptance test failed'
-    no_addresses_found = 'Found no addresses in source data'
+    no_features_found = 'Found no features in source data'
 
     # Old tag naming; replaced with "format" or "protocol"
     unknown_conform_type = 'Unknown source conform type'
@@ -264,8 +264,8 @@ def find_source_problem(log_contents, source):
     if 'WARNING: Unknown source conform type' in log_contents:
         return SourceProblem.unknown_conform_type
 
-    if 'WARNING: Found no addresses in source data' in log_contents:
-        return SourceProblem.no_addresses_found
+    if 'WARNING: Found no features in source data' in log_contents:
+        return SourceProblem.no_features_found
 
     if 'WARNING: Could not download source data' in log_contents:
         return SourceProblem.download_source_failed

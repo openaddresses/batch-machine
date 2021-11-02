@@ -28,6 +28,11 @@ from ..conform import (
     is_in, geojson_source_to_csv, check_source_tests
     )
 
+" Return an x,y array given a wkt point string"
+def wkt_pt(pt_str):
+    pt = pt_str.strip().replace('POINT', '').replace('(', '').replace(')', '').strip().split(' ')
+    return float(pt[0]), float(pt[1])
+
 class TestConformTransforms (unittest.TestCase):
     "Test low level data transform functions"
 
@@ -549,7 +554,9 @@ class TestConformTransforms (unittest.TestCase):
         }), "addresses", "default")
         r = row_extract_and_reproject(d, {GEOM_FIELDNAME: "POINT (7655634.924 668868.414)"})
 
-        self.assertEqual('POINT (-122.630842186651 45.4815543938511)', r[GEOM_FIELDNAME])
+        x,y = wkt_pt(r[GEOM_FIELDNAME])
+        self.assertAlmostEqual(-122.630842186651, x, places=4)
+        self.assertAlmostEqual(45.4815543938511, y, places=4)
 
         d = SourceConfig(dict({
             "schema": 2,
@@ -1839,7 +1846,10 @@ class TestConformCli (unittest.TestCase):
         self.assertEqual(0, rc)
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592495 37.8026123)')
+            x,y= wkt_pt(rows[0]['GEOM'])
+            self.assertAlmostEqual(-122.2592495, x, places=4)
+            self.assertAlmostEqual(37.8026123, y, places=4)
+
             self.assertEqual(rows[0]['NUMBER'], '5')
             self.assertEqual(rows[0]['STREET'], u'PZ ESPA\u00d1A')
 
@@ -2211,7 +2221,14 @@ class TestConformCsv(unittest.TestCase):
              u'3203,SE WOODSTOCK BLVD,7655634.924,668868.414'.encode('ascii'))
         r = self._convert(c, d)
         self.assertEqual(r[0], u'n,s,{GEOM_FIELDNAME}'.format(**globals()))
-        self.assertEqual(r[1], u'3203,SE WOODSTOCK BLVD,POINT (-122.630842186651 45.4815543938511)')
+
+        r = r[1].split(',');
+        self.assertEquals(r[0], '3203')
+        self.assertEquals(r[1], 'SE WOODSTOCK BLVD')
+
+        x,y = wkt_pt(r[2])
+        self.assertAlmostEqual(-122.630842186651, x, places=4)
+        self.assertAlmostEqual(45.4815543938511, y, places=4)
 
     def test_too_many_columns(self):
         "Check that we don't barf on input with too many columns in some rows"

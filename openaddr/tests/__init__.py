@@ -1315,7 +1315,8 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state["processed"])
-        self.assertEqual(state["source problem"], "Found no addresses in source data")
+        print(state)
+        self.assertEqual(state["source problem"], "Found no features in source data")
 
     def test_single_lake_man_gdb(self):
         ''' Test complete process_one.process on data.
@@ -1508,7 +1509,7 @@ class TestState (unittest.TestCase):
         self.assertIs({'source problem': find_source_problem('WARNING: Unknown source conform format', {})}["source problem"], SourceProblem.unknown_conform_format)
         self.assertIs({'source problem': find_source_problem('WARNING: Unknown source conform type', {})}["source problem"], SourceProblem.unknown_conform_type)
         self.assertIs({'source problem': find_source_problem('WARNING: A source test failed', {})}["source problem"], SourceProblem.test_failed)
-        self.assertIs({'source problem': find_source_problem('WARNING: Found no addresses in source data', {})}["source problem"], SourceProblem.no_addresses_found)
+        self.assertIs({'source problem': find_source_problem('WARNING: Found no features in source data', {})}["source problem"], SourceProblem.no_features_found)
 
 
 @contextmanager
