@@ -1,3 +1,6 @@
+2021-11-02 7.11.1
+- Generate Cache Fingerprint via chunks instead of lines
+
 2021-11-02 7.11.0
 - Remove Sampling Code (handled upstream in batch)
 - Remove License Tracking (handled upstream handled upstream in batch)
