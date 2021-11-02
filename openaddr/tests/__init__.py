@@ -651,10 +651,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNone(state["preview"])
         self.assertIsNone(state["slippymap"])
 
-        with open(join(dirname(state_path), state["sample"])) as file:
-            sample_data = json.load(file)
-
-        self.assertTrue('APN' in sample_data[0])
 
     def test_single_berk_404(self):
         ''' Test complete process_one.process on 404 sample data.
@@ -763,20 +759,10 @@ class TestOA (unittest.TestCase):
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
 
-        self.assertIsNotNone(state["sample"])
         self.assertIsNone(state["source problem"])
         self.assertIsNotNone(state["processed"])
         self.assertIsNone(state["preview"])
         self.assertIsNone(state["slippymap"])
-
-        with open(join(dirname(state_path), state["sample"])) as file:
-            sample_data = json.load(file)
-
-        self.assertEqual(len(sample_data), 6)
-        self.assertTrue(u'大字・町丁目名' in sample_data[0])
-        self.assertTrue(u'田沢字姥懐' in sample_data[1])
-        self.assertTrue('37.706391' in sample_data[1])
-        self.assertTrue('140.480007' in sample_data[1])
 
         with open(join(dirname(state_path), state["processed"]), encoding='utf8') as file:
             rows = list(csv.DictReader(file))
@@ -1024,7 +1010,6 @@ class TestOA (unittest.TestCase):
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
 
-        self.assertIsNone(state["sample"], 'Sample should be missing when csv.field_size_limit() is too short')
         self.assertEqual(state["source problem"], "Could not conform source data")
         self.assertIsNone(state["processed"])
 
@@ -1039,7 +1024,6 @@ class TestOA (unittest.TestCase):
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
 
-        self.assertIsNotNone(state["sample"], 'Sample should be present when csv.field_size_limit() is long enough')
         self.assertIsNone(state["source problem"])
         self.assertIsNotNone(state["processed"])
         self.assertIsNone(state["preview"])
@@ -1071,7 +1055,6 @@ class TestOA (unittest.TestCase):
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
 
-        self.assertIsNotNone(state["sample"])
         self.assertIsNotNone(state["processed"])
 
         output_path = join(dirname(state_path), state["processed"])
@@ -1099,7 +1082,6 @@ class TestOA (unittest.TestCase):
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
 
-        self.assertIsNotNone(state["sample"])
         self.assertIsNotNone(state["processed"])
 
         output_path = join(dirname(state_path), state["processed"])
@@ -1289,7 +1271,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIs(state["tests passed"], False)
-        self.assertIsNone(state["sample"])
         self.assertIsNone(state["processed"])
         self.assertEqual(state["source problem"], "An acceptance test failed")
 
@@ -1305,7 +1286,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertTrue(state["tests passed"])
-        self.assertIsNone(state["sample"])
         self.assertIsNone(state["processed"])
         self.assertEqual(state["source problem"], "Could not download source data")
 
@@ -1448,12 +1428,10 @@ class TestState (unittest.TestCase):
         with open(join(self.output_dir, 'slippymap.mbtiles'), 'w') as file:
             slippymap_path = file.name
 
-        conform_result = ConformResult(processed=None, sample='/tmp/sample.json',
-                                       website='http://example.com', license='ODbL',
-                                       geometry_type='Point', feat_count=999,
-                                       path=processed_path, elapsed=timedelta(seconds=1),
-                                       attribution_flag=True, attribution_name='Example',
-                                       sharealike_flag=True)
+        conform_result = ConformResult(processed=None,
+                                       feat_count=999,
+                                       path=processed_path,
+                                       elapsed=timedelta(seconds=1))
 
         cache_result = CacheResult(cache='http://example.com/cache.csv',
                                    fingerprint='ff9900', version='0.0.0',
