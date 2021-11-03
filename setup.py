@@ -19,6 +19,9 @@ setup(
         ]
     ),
     package_data = {
+        'openaddr': [
+            'VERSION'
+        ],
         'openaddr.tests': [
             'data/*.*', 'outputs/*.*', 'sources/*.*', 'sources/fr/*.*',
             'sources/us/*/*.*', 'sources/de/*.*', 'sources/nl/*.*',
