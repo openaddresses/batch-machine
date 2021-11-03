@@ -1,3 +1,6 @@
+2021-11-03 7.11.2
+- Fix BUG where VERSION was not included in package
+
 2021-11-02 7.11.1
 - Generate Cache Fingerprint via chunks instead of lines
 
