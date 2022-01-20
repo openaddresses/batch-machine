@@ -456,7 +456,8 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
     inSpatialRef = in_layer.GetSpatialRef()
     srs = source_config.data_source["conform"].get("srs", None)
 
-    if srs is not None:
+    # Skip Transformation is the EPSG code is superfluous
+    if srs is not None and srs != "EPSG:4326":
         # OGR may have a projection, but use the explicit SRS instead
         if srs.startswith(u"EPSG:"):
             _L.debug("SRS tag found specifying %s", srs)
@@ -660,7 +661,7 @@ def geojson_source_to_csv(source_config, source_path, dest_path):
                     writer.writerow(row)
 
 _transform_cache = {}
-def _transform_to_4326(srs):
+def _transform_to_4326(srs, reverse=True):
     "Given a string like EPSG:2913, return an OGR transform object to turn it in to EPSG:4326"
     if srs not in _transform_cache:
         epsg_id = int(srs[5:]) if srs.startswith("EPSG:") else int(srs)
@@ -672,7 +673,8 @@ def _transform_to_4326(srs):
         out_spatial_ref.ImportFromEPSG(4326)
 
         # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
-        out_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+        if reverse:
+            out_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
 
         _transform_cache[srs] = osr.CoordinateTransformation(in_spatial_ref, out_spatial_ref)
     return _transform_cache[srs]
@@ -743,10 +745,9 @@ def row_extract_and_reproject(source_config, source_row):
     if "srs" in data_source["conform"]:
         try:
             srs = data_source["conform"]["srs"]
-            point = ogr.CreateGeometryFromWkt(source_geom)
-            point.Transform(_transform_to_4326(srs))
-
-            source_geom = point.ExportToWkt()
+            geom = ogr.CreateGeometryFromWkt(source_geom)
+            geom.Transform(_transform_to_4326(srs, False))
+            source_geom = geom.ExportToWkt()
         except (TypeError, ValueError) as e:
             if not (source_x == "" or source_y == ""):
                 _L.debug("Could not reproject %s %s in SRS %s", source_x, source_y, srs)
