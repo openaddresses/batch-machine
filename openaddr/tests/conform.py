@@ -1818,16 +1818,22 @@ class TestConformCli (unittest.TestCase):
             rows = list(csv.DictReader(fp))
             self.assertEqual(rows[0]['NUMBER'], '1')
             self.assertEqual(rows[0]['STREET'], 'Spectrum Pointe Dr #320')
+            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.25925 37.802613)')
             self.assertEqual(rows[1]['NUMBER'], '')
             self.assertEqual(rows[1]['STREET'], '')
+            self.assertEqual(rows[1]['GEOM'], 'POINT (-122.256718 37.802528)')
             self.assertEqual(rows[2]['NUMBER'], '300')
             self.assertEqual(rows[2]['STREET'], 'E Chapman Ave')
+            self.assertEqual(rows[2]['GEOM'], 'POINT (-122.257941 37.802969)')
             self.assertEqual(rows[3]['NUMBER'], '1')
             self.assertEqual(rows[3]['STREET'], 'Spectrum Pointe Dr #320')
+            self.assertEqual(rows[3]['GEOM'], 'POINT (-122.258971 37.800748)')
             self.assertEqual(rows[4]['NUMBER'], '1')
             self.assertEqual(rows[4]['STREET'], 'Spectrum Pointe Dr #320')
+            self.assertEqual(rows[4]['GEOM'], 'POINT (-122.256954 37.800714)')
             self.assertEqual(rows[5]['NUMBER'], '1')
             self.assertEqual(rows[5]['STREET'], 'Spectrum Pointe Dr #320')
+            self.assertEqual(rows[5]['GEOM'], 'POINT (-122.25764 37.804359)')
 
     def test_nara_jp(self):
         "Test case from jp-nara.json"
@@ -1847,6 +1853,8 @@ class TestConformCli (unittest.TestCase):
         with open(dest_path) as fp:
             rows = list(csv.DictReader(fp))
             x,y= wkt_pt(rows[0]['GEOM'])
+
+            # POINT (-122.2592495 37.8026123)
             self.assertAlmostEqual(-122.2592495, x, places=4)
             self.assertAlmostEqual(37.8026123, y, places=4)
 

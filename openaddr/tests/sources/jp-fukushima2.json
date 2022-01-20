@@ -19,7 +19,7 @@
             "attribution": "Japanese Ministry of Land, Infrastructure and Transport",
             "conform": {
                 "format": "csv",
-                "lat": "緯度",
+                "lon": "緯度",
                 "srs": "EPSG:4612",
                 "number": {
                     "function": "join",
@@ -30,7 +30,7 @@
                     "separator": "-"
                 },
                 "street": "大字・町丁目名",
-                "lon": "経度",
+                "lat": "経度",
                 "encoding": "SHIFT_JISX0213"
             },
             "license": {
