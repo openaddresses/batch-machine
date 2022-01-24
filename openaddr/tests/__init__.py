@@ -777,9 +777,9 @@ class TestOA (unittest.TestCase):
         self.assertEqual(rows[1]['STREET'], u'田沢字躑躅ケ森')
         self.assertEqual(rows[2]['NUMBER'], u'22-9')
         self.assertEqual(rows[2]['STREET'], u'小田字正夫田')
-        self.assertEqual(rows[0]['GEOM'], 'POINT (37.706391 140.480007)')
-        self.assertEqual(rows[1]['GEOM'], 'POINT (37.707664 140.486267)')
-        self.assertEqual(rows[2]['GEOM'], 'POINT (37.710239 140.41875)')
+        self.assertEqual(rows[0]['GEOM'], 'POINT (140.480007 37.706391)')
+        self.assertEqual(rows[1]['GEOM'], 'POINT (140.486267 37.707664)')
+        self.assertEqual(rows[2]['GEOM'], 'POINT (140.41875 37.710239)')
 
     def test_single_utah(self):
         ''' Test complete process_one.process on data that uses file selection with mixed case (issue #104)

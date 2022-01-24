@@ -33,7 +33,7 @@ setup(
     },
     test_suite = 'openaddr.tests',
     install_requires = [
-        'boto == 2.49.0', 'dateutils == 0.6.6', 'ijson == 2.4',
+        'dateutils == 0.6.6', 'ijson == 2.4',
 
         'simplejson == 3.17.2',
 
@@ -44,26 +44,16 @@ setup(
         'uritemplate == 3.0.0',
 
         # http://docs.python-requests.org/en/master/
-        'requests == 2.22.0',
+        'requests == 2.27.1',
 
         # https://github.com/patrys/httmock
         'httmock == 1.3.0',
-
-        # https://boto3.readthedocs.org
-        'boto3 == 1.11.5',
 
         # https://github.com/openaddresses/pyesridump
         'esridump == 1.10.1',
 
         # Used in openaddr.parcels
         'Shapely == 1.7.1',
-
-        # Used in dotmaps preview to support S3-backed SQLite mbtiles
-        # https://rogerbinns.github.io/apsw/
-        'apsw == 3.9.2.post1',
-
-        # http://pythonhosted.org/itsdangerous/
-        'itsdangerous == 1.1.0',
 
         # https://github.com/tilezen/mapbox-vector-tile
         'mapbox-vector-tile==1.2.0',

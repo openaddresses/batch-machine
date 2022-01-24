@@ -51,25 +51,6 @@ RESERVED_SCHEMA = ADDRESSES_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA + [
 
 UNZIPPED_DIRNAME = 'unzipped'
 
-geometry_types = {
-    ogr.wkbPoint: 'Point',
-    ogr.wkbPoint25D: 'Point 2.5D',
-    ogr.wkbLineString: 'LineString',
-    ogr.wkbLineString25D: 'LineString 2.5D',
-    ogr.wkbLinearRing: 'LinearRing',
-    ogr.wkbPolygon: 'Polygon',
-    ogr.wkbPolygon25D: 'Polygon 2.5D',
-    ogr.wkbMultiPoint: 'MultiPoint',
-    ogr.wkbMultiPoint25D: 'MultiPoint 2.5D',
-    ogr.wkbMultiLineString: 'MultiLineString',
-    ogr.wkbMultiLineString25D: 'MultiLineString 2.5D',
-    ogr.wkbMultiPolygon: 'MultiPolygon',
-    ogr.wkbMultiPolygon25D: 'MultiPolygon 2.5D',
-    ogr.wkbGeometryCollection: 'GeometryCollection',
-    ogr.wkbGeometryCollection25D: 'GeometryCollection 2.5D',
-    ogr.wkbUnknown: 'Unknown'
-    }
-
 # extracts:
 # - '123' from '123 Main St'
 # - '123 1/2' from '123 1/2 Main St'
@@ -475,6 +456,7 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
     inSpatialRef = in_layer.GetSpatialRef()
     srs = source_config.data_source["conform"].get("srs", None)
 
+    # Skip Transformation is the EPSG code is superfluous
     if srs is not None:
         # OGR may have a projection, but use the explicit SRS instead
         if srs.startswith(u"EPSG:"):
@@ -510,6 +492,7 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
     # Set up a transformation from the source SRS to EPSG:4326
     outSpatialRef = osr.SpatialReference()
     outSpatialRef.ImportFromEPSG(4326)
+
     if int(osgeo.__version__[0]) >= 3:
         # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
         outSpatialRef.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
@@ -616,9 +599,13 @@ def csv_source_to_csv(source_config, source_path, dest_path):
 
         else:
             # CSV sources: replace the source's lat/lon columns with OA:GEOM
-            old_latlon = [source_config.data_source["conform"]["lat"], source_config.data_source["conform"]["lon"]]
-            old_latlon.extend([s.upper() for s in old_latlon])
-            out_fieldnames = [fn for fn in reader.fieldnames if fn not in old_latlon]
+            old_ll = [
+                source_config.data_source["conform"]["lon"],
+                source_config.data_source["conform"]["lat"]
+            ]
+
+            old_ll.extend([s.upper() for s in old_ll])
+            out_fieldnames = [fn for fn in reader.fieldnames if fn not in old_ll]
             out_fieldnames.append(GEOM_FIELDNAME)
 
         # Write the extracted CSV file
@@ -683,11 +670,14 @@ def _transform_to_4326(srs):
 
         in_spatial_ref = osr.SpatialReference()
         in_spatial_ref.ImportFromEPSG(epsg_id)
+
         out_spatial_ref = osr.SpatialReference()
         out_spatial_ref.ImportFromEPSG(4326)
 
-        # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
-        out_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+        if int(osgeo.__version__[0]) >= 3:
+            # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
+            in_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
+            out_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
 
         _transform_cache[srs] = osr.CoordinateTransformation(in_spatial_ref, out_spatial_ref)
     return _transform_cache[srs]
@@ -755,13 +745,12 @@ def row_extract_and_reproject(source_config, source_row):
 
 
     # Reproject the coordinates if necessary
-    if "srs" in data_source["conform"]:
+    if "srs" in data_source["conform"] and data_source["conform"]["srs"] != "EPSG:4326":
         try:
             srs = data_source["conform"]["srs"]
-            point = ogr.CreateGeometryFromWkt(source_geom)
-            point.Transform(_transform_to_4326(srs))
-
-            source_geom = point.ExportToWkt()
+            geom = ogr.CreateGeometryFromWkt(source_geom)
+            geom.Transform(_transform_to_4326(srs))
+            source_geom = geom.ExportToWkt()
         except (TypeError, ValueError) as e:
             if not (source_x == "" or source_y == ""):
                 _L.debug("Could not reproject %s %s in SRS %s", source_x, source_y, srs)
