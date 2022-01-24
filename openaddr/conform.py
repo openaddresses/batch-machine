@@ -456,9 +456,6 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
     inSpatialRef = in_layer.GetSpatialRef()
     srs = source_config.data_source["conform"].get("srs", None)
 
-    if srs == "EPSG:4326":
-        srs = None
-
     # Skip Transformation is the EPSG code is superfluous
     if srs is not None:
         # OGR may have a projection, but use the explicit SRS instead
@@ -679,6 +676,7 @@ def _transform_to_4326(srs):
 
         if int(osgeo.__version__[0]) >= 3:
             # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
+            in_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
             out_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
 
         _transform_cache[srs] = osr.CoordinateTransformation(in_spatial_ref, out_spatial_ref)
