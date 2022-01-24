@@ -23,3 +23,7 @@ before use.
 ```
 docker build -t batch-machine .
 ```
+
+```
+Todo: Add example for running as cli in docker
+```
