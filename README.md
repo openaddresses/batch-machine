@@ -10,3 +10,16 @@ basis, with output visible at [batch.openaddresses.io](https://batch.openaddress
 
 These scripts are wrapped by the main [openaddresses/batch](https://github.com/openaddresses/batch) processor.
 
+## Use
+
+It is highly recommended to use this tool via the provided docker file - using an unsupported/untested version
+of GDAL (the core geospatial library) will result in widely varying results.
+
+Should you run this in a virtual env, install [Tippecanoe](https://github.com/mapbox/tippecanoe.git) and [GDAL](https://pypi.org/project/GDAL/)
+before use.
+
+### Docker
+
+```
+docker build -t batch-machine .
+```
