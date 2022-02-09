@@ -463,6 +463,10 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
             _L.debug("SRS tag found specifying %s", srs)
             inSpatialRef = osr.SpatialReference()
             inSpatialRef.ImportFromEPSG(int(srs[5:]))
+
+            if int(osgeo.__version__[0]) >= 3:
+                # GDAL 3 changes axis order: https://github.com/OSGeo/gdal/issues/1546
+                inSpatialRef.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
         else:
             # OGR is capable of doing more than EPSG, but so far we don't need it.
             raise Exception("Bad SRS. Can only handle EPSG, the SRS tag is %s", srs)
