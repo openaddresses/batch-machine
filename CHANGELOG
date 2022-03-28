@@ -1,3 +1,6 @@
+2022-05-28 v7.13.1
+- Remove `py3-gdal` which was causing a segmentation fault in `ogr2ogr` and appears not to be necessary
+
 2022-05-28 7.13.0
 - Update Alpine version to support node 16 for upstream stream/promises use
 
