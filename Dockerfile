@@ -1,7 +1,7 @@
 FROM osgeo/gdal:alpine-normal-3.4.2
 
 RUN apk add nodejs yarn git python3 python3-dev py3-pip \
-    py3-gdal make bash sqlite-dev zlib-dev \
+    make bash sqlite-dev zlib-dev \
     postgresql-libs gcc g++ musl-dev postgresql-dev cairo \
     py3-cairo file
 
