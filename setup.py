@@ -33,9 +33,10 @@ setup(
     },
     test_suite = 'openaddr.tests',
     install_requires = [
-        'dateutils == 0.6.6', 'ijson == 2.4',
+        'dateutils == 0.6.6',
+        'ijson == 2.4',
 
-        'simplejson == 3.17.2',
+        'simplejson == 3.17.6',
 
         # http://www.voidspace.org.uk/python/mock/
         'mock == 3.0.5',
@@ -53,10 +54,10 @@ setup(
         'esridump == 1.11.0',
 
         # Used in openaddr.parcels
-        'Shapely == 1.7.1',
+        'Shapely == 1.8.2',
 
         # https://github.com/tilezen/mapbox-vector-tile
-        'mapbox-vector-tile==1.2.0',
+        'mapbox-vector-tile==1.2.1',
         'future==0.16.0',
         'protobuf==3.5.1',
         ]
