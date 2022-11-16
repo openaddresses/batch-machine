@@ -22,8 +22,41 @@ before use.
 
 ```
 docker build -t batch-machine .
+docker run -it batch-machine bash
 ```
 
+Or to direct your generated output to a folder on the host machine, use [Docker Volumes](https://docs.docker.com/storage/volumes/).
+
+Given an input file like this residing in the current directory inside Docker:
+
+```example.json
+{
+    "schema": 2,
+    "coverage": {
+        "country": "ca",
+        "state": "nb"
+    },
+    "layers": {
+        "addresses": [{
+            "name": "state",
+            "data": "http://geonb.snb.ca/downloads/gcadb/geonb_gcadb-bdavg_shp.zip",
+            "protocol": "http",
+            "compression": "zip",
+            "conform": {
+                "number": "civic_num",
+                "street": "street_nam",
+                "format": "shapefile",
+            }
+        }]
+    }
+}
 ```
-Todo: Add example for running as cli in docker
+
+You can create an output folder and then run the batch process on the desired layer's key and its child object's `name` as arguments:
+
 ```
+mkdir my-output
+openaddr-process-one --layer addresses --layersource state example.json my-output
+```
+
+Review https://github.com/openaddresses/openaddresses/blob/master/CONTRIBUTING.md for input json syntax.
