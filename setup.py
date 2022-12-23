@@ -41,7 +41,7 @@ setup(
         'mock == 3.0.5',
 
         # https://github.com/uri-templates/uritemplate-py/
-        'uritemplate == 3.0.0',
+        'uritemplate == 4.1.1',
 
         # http://docs.python-requests.org/en/master/
         'requests == 2.28.1',
