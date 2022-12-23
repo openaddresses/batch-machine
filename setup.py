@@ -58,6 +58,6 @@ setup(
         # https://github.com/tilezen/mapbox-vector-tile
         'mapbox-vector-tile @ git+https://github.com/tilezen/mapbox-vector-tile.git@5249a23da696515f118564dbcc83b39216792454#egg=mapbox-vector-tile',
         'future==0.18.2',
-        'protobuf==4.21',
+        'protobuf==4.21.6',
     ]
 )
