@@ -33,31 +33,31 @@ setup(
     },
     test_suite = 'openaddr.tests',
     install_requires = [
-        'dateutils == 0.6.6', 'ijson == 2.4',
+        'dateutils == 0.6.12', 'ijson == 2.4',
 
-        'simplejson == 3.17.2',
+        'simplejson == 3.18.0',
 
         # http://www.voidspace.org.uk/python/mock/
         'mock == 3.0.5',
 
         # https://github.com/uri-templates/uritemplate-py/
-        'uritemplate == 3.0.0',
+        'uritemplate == 4.1.1',
 
         # http://docs.python-requests.org/en/master/
-        'requests == 2.27.1',
+        'requests == 2.28.1',
 
         # https://github.com/patrys/httmock
-        'httmock == 1.3.0',
+        'httmock == 1.4.0',
 
         # https://github.com/openaddresses/pyesridump
         'esridump == 1.11.0',
 
         # Used in openaddr.parcels
-        'Shapely == 1.7.1',
+        'Shapely == 2.0.0',
 
         # https://github.com/tilezen/mapbox-vector-tile
-        'mapbox-vector-tile==1.2.0',
-        'future==0.16.0',
-        'protobuf==3.5.1',
-        ]
+        'mapbox-vector-tile @ git+https://github.com/tilezen/mapbox-vector-tile.git@5249a23da696515f118564dbcc83b39216792454#egg=mapbox-vector-tile',
+        'future==0.18.2',
+        'protobuf==4.21',
+    ]
 )
