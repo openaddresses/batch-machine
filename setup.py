@@ -12,6 +12,7 @@ setup(
     author_email = 'mike-pypi@teczno.com',
     description = 'In-progress scripts for running OpenAddresses on a complete data set and publishing the results.',
     packages = ['openaddr', 'openaddr.util', 'openaddr.tests'],
+    python_requires='>=3.10',
     entry_points = dict(
         console_scripts = [
             'openaddr-preview-source = openaddr.preview:main',
