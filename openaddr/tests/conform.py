@@ -22,7 +22,7 @@ from ..conform import (
     row_fxn_prefixed_number, row_fxn_postfixed_street,
     row_fxn_postfixed_unit,
     row_fxn_remove_prefix, row_fxn_remove_postfix, row_fxn_chain,
-    row_fxn_first_non_empty,
+    row_fxn_first_non_empty, row_fxn_constant,
     row_canonicalize_unit_and_number, conform_smash_case, conform_cli,
     convert_regexp_replace, normalize_ogr_filename_case,
     is_in, geojson_source_to_csv, check_source_tests
@@ -1619,6 +1619,35 @@ class TestConformTransforms (unittest.TestCase):
         e.update({ })
 
         d = row_fxn_first_non_empty(c, d, "street", c["conform"]["street"])
+        self.assertEqual(e, d)
+
+    def test_row_fxn_constant(self):
+        "constant - replacing empty string"
+        c = { "conform": {
+            "region": {
+                "function": "constant",
+                "value": "PA"
+            }
+        } }
+        d = { "STATE": "" }
+        e = copy.deepcopy(d)
+        e.update({ "oa:region": "PA" })
+
+        d = row_fxn_constant(c, d, "region", c["conform"]["region"])
+        self.assertEqual(e, d)
+        
+        "constant - replacing non-empty, non-standard string"
+        c = { "conform": {
+            "region": {
+                "function": "constant",
+                "value": "PA"
+            }
+        } }
+        d = { "STATE": "Penna" }
+        e = copy.deepcopy(d)
+        e.update({ "oa:region": "PA" })
+
+        d = row_fxn_constant(c, d, "region", c["conform"]["region"])
         self.assertEqual(e, d)
 
 class TestConformCli (unittest.TestCase):
