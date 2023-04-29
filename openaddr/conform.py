@@ -803,6 +803,8 @@ def row_function(sc, row, key, fxn):
         row = row_fxn_chain(sc, row, key, fxn)
     elif function == "first_non_empty":
         row = row_fxn_first_non_empty(sc, row, key, fxn)
+    elif function == "constant":
+        row = row_fxn_constant(sc, row, key, key, fxn)
 
     return row
 
@@ -1028,6 +1030,14 @@ def row_fxn_first_non_empty(sc, row, key, fxn):
         if row[field] and row[field].strip():
             row["oa:{}".format(key)] = row[field]
             break
+
+    return row
+
+def row_fxn_constant(sc, row, key, fxn):
+    "Set an attribute to a constant value"
+    value  = fxn['value']
+
+    row['oa:{}'.format(key)] = value
 
     return row
 
