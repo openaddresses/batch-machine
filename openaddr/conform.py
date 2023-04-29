@@ -445,12 +445,17 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
     '''
     in_datasource = ogr.Open(source_path, 0)
     layer_id = source_config.data_source['conform'].get('layer', 0)
+
     if isinstance(layer_id, int):
         in_layer = in_datasource.GetLayerByIndex(layer_id)
-        _L.info("Converting layer %s (%s) to CSV", layer_id, repr(in_layer.GetName()))
+        _L.info("Looking for layer index %s", layer_id)
     else:
         in_layer = in_datasource.GetLayerByName(layer_id)
-        _L.info("Converting layer %s to CSV", repr(in_layer.GetName()))
+        _L.info("Converting layer name %s", layer_id)
+
+    if not in_layer:
+        _L.error("Requested layer not found among layers: %s", ", ".join([l.GetName() for l in in_datasource]))
+        raise Exception("Layer %s not found")
 
     # Determine the appropriate SRS
     inSpatialRef = in_layer.GetSpatialRef()
