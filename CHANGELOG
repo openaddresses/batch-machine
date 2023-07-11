@@ -1,5 +1,10 @@
-2023-07-11 v8.0.1
+2023-07-11 v8.1.1
 - Update TippeCanoe Version
+
+2023-04-29 v8.1.0
+- Add python tests workflow by @iandees in https://github.com/openaddresses/batch-machine/pull/40
+- Add better logging when getting GDB layers by @iandees in https://github.com/openaddresses/batch-machine/pull/39
+- Add constant attribute function and tests by @rbrtmrtn in https://github.com/openaddresses/batch-machine/pull/38 
 
 2022-12-22 v8.0.0
 - Update required python version to 3.10
