@@ -445,12 +445,17 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
     '''
     in_datasource = ogr.Open(source_path, 0)
     layer_id = source_config.data_source['conform'].get('layer', 0)
+
     if isinstance(layer_id, int):
         in_layer = in_datasource.GetLayerByIndex(layer_id)
-        _L.info("Converting layer %s (%s) to CSV", layer_id, repr(in_layer.GetName()))
+        _L.info("Looking for layer index %s", layer_id)
     else:
         in_layer = in_datasource.GetLayerByName(layer_id)
-        _L.info("Converting layer %s to CSV", repr(in_layer.GetName()))
+        _L.info("Converting layer name %s", layer_id)
+
+    if not in_layer:
+        _L.error("Requested layer not found among layers: %s", ", ".join([l.GetName() for l in in_datasource]))
+        raise Exception("Layer %s not found")
 
     # Determine the appropriate SRS
     inSpatialRef = in_layer.GetSpatialRef()
@@ -798,6 +803,8 @@ def row_function(sc, row, key, fxn):
         row = row_fxn_chain(sc, row, key, fxn)
     elif function == "first_non_empty":
         row = row_fxn_first_non_empty(sc, row, key, fxn)
+    elif function == "constant":
+        row = row_fxn_constant(sc, row, key, key, fxn)
 
     return row
 
@@ -1023,6 +1030,14 @@ def row_fxn_first_non_empty(sc, row, key, fxn):
         if row[field] and row[field].strip():
             row["oa:{}".format(key)] = row[field]
             break
+
+    return row
+
+def row_fxn_constant(sc, row, key, fxn):
+    "Set an attribute to a constant value"
+    value  = fxn['value']
+
+    row['oa:{}'.format(key)] = value
 
     return row
 
