@@ -153,7 +153,7 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
                             preview_path = render_preview(conform_result.path, temp_dir, mapbox_key)
 
                         if do_preview:
-                            mbtiles_path = render_slippymap(conform_result.path, temp_dir)
+                            mbtiles_path = render_mbtiles(conform_result.path, temp_dir)
                             pmtiles_path = render_pmtiles(conform_result.path, temp_dir)
 
                         if not preview_path:
@@ -208,14 +208,14 @@ def render_preview(csv_filename, temp_dir, mapbox_key):
 
     return png_filename
 
-def render_slippymap(csv_filename, temp_dir):
+def render_mbtiles(csv_filename, temp_dir):
     '''
     '''
     try:
         mbtiles_filename = join(temp_dir, 'slippymap.mbtiles')
         slippymap.generate(mbtiles_filename, csv_filename)
     except Exception as e:
-        _L.error('%s in render_slippymap: %s', type(e), e)
+        _L.error('%s in render_mbtiles: %s', type(e), e)
         return None
     else:
         return mbtiles_filename
