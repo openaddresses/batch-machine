@@ -75,7 +75,7 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
     with wait_lock:
         proc_wait.start()
         cache_result, conform_result = CacheResult.empty(), ConformResult.empty()
-        preview_path, slippymap_path, skipped_source = None, None, False
+        preview_path, mbtiles_path, pmtiles_path, skipped_source = None, None, None, False
         tests_passed = None
 
         try:
@@ -153,7 +153,8 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
                             preview_path = render_preview(conform_result.path, temp_dir, mapbox_key)
 
                         if do_preview:
-                            slippymap_path = render_slippymap(conform_result.path, temp_dir)
+                            mbtiles_path = render_slippymap(conform_result.path, temp_dir)
+                            pmtiles_path = render_pmtiles(conform_result.path, temp_dir)
 
                         if not preview_path:
                             _L.warning('Nothing previewed')
@@ -176,7 +177,7 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
             logging.getLogger('openaddr').removeHandler(log_handler)
 
         state_path = write_state(temp_src, layer, data_source['name'], skipped_source, destination, log_handler,
-            tests_passed, cache_result, conform_result, preview_path, slippymap_path,
+            tests_passed, cache_result, conform_result, preview_path, mbtiles_path, pmtiles_path,
             temp_dir)
 
         log_handler.close()
@@ -218,6 +219,21 @@ def render_slippymap(csv_filename, temp_dir):
         return None
     else:
         return mbtiles_filename
+
+def render_pmtiles(csv_filename, temp_dir):
+    '''
+    :param csv_filename:
+    :param temp_dir:
+    :return:
+    '''
+    try:
+        pmtiles_filename = join(temp_dir, 'slippymap.pmtiles')
+        slippymap.generate(pmtiles_filename, csv_filename)
+    except Exception as e:
+        _L.error('%s in render_pmtiles: %s', type(e), e)
+        return None
+    else:
+        return pmtiles_filename
 
 class LogFilterCurrentThread:
     ''' Logging filter object to match only record in the current thread.
@@ -288,7 +304,7 @@ def find_source_problem(log_contents, source):
     return None
 
 def write_state(source, layer, data_source_name, skipped, destination, log_handler, tests_passed,
-                cache_result, conform_result, preview_path, slippymap_path,
+                cache_result, conform_result, preview_path, mbtiles_path, pmtiles_path,
                 temp_dir):
     '''
     '''
@@ -332,9 +348,13 @@ def write_state(source, layer, data_source_name, skipped, destination, log_handl
         preview_path2 = join(statedir, 'preview.png')
         copy(preview_path, preview_path2)
 
-    if slippymap_path:
-        slippymap_path2 = join(statedir, 'slippymap.mbtiles')
-        copy(slippymap_path, slippymap_path2)
+    if mbtiles_path:
+        mbtiles_path2 = join(statedir, 'slippymap.mbtiles')
+        copy(mbtiles_path, mbtiles_path2)
+
+    if pmtiles_path:
+        pmtiles_path2 = join(statedir, 'slippymap.pmtiles')
+        copy(pmtiles_path, pmtiles_path2)
 
     log_handler.flush()
     output_path = join(statedir, 'output.txt')
@@ -366,7 +386,8 @@ def write_state(source, layer, data_source_name, skipped, destination, log_handl
         ('process time', conform_result.elapsed and str(conform_result.elapsed)),
         ('output', relpath(output_path, statedir)),
         ('preview', preview_path and relpath(preview_path2, statedir)),
-        ('slippymap', slippymap_path and relpath(slippymap_path2, statedir)),
+        ('slippymap', mbtiles_path and relpath(mbtiles_path2, statedir)),
+        ('pmtiles', pmtiles_path and relpath(pmtiles_path2, statedir)),
         ('source problem', getattr(source_problem, 'value', None)),
         ('code version', __version__),
         ('tests passed', tests_passed),
