@@ -340,15 +340,19 @@ class TestOA (unittest.TestCase):
 
         with HTTMock(self.response_content), \
              mock.patch('openaddr.preview.render') as preview_ren, \
-             mock.patch('openaddr.slippymap.generate') as slippymap_gen:
+             mock.patch('openaddr.slippymap.generate') as slippymap_gen, \
+             mock.patch('openaddr.process_one.render_geojsonld') as render_geojsonld:
             preview_ren.side_effect = touch_second_arg_file
             slippymap_gen.side_effect = touch_first_arg_file
-            state_path = process_one.process(source, self.testdir, "addresses", "default", True, mapbox_key='mapbox-XXXX')
+            render_geojsonld.side_effect = touch_first_arg_file
+            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, True, mapbox_key='mapbox-XXXX')
 
         self.assertTrue(slippymap_gen.mock_calls[0][1][0].endswith('.mbtiles'))
         self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.csv'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.csv'))
+        self.assertTrue(render_geojsonld.mock_calls[0][1][0].endswith('.geojsonld'))
+        self.assertTrue(render_geojsonld.mock_calls[0][1][1].endswith('.csv'))
 
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
@@ -358,6 +362,7 @@ class TestOA (unittest.TestCase):
         self.assertIsNotNone(state['preview'])
         self.assertIsNotNone(state['slippymap'])
         self.assertIsNotNone(state['pmtiles'])
+        self.assertIsNotNone(state['geojsonld'])
 
         output_path = join(dirname(state_path), state['processed'])
         with open(output_path, encoding='utf8') as input:
@@ -1461,6 +1466,9 @@ class TestState (unittest.TestCase):
         with open(join(self.output_dir, 'slippymap.pmtiles'), 'w') as file:
             pmtiles_path = file.name
 
+        with open(join(self.output_dir, 'out.geojsonld'), 'w') as file:
+            geojsonld_path = file.name
+
         conform_result = ConformResult(processed=None,
                                        feat_count=999,
                                        path=processed_path,
@@ -1479,6 +1487,7 @@ class TestState (unittest.TestCase):
                     cache_result=cache_result, conform_result=conform_result,
                     temp_dir=self.output_dir, preview_path=preview_path,
                     mbtiles_path=mbtiles_path, pmtiles_path=pmtiles_path,
+                    geojsonld_path=geojsonld_path,
                     tests_passed=True)
 
         path1 = process_one.write_state(**args)
@@ -1498,6 +1507,7 @@ class TestState (unittest.TestCase):
         self.assertEqual(state1['output'], 'output.txt')
         self.assertEqual(state1['preview'], 'preview.png')
         self.assertEqual(state1['slippymap'], 'slippymap.mbtiles')
+        self.assertEqual(state1['geojsonld'], 'out.geojsonld')
         self.assertEqual(state1['tests passed'], True)
 
         #

@@ -6,6 +6,7 @@ from os.path import join, basename, dirname, exists, splitext, relpath
 from shutil import copy, move, rmtree
 from argparse import ArgumentParser
 from os import mkdir, rmdir, close, chmod
+from shapely.wkt import loads as wkt_loads
 from _thread import get_ident
 import tempfile, json, csv, sys, enum
 import threading
@@ -51,7 +52,9 @@ def boolstr(value):
 
     raise ValueError(repr(value))
 
-def process(source, destination, layer, layersource, do_preview, mapbox_key=None, extras=dict()):
+def process(source, destination, layer, layersource,
+            do_geojsonld, do_preview, do_mbtiles, do_pmtiles,
+            mapbox_key=None, extras=dict()):
     ''' Process a single source and destination, return path to JSON state file.
 
         Creates a new directory and files under destination.
@@ -75,7 +78,7 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
     with wait_lock:
         proc_wait.start()
         cache_result, conform_result = CacheResult.empty(), ConformResult.empty()
-        preview_path, mbtiles_path, pmtiles_path, skipped_source = None, None, None, False
+        geojsonld_path, preview_path, mbtiles_path, pmtiles_path, skipped_source = None, None, None, None, False
         tests_passed = None
 
         try:
@@ -152,14 +155,40 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
                         if do_preview and mapbox_key:
                             preview_path = render_preview(conform_result.path, temp_dir, mapbox_key)
 
-                        if do_preview:
-                            mbtiles_path = render_mbtiles(conform_result.path, temp_dir)
-                            pmtiles_path = render_pmtiles(conform_result.path, temp_dir)
-
                         if not preview_path:
                             _L.warning('Nothing previewed')
                         else:
                             _L.info('Preview image in {}'.format(preview_path))
+
+                        if do_geojsonld:
+                            geojsonld_path = render_geojsonld(conform_result.path, temp_dir)
+
+                            if not geojsonld_path:
+                                _L.warning('No GeoJSON-LD generated')
+                            else:
+                                _L.info('GeoJSON-LD file in {}'.format(geojsonld_path))
+
+                        if do_mbtiles:
+                            if not geojsonld_path:
+                                _L.error("Can't generate mbtiles without GeoJSON-LD")
+                            else:
+                                mbtiles_path = render_mbtiles(geojsonld_path, temp_dir)
+
+                                if not mbtiles_path:
+                                    _L.warning('No mbtiles generated')
+                                else:
+                                    _L.info('mbtiles file in {}'.format(mbtiles_path))
+
+                        if do_pmtiles:
+                            if not geojsonld_path:
+                                _L.error("Can't generate pmtiles without GeoJSON-LD")
+                            else:
+                                pmtiles_path = render_pmtiles(geojsonld_path, temp_dir)
+
+                                if not pmtiles_path:
+                                    _L.warning('No pmtiles generated')
+                                else:
+                                    _L.info('pmtiles file in {}'.format(pmtiles_path))
 
         except SourceSaysSkip:
             _L.info('Source says to skip in process_one.process()')
@@ -177,7 +206,7 @@ def process(source, destination, layer, layersource, do_preview, mapbox_key=None
             logging.getLogger('openaddr').removeHandler(log_handler)
 
         state_path = write_state(temp_src, layer, data_source['name'], skipped_source, destination, log_handler,
-            tests_passed, cache_result, conform_result, preview_path, mbtiles_path, pmtiles_path,
+            tests_passed, cache_result, conform_result, preview_path, mbtiles_path, pmtiles_path, geojsonld_path,
             temp_dir)
 
         log_handler.close()
@@ -234,6 +263,29 @@ def render_pmtiles(csv_filename, temp_dir):
         return None
     else:
         return pmtiles_filename
+
+def render_geojsonld(csv_filename, temp_dir):
+    '''
+    Convert the given CSV file to GeoJSON-LD.
+    :return: Path to the generated GeoJSON-LD file.
+    '''
+    geojsonld_filename = join(temp_dir, 'out.geojson')
+    with open(csv_filename, encoding='utf8') as csv_file:
+        csv_rows = csv.DictReader(csv_file)
+        with open(geojsonld_filename, 'w', encoding='utf8') as geojsonld_file:
+            for row in csv_rows:
+                feat = {"type": "Feature", "properties": None, "geometry": None}
+
+                if geom_wkt := row.pop("GEOM", None):
+                    feat["geometry"] = wkt_loads(geom_wkt)
+
+                for k, v in row.items():
+                    feat["properties"][k.lower()] = v
+
+                geojsonld_file.write(json.dumps(feat))
+                geojsonld_file.write('\n')
+
+    return geojsonld_filename
 
 class LogFilterCurrentThread:
     ''' Logging filter object to match only record in the current thread.
@@ -304,7 +356,7 @@ def find_source_problem(log_contents, source):
     return None
 
 def write_state(source, layer, data_source_name, skipped, destination, log_handler, tests_passed,
-                cache_result, conform_result, preview_path, mbtiles_path, pmtiles_path,
+                cache_result, conform_result, preview_path, mbtiles_path, pmtiles_path, geojsonld_path,
                 temp_dir):
     '''
     '''
@@ -337,6 +389,10 @@ def write_state(source, layer, data_source_name, skipped, destination, log_handl
         _, _, processed_path1, _, _, _ = urlparse(conform_result.path)
         processed_path2 = join(statedir, 'out{1}'.format(*splitext(processed_path1)))
         copy(processed_path1, processed_path2)
+
+    if geojsonld_path:
+        geojsonld_path2 = join(statedir, 'out.geojson')
+        copy(geojsonld_path, geojsonld_path2)
 
     # Write the sample data to a sample.json file
     if conform_result.sample:
@@ -388,6 +444,7 @@ def write_state(source, layer, data_source_name, skipped, destination, log_handl
         ('preview', preview_path and relpath(preview_path2, statedir)),
         ('slippymap', mbtiles_path and relpath(mbtiles_path2, statedir)),
         ('pmtiles', pmtiles_path and relpath(pmtiles_path2, statedir)),
+        ('geojsonld', geojsonld_path and relpath(geojsonld_path2, statedir)),
         ('source problem', getattr(source_problem, 'value', None)),
         ('code version', __version__),
         ('tests passed', tests_passed),
@@ -414,9 +471,9 @@ parser.add_argument('-ln', '--layer', help='Layer name to process in V2 sources'
 parser.add_argument('-ls', '--layersource', help='Source within a given layer to pull from',
                     dest='layersource', default='')
 
-parser.add_argument('--render-preview', help='Render a map preview',
-                    action='store_const', dest='render_preview',
-                    const=True, default=False)
+parser.add_argument('--skip-geojsonld', help="Don't generate GeoJSON-LD alongside CSV output",
+                    action='store_const', dest='generate_geojsonld',
+                    const=False, default=False)
 
 parser.add_argument('--skip-preview', help="Don't render a map preview",
                     action='store_const', dest='render_preview',
@@ -458,11 +515,24 @@ def main():
 
     args = parser.parse_args()
 
+    # Can't generate preview without Mapbox key
+    if args.render_preview and not args.mapbox_key:
+        _L.error('Mapbox key is required to generate preview')
+        return 1
+
+    # Can't generate preview without GeoJSON-LD
+    if args.render_preview and not args.generate_geojsonld:
+        _L.error('GeoJSON-LD is required to generate preview')
+        return 1
+
     # Allow CSV files with very long fields
     csv.field_size_limit(sys.maxsize)
 
     try:
-        processed_path = process(args.source, args.destination, args.layer, args.layersource, args.render_preview, mapbox_key=args.mapbox_key)
+        processed_path = process(args.source, args.destination,
+                                 args.layer, args.layersource,
+                                 args.generate_geojsonld,
+                                 args.render_preview, mapbox_key=args.mapbox_key)
     except Exception as e:
         _L.error(e, exc_info=True)
         return 1
