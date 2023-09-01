@@ -1525,7 +1525,7 @@ class TestState (unittest.TestCase):
         self.assertEqual(state1['output'], 'output.txt')
         self.assertEqual(state1['preview'], 'preview.png')
         self.assertEqual(state1['slippymap'], 'slippymap.mbtiles')
-        self.assertEqual(state1['geojsonld'], 'out.geojsonld')
+        self.assertEqual(state1['geojsonld'], 'out.geojson')
         self.assertEqual(state1['tests passed'], True)
 
         #
