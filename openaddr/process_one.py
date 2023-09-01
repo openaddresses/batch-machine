@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
-import logging; _L = logging.getLogger('openaddr.process_one')
+import logging;
+
+_L = logging.getLogger('openaddr.process_one')
 
 from urllib.parse import urlparse
 from os.path import join, basename, dirname, exists, splitext, relpath
@@ -7,6 +9,7 @@ from shutil import copy, move, rmtree
 from argparse import ArgumentParser
 from os import mkdir, rmdir, close, chmod
 from shapely.wkt import loads as wkt_loads
+from shapely.geometry import mapping
 from _thread import get_ident
 import tempfile, json, csv, sys, enum
 import threading
@@ -274,13 +277,16 @@ def render_geojsonld(csv_filename, temp_dir):
         csv_rows = csv.DictReader(csv_file)
         with open(geojsonld_filename, 'w', encoding='utf8') as geojsonld_file:
             for row in csv_rows:
-                feat = {"type": "Feature", "properties": None, "geometry": None}
+                feat = {"type": "Feature", "properties": {}, "geometry": None}
 
                 if geom_wkt := row.pop("GEOM", None):
-                    feat["geometry"] = wkt_loads(geom_wkt)
+                    wkt_parsed = wkt_loads(geom_wkt)
+                    feat["geometry"] = mapping(wkt_parsed)
 
                 for k, v in row.items():
                     feat["properties"][k.lower()] = v
+                else:
+                    feat["properties"] = None
 
                 geojsonld_file.write(json.dumps(feat))
                 geojsonld_file.write('\n')
