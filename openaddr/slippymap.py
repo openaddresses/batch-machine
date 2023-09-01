@@ -61,9 +61,18 @@ def iterate_file_features(filename):
         open_file = open(filename, 'r')
     elif suffix == '.zip':
         open_file = open(filename, 'rb')
+    elif suffix == '.geojson':
+        open_file = open(filename, 'r')
+    else:
+        raise ValueError('Unknown file type: {}'.format(filename))
 
     with open_file as file:
-        if suffix == '.csv':
+        if suffix == '.geojson':
+            for line in file:
+                feature = json.loads(line)
+                yield feature
+            return
+        elif suffix == '.csv':
             csv_file = file
         elif suffix == '.zip':
             zip = ZipFile(file)
