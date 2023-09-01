@@ -10,12 +10,12 @@ from urllib.parse import urlparse
 import os, subprocess, json
 import requests
 
-def generate(mbtiles_filename, *filenames_or_urls):
+def generate(output_filename, *filenames_or_urls):
     '''
     '''
     cmd = 'tippecanoe', '-l', 'dots', '-r', '3', \
           '-n', 'OpenAddresses Dots', '-f', \
-          '-t', gettempdir(), '-o', mbtiles_filename
+          '-t', gettempdir(), '-o', output_filename
 
     tippecanoe = subprocess.Popen(cmd, stdin=subprocess.PIPE, bufsize=1)
 
