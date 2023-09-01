@@ -538,7 +538,10 @@ def main():
         processed_path = process(args.source, args.destination,
                                  args.layer, args.layersource,
                                  args.generate_geojsonld,
-                                 args.render_preview, mapbox_key=args.mapbox_key)
+                                 args.render_preview,
+                                 args.render_preview,
+                                 args.render_preview,
+                                 mapbox_key=args.mapbox_key)
     except Exception as e:
         _L.error(e, exc_info=True)
         return 1
