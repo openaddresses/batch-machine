@@ -1,3 +1,6 @@
+2023-08-31 v8.2.1
+- Add suport for GeoJSON-LD output, which fixes a bug that prevented pmtiles or mbtiles from generating in https://github.com/openaddresses/batch-machine/pull/45
+
 2023-08-30 v8.2.0
 - Add support for generating pmtiles in https://github.com/openaddresses/batch-machine/pull/44
 
