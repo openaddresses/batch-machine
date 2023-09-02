@@ -285,8 +285,6 @@ def render_geojsonld(csv_filename, temp_dir):
 
                 for k, v in row.items():
                     feat["properties"][k.lower()] = v
-                else:
-                    feat["properties"] = None
 
                 geojsonld_file.write(json.dumps(feat, sort_keys=True, separators=(',', ':')))
                 geojsonld_file.write('\n')
