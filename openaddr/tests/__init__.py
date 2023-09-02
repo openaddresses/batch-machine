@@ -839,7 +839,7 @@ class TestOA (unittest.TestCase):
         source = join(self.src_dir, 'iceland.json')
 
         with mock.patch('openaddr.util.request_ftp_file', new=self.response_content_ftp):
-            state_path = process_one.process(source, self.testdir, "addresses", "default", False, False, False, False)
+            state_path = process_one.process(source, self.testdir, "addresses", "default", True, False, False, False)
 
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
@@ -848,6 +848,7 @@ class TestOA (unittest.TestCase):
         self.assertIsNone(state['slippymap'])
         self.assertIsNotNone(state['processed'])
         self.assertIsNotNone(state['cache'])
+        self.assertIsNotNone(state['geojsonld'])
 
         with open(join(dirname(state_path), state['processed']), encoding='utf8') as file:
             rows = list(csv.DictReader(file))
@@ -856,6 +857,14 @@ class TestOA (unittest.TestCase):
         self.assertEqual(rows[0]['STREET'], u'2.Gata v/Rauðavatn')
         self.assertEqual(rows[2]['GEOM'], 'POINT (-21.7684622 64.110974)')
         self.assertEqual(rows[3]['GEOM'], 'POINT (-21.7665982 64.1100444)')
+
+        with open(join(dirname(state_path), state['geojsonld']), encoding='utf8') as file:
+            features = [json.loads(line) for line in file]
+
+        self.assertEqual(len(features), 15)
+        self.assertEqual(features[0]['properties']['street'], u'2.Gata v/Rauðavatn')
+        self.assertEqual(features[2]['geometry']['coordinates'], [-21.7684622, 64.110974])
+        self.assertEqual(features[3]['geometry']['coordinates'], [-21.7665982, 64.1100444])
 
     def test_single_fr_paris(self):
         ''' Test complete process_one.process on data that uses conform csvsplit (issue #124)
