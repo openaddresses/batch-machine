@@ -1,3 +1,7 @@
+2023-09-02 v8.2.3
+- Fix properties in geojson-ld features in https://github.com/openaddresses/batch-machine/pull/49
+- Remove extra whitespace in geojson-ld output in https://github.com/openaddresses/batch-machine/pull/48
+
 2023-09-01 v8.2.2
 - Fix iterating over geojson-ld features in https://github.com/openaddresses/batch-machine/pull/47
 - Fix openaddr-process-one command line arguments in https://github.com/openaddresses/batch-machine/pull/46
