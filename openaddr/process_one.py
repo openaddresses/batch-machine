@@ -56,7 +56,7 @@ def boolstr(value):
     raise ValueError(repr(value))
 
 def process(source, destination, layer, layersource,
-            do_geojsonld, do_preview, do_mbtiles, do_pmtiles,
+            do_preview, do_mbtiles, do_pmtiles,
             mapbox_key=None, extras=dict()):
     ''' Process a single source and destination, return path to JSON state file.
 
@@ -163,13 +163,12 @@ def process(source, destination, layer, layersource,
                         else:
                             _L.info('Preview image in {}'.format(preview_path))
 
-                        if do_geojsonld:
-                            geojsonld_path = render_geojsonld(conform_result.path, temp_dir)
+                        geojsonld_path = render_geojsonld(conform_result.path, temp_dir)
 
-                            if not geojsonld_path:
-                                _L.warning('No GeoJSON-LD generated')
-                            else:
-                                _L.info('GeoJSON-LD file in {}'.format(geojsonld_path))
+                        if not geojsonld_path:
+                            _L.warning('No GeoJSON-LD generated')
+                        else:
+                            _L.info('GeoJSON-LD file in {}'.format(geojsonld_path))
 
                         if do_mbtiles:
                             if not geojsonld_path:
@@ -475,13 +474,13 @@ parser.add_argument('-ln', '--layer', help='Layer name to process in V2 sources'
 parser.add_argument('-ls', '--layersource', help='Source within a given layer to pull from',
                     dest='layersource', default='')
 
-parser.add_argument('--skip-geojsonld', help="Don't generate GeoJSON-LD alongside CSV output",
-                    action='store_const', dest='generate_geojsonld',
-                    const=False, default=False)
-
 parser.add_argument('--skip-preview', help="Don't render a map preview",
                     action='store_const', dest='render_preview',
-                    const=False, default=False)
+                    const=False, default=True)
+
+parser.add_argument('--render-preview', help="Render a map preview",
+                    action='store_const', dest='render_preview',
+                    const=True, default=True)
 
 parser.add_argument('--mapbox-key', dest='mapbox_key',
                     help='Mapbox API Key. See: https://mapbox.com/')
@@ -524,18 +523,12 @@ def main():
         _L.error('Mapbox key is required to generate preview')
         return 1
 
-    # Can't generate preview without GeoJSON-LD
-    if args.render_preview and not args.generate_geojsonld:
-        _L.error('GeoJSON-LD is required to generate preview')
-        return 1
-
     # Allow CSV files with very long fields
     csv.field_size_limit(sys.maxsize)
 
     try:
         processed_path = process(args.source, args.destination,
                                  args.layer, args.layersource,
-                                 args.generate_geojsonld,
                                  args.render_preview,
                                  args.render_preview,
                                  args.render_preview,
