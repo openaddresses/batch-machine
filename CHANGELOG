@@ -1,5 +1,6 @@
 2023-09-05 v8.2.4
 - Update TippeCanoe to latest version
+- Make GeoJSON+LD output a default
 
 2023-09-02 v8.2.3
 - Fix properties in geojson-ld features in https://github.com/openaddresses/batch-machine/pull/49
