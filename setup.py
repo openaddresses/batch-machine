@@ -34,6 +34,8 @@ setup(
     },
     test_suite = 'openaddr.tests',
     install_requires = [
+        'gdal == 3.7.1',
+
         'dateutils == 0.6.12', 'ijson == 2.4',
 
         # https://github.com/uri-templates/uritemplate-py/
