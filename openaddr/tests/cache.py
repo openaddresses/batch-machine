@@ -7,7 +7,7 @@ from os.path import join, dirname
 import shutil
 import mimetypes
 
-from mock import patch
+from unittest.mock import patch
 from esridump.errors import EsriDownloadError
 import unittest
 import httmock
