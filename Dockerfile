@@ -1,4 +1,4 @@
-FROM osgeo/gdal:alpine-normal-3.7.2
+FROM ghcr.io/osgeo/gdal:alpine-small-3.7.2
 
 RUN apk add nodejs yarn git python3 python3-dev py3-pip \
     make bash sqlite-dev zlib-dev geos geos-dev \
