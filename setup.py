@@ -52,7 +52,7 @@ setup(
         'Shapely == 2.0.1',
 
         # https://github.com/tilezen/mapbox-vector-tile
-        'mapbox-vector-tile @ git+https://github.com/tilezen/mapbox-vector-tile.git@5249a23da696515f118564dbcc83b39216792454#egg=mapbox-vector-tile',
+        'mapbox-vector-tile == 2.0.1',
         'future==0.18.3',
         'protobuf==4.24',
     ]

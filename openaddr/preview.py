@@ -189,6 +189,9 @@ def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, mapbox_key):
 
     for (row, col) in row_cols:
         url = uritemplate.expand(TILE_URL, dict(z=zoom, x=col, y=row, access_token=mapbox_key))
+
+        _L.debug('Getting tile {}'.format(url))
+
         got = requests.get(url)
         tile = mapbox_vector_tile.decode(got.content)
         bounds = tile_bounds(row, col, zoom)
@@ -212,8 +215,6 @@ def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, mapbox_key):
                 if 'LineString' in feature['geometry']['type']:
                     if feature['properties'].get('class') in ('motorway', 'motorway_link', 'trunk', 'primary', 'secondary', 'tertiary', 'link', 'street', 'street_limited', 'pedestrian', 'construction', 'track', 'service', 'major_rail', 'minor_rail'):
                         roads_geoms.append(projected_geom(feature['geometry'], *road_xform))
-
-        _L.debug('Getting tile {}'.format(url))
 
     return landuse_geoms, water_geoms, roads_geoms
 
