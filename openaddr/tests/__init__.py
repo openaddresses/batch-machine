@@ -44,7 +44,7 @@ else:
 
 from requests import get
 from httmock import response, HTTMock
-import mock
+import unittest.mock
 
 from .. import cache, conform, process_one
 from ..cache import CacheResult

@@ -10,7 +10,7 @@ import unittest, tempfile, json, io
 from mimetypes import guess_type
 from urllib.parse import urlparse, parse_qs
 from httmock import HTTMock, response
-from mock import Mock, patch
+from unittest.mock import Mock, patch
 
 from .. import util, __version__
 

@@ -3,7 +3,7 @@ from __future__ import division
 import os
 import unittest
 import tempfile
-import mock
+import unittest.mock
 
 from os.path import join, dirname
 from zipfile import ZipFile

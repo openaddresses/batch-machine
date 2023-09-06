@@ -8,7 +8,6 @@ import mimetypes
 import shutil
 import re
 import csv
-import simplejson as json
 
 from os import mkdir
 from hashlib import md5
