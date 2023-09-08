@@ -845,7 +845,7 @@ def row_transform_and_convert(source_config, row):
     if source_config.layer == "addresses":
         feat = feat_canonicalize_unit_and_number(source_config.data_source, feat)
 
-    return row
+    return feat
 
 def fxn_smash_case(fxn):
     if "field" in fxn:
