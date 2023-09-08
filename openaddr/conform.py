@@ -365,7 +365,7 @@ def find_source_path(data_source, source_paths):
         _L.warning("Unknown source conform format %s", format_string)
         return None
 
-class ConvertToCsvTask(object):
+class ConvertToGeojsonTask(object):
     known_types = ('.shp', '.json', '.csv', '.kml', '.gdb')
 
     def convert(self, source_config, source_paths, workdir):
@@ -381,7 +381,7 @@ class ConvertToCsvTask(object):
         source_path = find_source_path(source_config.data_source, source_paths)
         if source_path is not None:
             basename, ext = os.path.splitext(os.path.basename(source_path))
-            dest_path = os.path.join(convert_path, basename + ".csv")
+            dest_path = os.path.join(convert_path, basename + ".geojsonl")
             rc = conform_cli(source_config, source_path, dest_path)
             if rc == 0:
                 with open(dest_path) as file:
@@ -832,13 +832,16 @@ def row_transform_and_convert(source_config, row):
     # Make up a random fingerprint if none exists
     cache_fingerprint = source_config.data_source.get('fingerprint', str(uuid4()))
 
-    row = row_convert_to_out(source_config, row)
-
     if source_config.layer == "addresses":
-        row = row_canonicalize_unit_and_number(source_config.data_source, row)
         row = row_round_lat_lon(source_config.data_source, row)
 
     row = row_calculate_hash(cache_fingerprint, row)
+
+    feat = row_convert_to_out(source_config, row)
+
+    if source_config.layer == "addresses":
+        feat = feat_canonicalize_unit_and_number(source_config.data_source, feat)
+
     return row
 
 def fxn_smash_case(fxn):
@@ -1041,14 +1044,14 @@ def row_fxn_constant(sc, row, key, fxn):
 
     return row
 
-def row_canonicalize_unit_and_number(sc, row):
+def feat_canonicalize_unit_and_number(sc, feat):
     "Canonicalize address unit and number"
-    row["UNIT"] = (row["UNIT"] or '').strip()
-    row["NUMBER"] = (row["NUMBER"] or '').strip()
-    if row["NUMBER"].endswith(".0"):
-        row["NUMBER"] = row["NUMBER"][:-2]
-    row["STREET"] = (row["STREET"] or '').strip()
-    return row
+    feat["properties"]["UNIT"] = (feat["properties"]["UNIT"] or '').strip()
+    feat["properties"]["NUMBER"] = (feat["properties"]["NUMBER"] or '').strip()
+    if feat["properties"]["NUMBER"].endswith(".0"):
+        feat["properties"]["NUMBER"] = feat["properties"]["NUMBER"][:-2]
+    feat["properties"]["STREET"] = (feat["properties"]["STREET"] or '').strip()
+    return feat
 
 def _round_wgs84_to_7(n):
     "Round a WGS84 coordinate to 7 decimal points. Input and output both strings."
@@ -1086,21 +1089,23 @@ def row_convert_to_out(source_config, row):
     "Convert a row from the source schema to OpenAddresses output schema"
 
     output = {
-        "GEOM": row.get(GEOM_FIELDNAME.lower(), None),
+        "type": "Feature",
+        "properties": {},
+        "geometry": row.get(GEOM_FIELDNAME.lower(), None),
     }
 
     for field in source_config.SCHEMA:
         if row.get('oa:{}'.format(field.lower())) is not None:
             # If there is an OA prefix, it is not a native field and was compiled
             # via an attrib funciton or concatentation
-            output[field] = row.get('oa:{}'.format(field.lower()))
+            output["properties"][field] = row.get('oa:{}'.format(field.lower()))
         else:
             # Get a native field as specified in the conform object
             cfield = source_config.data_source['conform'].get(field.lower())
             if cfield:
-                output[field] = row.get(cfield.lower())
+                output["properties"][field] = row.get(cfield.lower())
             else:
-                output[field] = ''
+                output["properties"][field] = ''
 
     return output
 
@@ -1134,8 +1139,8 @@ def extract_to_source_csv(source_config, source_path, extract_path):
     else:
         raise Exception("Unsupported source format %s" % format_string)
 
-def transform_to_out_csv(source_config, extract_path, dest_path):
-    ''' Transform an extracted source CSV to the OpenAddresses output CSV by applying conform rules.
+def transform_to_out_geojson(source_config, extract_path, dest_path):
+    ''' Transform an extracted source CSV to the OpenAddresses output GeoJSON by applying conform rules.
 
         source_config: description of the source, containing the conform object
         extract_path: extracted CSV file to process
@@ -1147,14 +1152,12 @@ def transform_to_out_csv(source_config, extract_path, dest_path):
     # Read through the extract CSV
     with open(extract_path, 'r', encoding='utf-8') as extract_fp:
         reader = csv.DictReader(extract_fp)
-        # Write to the destination CSV
+        # Write to the destination GeoJSON
         with open(dest_path, 'w', encoding='utf-8') as dest_fp:
-            writer = csv.DictWriter(dest_fp, ['GEOM', 'HASH', *source_config.SCHEMA])
-            writer.writeheader()
             # For every row in the extract
             for extract_row in reader:
                 out_row = row_transform_and_convert(source_config, extract_row)
-                writer.writerow(out_row)
+                dest_fp.write(json.dumps(out_row) + '\n')
 
 def conform_cli(source_config, source_path, dest_path):
     "Command line entry point for conforming a downloaded source to an output CSV."
@@ -1176,7 +1179,7 @@ def conform_cli(source_config, source_path, dest_path):
 
     try:
         extract_to_source_csv(source_config, source_path, extract_path)
-        transform_to_out_csv(source_config, extract_path, dest_path)
+        transform_to_out_geojson(source_config, extract_path, dest_path)
     finally:
         os.remove(extract_path)
 

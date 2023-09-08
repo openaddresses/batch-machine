@@ -19,7 +19,7 @@ from .cache import (
 from .conform import (
     ConformResult,
     DecompressionTask,
-    ConvertToCsvTask,
+    ConvertToGeojsonTask,
     elaborate_filenames,
     ADDRESSES_SCHEMA,
     BUILDINGS_SCHEMA,
@@ -134,7 +134,7 @@ def conform(source_config, destdir, extras):
     decompressed_paths = task2.decompress(downloaded_path, workdir, names)
     _L.info("Decompressed to %d files", len(decompressed_paths))
 
-    task4 = ConvertToCsvTask()
+    task4 = ConvertToGeojsonTask()
     try:
         csv_path, feat_count = task4.convert(source_config, decompressed_paths, workdir)
         if feat_count > 0:
@@ -148,8 +148,8 @@ def conform(source_config, destdir, extras):
 
     out_path = None
     if csv_path is not None and exists(csv_path):
-        move(csv_path, join(destdir, 'out.csv'))
-        out_path = realpath(join(destdir, 'out.csv'))
+        move(csv_path, join(destdir, 'out.geojsonl'))
+        out_path = realpath(join(destdir, 'out.geojsonl'))
 
     rmtree(workdir)
 
