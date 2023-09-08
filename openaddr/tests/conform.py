@@ -377,16 +377,21 @@ class TestConformTransforms (unittest.TestCase):
 
         r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", "oa:geom": "POINT (-119.2 39.3)"})
         self.assertEqual({
-            "STREET": "MAPLE ST",
-            "UNIT": "",
-            "NUMBER": "123",
-            "GEOM": "POINT (-119.2 39.3)",
-            "CITY": "",
-            "REGION": "",
-            "DISTRICT": "",
-            "POSTCODE": "",
-            "ID": "",
-            'HASH': '9574c16dfc3cc7b1'
+            'type': 'Feature'
+            'properties': {
+                "street": "MAPLE ST",
+                "unit": "",
+                "number": "123",
+                "city": "",
+                "region": "",
+                "district": "",
+                "postcode": "",
+                "id": "",
+                'hash': '9574c16dfc3cc7b1'
+            },
+            'geometry': {
+                'coordinates': (-119.2, 39.3), 'type': 'Point'
+            }
         }, r)
 
         d = SourceConfig(dict({
@@ -1635,7 +1640,7 @@ class TestConformTransforms (unittest.TestCase):
 
         d = row_fxn_constant(c, d, "region", c["conform"]["region"])
         self.assertEqual(e, d)
-        
+
         "constant - replacing non-empty, non-standard string"
         c = { "conform": {
             "region": {
