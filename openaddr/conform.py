@@ -1049,11 +1049,11 @@ def row_fxn_constant(sc, row, key, fxn):
 
 def feat_canonicalize_unit_and_number(sc, feat):
     "Canonicalize address unit and number"
-    feat["properties"]["UNIT"] = (feat["properties"]["UNIT"] or '').strip()
-    feat["properties"]["NUMBER"] = (feat["properties"]["NUMBER"] or '').strip()
-    if feat["properties"]["NUMBER"].endswith(".0"):
-        feat["properties"]["NUMBER"] = feat["properties"]["NUMBER"][:-2]
-    feat["properties"]["STREET"] = (feat["properties"]["STREET"] or '').strip()
+    feat["properties"]["unit"] = (feat["properties"]["unit"] or '').strip()
+    feat["properties"]["number"] = (feat["properties"]["number"] or '').strip()
+    if feat["properties"]["number"].endswith(".0"):
+        feat["properties"]["number"] = feat["properties"]["number"][:-2]
+    feat["properties"]["street"] = (feat["properties"]["street"] or '').strip()
     return feat
 
 def _round_wgs84_to_7(n):
@@ -1106,14 +1106,14 @@ def row_convert_to_out(source_config, row):
         if row.get('oa:{}'.format(field.lower())) is not None:
             # If there is an OA prefix, it is not a native field and was compiled
             # via an attrib funciton or concatentation
-            output["properties"][field] = row.get('oa:{}'.format(field.lower()))
+            output["properties"][field.lower()] = row.get('oa:{}'.format(field.lower()))
         else:
             # Get a native field as specified in the conform object
             cfield = source_config.data_source['conform'].get(field.lower())
             if cfield:
-                output["properties"][field] = row.get(cfield.lower())
+                output["properties"][field.lower()] = row.get(cfield.lower())
             else:
-                output["properties"][field] = ''
+                output["properties"][field.lower()] = ''
 
     return output
 
