@@ -15,6 +15,9 @@ import osgeo
 
 from .geojson import stream_geojson
 
+from shapely.wkt import loads as wkt_loads
+from shapely.geometry import mapping
+
 from zipfile import ZipFile
 from locale import getpreferredencoding
 from os.path import splitext
@@ -1093,6 +1096,11 @@ def row_convert_to_out(source_config, row):
         "properties": {},
         "geometry": row.get(GEOM_FIELDNAME.lower(), None),
     }
+
+    if output["geometry"] is not None:
+        wkt_parsed = wkt_loads(geom_wkt)
+        output["geometry"] = mapping(wkt_parsed)
+
 
     for field in source_config.SCHEMA:
         if row.get('oa:{}'.format(field.lower())) is not None:
