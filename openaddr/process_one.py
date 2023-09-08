@@ -56,7 +56,7 @@ def boolstr(value):
     raise ValueError(repr(value))
 
 def process(source, destination, layer, layersource,
-            do_preview, do_mbtiles, do_pmtiles,
+            do_preview, do_pmtiles,
             mapbox_key=None, extras=dict()):
     ''' Process a single source and destination, return path to JSON state file.
 
@@ -163,29 +163,11 @@ def process(source, destination, layer, layersource,
                         else:
                             _L.info('Preview image in {}'.format(preview_path))
 
-                        geojsonld_path = render_geojsonld(conform_result.path, temp_dir)
-
-                        if not geojsonld_path:
-                            _L.warning('No GeoJSON-LD generated')
-                        else:
-                            _L.info('GeoJSON-LD file in {}'.format(geojsonld_path))
-
-                        if do_mbtiles:
-                            if not geojsonld_path:
-                                _L.error("Can't generate mbtiles without GeoJSON-LD")
-                            else:
-                                mbtiles_path = render_mbtiles(geojsonld_path, temp_dir)
-
-                                if not mbtiles_path:
-                                    _L.warning('No mbtiles generated')
-                                else:
-                                    _L.info('mbtiles file in {}'.format(mbtiles_path))
-
                         if do_pmtiles:
                             if not geojsonld_path:
                                 _L.error("Can't generate pmtiles without GeoJSON-LD")
                             else:
-                                pmtiles_path = render_pmtiles(geojsonld_path, temp_dir)
+                                pmtiles_path = render_pmtiles(conform_result.path, temp_dir)
 
                                 if not pmtiles_path:
                                     _L.warning('No pmtiles generated')
@@ -529,7 +511,6 @@ def main():
     try:
         processed_path = process(args.source, args.destination,
                                  args.layer, args.layersource,
-                                 args.render_preview,
                                  args.render_preview,
                                  args.render_preview,
                                  mapbox_key=args.mapbox_key)

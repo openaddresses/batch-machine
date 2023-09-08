@@ -1098,7 +1098,7 @@ def row_convert_to_out(source_config, row):
     }
 
     if output["geometry"] is not None:
-        wkt_parsed = wkt_loads(geom_wkt)
+        wkt_parsed = wkt_loads(output["geometry"])
         output["geometry"] = mapping(wkt_parsed)
 
 
