@@ -384,7 +384,7 @@ class ConvertToGeojsonTask(object):
         source_path = find_source_path(source_config.data_source, source_paths)
         if source_path is not None:
             basename, ext = os.path.splitext(os.path.basename(source_path))
-            dest_path = os.path.join(convert_path, basename + ".geojsonl")
+            dest_path = os.path.join(convert_path, basename + ".geojson")
             rc = conform_cli(source_config, source_path, dest_path)
             if rc == 0:
                 with open(dest_path) as file:

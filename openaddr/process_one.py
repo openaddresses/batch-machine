@@ -81,7 +81,7 @@ def process(source, destination, layer, layersource,
     with wait_lock:
         proc_wait.start()
         cache_result, conform_result = CacheResult.empty(), ConformResult.empty()
-        geojsonld_path, preview_path, mbtiles_path, pmtiles_path, skipped_source = None, None, None, None, False
+        preview_path, pmtiles_path, skipped_source = None, None, False
         tests_passed = None
 
         try:
@@ -164,15 +164,12 @@ def process(source, destination, layer, layersource,
                             _L.info('Preview image in {}'.format(preview_path))
 
                         if do_pmtiles:
-                            if not geojsonld_path:
-                                _L.error("Can't generate pmtiles without GeoJSON-LD")
-                            else:
-                                pmtiles_path = render_pmtiles(conform_result.path, temp_dir)
+                            pmtiles_path = render_pmtiles(conform_result.path, temp_dir)
 
-                                if not pmtiles_path:
-                                    _L.warning('No pmtiles generated')
-                                else:
-                                    _L.info('pmtiles file in {}'.format(pmtiles_path))
+                            if not pmtiles_path:
+                                _L.warning('No pmtiles generated')
+                            else:
+                                _L.info('pmtiles file in {}'.format(pmtiles_path))
 
         except SourceSaysSkip:
             _L.info('Source says to skip in process_one.process()')
@@ -190,8 +187,7 @@ def process(source, destination, layer, layersource,
             logging.getLogger('openaddr').removeHandler(log_handler)
 
         state_path = write_state(temp_src, layer, data_source['name'], skipped_source, destination, log_handler,
-            tests_passed, cache_result, conform_result, preview_path, mbtiles_path, pmtiles_path, geojsonld_path,
-            temp_dir)
+            tests_passed, cache_result, conform_result, preview_path, pmtiles_path, temp_dir)
 
         log_handler.close()
         rmtree(temp_dir)
@@ -221,17 +217,6 @@ def render_preview(csv_filename, temp_dir, mapbox_key):
 
     return png_filename
 
-def render_mbtiles(csv_filename, temp_dir):
-    '''
-    '''
-    try:
-        mbtiles_filename = join(temp_dir, 'slippymap.mbtiles')
-        slippymap.generate(mbtiles_filename, csv_filename)
-    except Exception as e:
-        _L.error('%s in render_mbtiles: %s', type(e), e)
-        return None
-    else:
-        return mbtiles_filename
 
 def render_pmtiles(csv_filename, temp_dir):
     '''
@@ -247,30 +232,6 @@ def render_pmtiles(csv_filename, temp_dir):
         return None
     else:
         return pmtiles_filename
-
-def render_geojsonld(csv_filename, temp_dir):
-    '''
-    Convert the given CSV file to GeoJSON-LD.
-    :return: Path to the generated GeoJSON-LD file.
-    '''
-    geojsonld_filename = join(temp_dir, 'out.geojson')
-    with open(csv_filename, encoding='utf8') as csv_file:
-        csv_rows = csv.DictReader(csv_file)
-        with open(geojsonld_filename, 'w', encoding='utf8') as geojsonld_file:
-            for row in csv_rows:
-                feat = {"type": "Feature", "properties": {}, "geometry": None}
-
-                if geom_wkt := row.pop("GEOM", None):
-                    wkt_parsed = wkt_loads(geom_wkt)
-                    feat["geometry"] = mapping(wkt_parsed)
-
-                for k, v in row.items():
-                    feat["properties"][k.lower()] = v
-
-                geojsonld_file.write(json.dumps(feat, sort_keys=True, separators=(',', ':')))
-                geojsonld_file.write('\n')
-
-    return geojsonld_filename
 
 class LogFilterCurrentThread:
     ''' Logging filter object to match only record in the current thread.
@@ -341,7 +302,7 @@ def find_source_problem(log_contents, source):
     return None
 
 def write_state(source, layer, data_source_name, skipped, destination, log_handler, tests_passed,
-                cache_result, conform_result, preview_path, mbtiles_path, pmtiles_path, geojsonld_path,
+                cache_result, conform_result, preview_path, pmtiles_path,
                 temp_dir):
     '''
     '''
@@ -375,10 +336,6 @@ def write_state(source, layer, data_source_name, skipped, destination, log_handl
         processed_path2 = join(statedir, 'out{1}'.format(*splitext(processed_path1)))
         copy(processed_path1, processed_path2)
 
-    if geojsonld_path:
-        geojsonld_path2 = join(statedir, 'out.geojson')
-        copy(geojsonld_path, geojsonld_path2)
-
     # Write the sample data to a sample.json file
     if conform_result.sample:
         sample_path = join(statedir, 'sample.json')
@@ -388,10 +345,6 @@ def write_state(source, layer, data_source_name, skipped, destination, log_handl
     if preview_path:
         preview_path2 = join(statedir, 'preview.png')
         copy(preview_path, preview_path2)
-
-    if mbtiles_path:
-        mbtiles_path2 = join(statedir, 'slippymap.mbtiles')
-        copy(mbtiles_path, mbtiles_path2)
 
     if pmtiles_path:
         pmtiles_path2 = join(statedir, 'slippymap.pmtiles')
@@ -427,9 +380,7 @@ def write_state(source, layer, data_source_name, skipped, destination, log_handl
         ('process time', conform_result.elapsed and str(conform_result.elapsed)),
         ('output', relpath(output_path, statedir)),
         ('preview', preview_path and relpath(preview_path2, statedir)),
-        ('slippymap', mbtiles_path and relpath(mbtiles_path2, statedir)),
         ('pmtiles', pmtiles_path and relpath(pmtiles_path2, statedir)),
-        ('geojsonld', geojsonld_path and relpath(geojsonld_path2, statedir)),
         ('source problem', getattr(source_problem, 'value', None)),
         ('code version', __version__),
         ('tests passed', tests_passed),

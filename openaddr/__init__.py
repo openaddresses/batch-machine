@@ -148,8 +148,8 @@ def conform(source_config, destdir, extras):
 
     out_path = None
     if csv_path is not None and exists(csv_path):
-        move(csv_path, join(destdir, 'out.geojsonl'))
-        out_path = realpath(join(destdir, 'out.geojsonl'))
+        move(csv_path, join(destdir, 'out.geojson'))
+        out_path = realpath(join(destdir, 'out.geojson'))
 
     rmtree(workdir)
 
