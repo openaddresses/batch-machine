@@ -207,8 +207,11 @@ def guess_url_file_extension(url):
                     if path_ext == attachment_ext:
                         _L.debug('Content-Disposition agrees: "{}"'.format(match.group('filename')))
                     else:
-                        _L.debug('Content-Disposition disagrees: "{}"'.format(match.group('filename')))
-                        path_ext = False
+                        _L.debug('Content-Disposition disagrees: "{}" says we should use "{}", using "{}" instead'.format(
+                            match.group('filename'),
+                            attachment_ext,
+                            path_ext,
+                        ))
 
         if not path_ext:
             #
