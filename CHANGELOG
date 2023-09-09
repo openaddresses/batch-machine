@@ -1,3 +1,6 @@
+2023-09-09 v8.2.5
+- Use the file extension from the content-type header when it disagrees with content-disposition in https://github.com/openaddresses/batch-machine/pull/54
+
 2023-09-05 v8.2.4
 - Update TippeCanoe to latest version
 - Make GeoJSON+LD output a default
