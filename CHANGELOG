@@ -1,9 +1,10 @@
-2023-09-09 v8.2.5
+2023-09-09 v8.3.1
 - Use the file extension from the content-type header when it disagrees with content-disposition in https://github.com/openaddresses/batch-machine/pull/54
 
-2023-09-05 v8.2.4
-- Update TippeCanoe to latest version
-- Make GeoJSON+LD output a default
+2023-09-05 v8.3.0
+- Update Mapbox Vector Tile dependency in https://github.com/openaddresses/batch-machine/pull/52
+- Make GeoJSON+LD output a default in https://github.com/openaddresses/batch-machine/pull/51
+- Update TippeCanoe to latest version in https://github.com/openaddresses/batch-machine/pull/50
 
 2023-09-02 v8.2.3
 - Fix properties in geojson-ld features in https://github.com/openaddresses/batch-machine/pull/49
