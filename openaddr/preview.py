@@ -92,6 +92,7 @@ def iterate_file_lonlats(filename):
         for line in file:
             try:
                 line = json.loads(line)
+
                 lon, lat, x = ogr.CreateGeometryFromJson(json.dumps(line['geometry'])).PointOnSurface().GetPoint()
 
                 if -180 <= lon <= 180 and -90 <= lat <= 90:
