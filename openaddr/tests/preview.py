@@ -41,7 +41,7 @@ class TestPreview (unittest.TestCase):
         bbox = preview.calculate_bounds(points_filename)
         self.assertEqual(bbox, (-1.04, -1.04, 1.04, 1.04), 'The two outliers are ignored')
 
-    def test_render_csv(self):
+    def test_render_geojson(self):
         '''
         '''
         def response_content(url, request):
