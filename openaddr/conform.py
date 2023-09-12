@@ -837,13 +837,11 @@ def row_transform_and_convert(source_config, row):
 
     if source_config.layer == "addresses":
         row = row_round_lat_lon(source_config.data_source, row)
+        row = row_canonicalize_unit_and_number(source_config.data_source, row)
 
     row = row_calculate_hash(cache_fingerprint, row)
 
     feat = row_convert_to_out(source_config, row)
-
-    if source_config.layer == "addresses":
-        feat = feat_canonicalize_unit_and_number(source_config.data_source, feat)
 
     return feat
 
@@ -1047,14 +1045,14 @@ def row_fxn_constant(sc, row, key, fxn):
 
     return row
 
-def feat_canonicalize_unit_and_number(sc, feat):
+def row_canonicalize_unit_and_number(sc, row):
     "Canonicalize address unit and number"
-    feat["properties"]["unit"] = (feat["properties"]["unit"] or '').strip()
-    feat["properties"]["number"] = (feat["properties"]["number"] or '').strip()
-    if feat["properties"]["number"].endswith(".0"):
-        feat["properties"]["number"] = feat["properties"]["number"][:-2]
-    feat["properties"]["street"] = (feat["properties"]["street"] or '').strip()
-    return feat
+    row["unit"] = (row["unit"] or '').strip()
+    row["number"] = (row["number"] or '').strip()
+    if row["number"].endswith(".0"):
+        row["number"] = row["number"][:-2]
+    row["street"] = (row["street"] or '').strip()
+    return row
 
 def _round_wgs84_to_7(n):
     "Round a WGS84 coordinate to 7 decimal points. Input and output both strings."

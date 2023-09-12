@@ -23,7 +23,7 @@ from ..conform import (
     row_fxn_postfixed_unit,
     row_fxn_remove_prefix, row_fxn_remove_postfix, row_fxn_chain,
     row_fxn_first_non_empty, row_fxn_constant,
-    feat_canonicalize_unit_and_number, conform_smash_case, conform_cli,
+    row_canonicalize_unit_and_number, conform_smash_case, conform_cli,
     convert_regexp_replace, normalize_ogr_filename_case,
     is_in, geojson_source_to_csv, check_source_tests
     )
@@ -72,15 +72,21 @@ class TestConformTransforms (unittest.TestCase):
         })
 
         self.assertEqual({
-            "GEOM": "POINT (-119.2 39.3)",
-            "UNIT": "",
-            "NUMBER": "123",
-            "STREET": "MAPLE LN",
-            "CITY": "",
-            "REGION": "",
-            "DISTRICT": "",
-            "POSTCODE": "",
-            "ID": ""
+            "type": "Feature",
+            "properties": {
+                "unit": "",
+                "number": "123",
+                "street": "MAPLE LN",
+                "city": "",
+                "region": "",
+                "district": "",
+                "postcode": "",
+                "id": ""
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": (-119.2, 39.3)
+            }
         }, r)
 
     def test_row_merge(self):
@@ -377,7 +383,7 @@ class TestConformTransforms (unittest.TestCase):
 
         r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", "oa:geom": "POINT (-119.2 39.3)"})
         self.assertEqual({
-            'type': 'Feature'
+            'type': 'Feature',
             'properties': {
                 "street": "MAPLE ST",
                 "unit": "",
@@ -455,8 +461,8 @@ class TestConformTransforms (unittest.TestCase):
             'HASH': '9574c16dfc3cc7b1'
         }, r)
 
-    def test_feat_canonicalize_unit_and_number(self):
-        r = feat_canonicalize_unit_and_number({}, {"NUMBER": "324 ", "STREET": " OAK DR.", "UNIT": "1"})
+    def test_row_canonicalize_unit_and_number(self):
+        r = row_canonicalize_unit_and_number({}, {"NUMBER": "324 ", "STREET": " OAK DR.", "UNIT": "1"})
         self.assertEqual("324", r["NUMBER"])
         self.assertEqual("OAK DR.", r["STREET"])
         self.assertEqual("1", r["UNIT"])
@@ -467,17 +473,17 @@ class TestConformTransforms (unittest.TestCase):
                      ("3240", "3240"),
                      ("INVALID", "INVALID"),
                      ("324.5", "324.5")):
-            r = feat_canonicalize_unit_and_number({}, {"NUMBER": a, "STREET": "", "UNIT": ""})
+            r = row_canonicalize_unit_and_number({}, {"NUMBER": a, "STREET": "", "UNIT": ""})
             self.assertEqual(e, r["NUMBER"])
 
-    def test_feat_canonicalize_street_and_no_number(self):
-        r = feat_canonicalize_unit_and_number({}, {"NUMBER": None, "STREET": " OAK DR.", "UNIT": None})
+    def test_row_canonicalize_street_and_no_number(self):
+        r = row_canonicalize_unit_and_number({}, {"NUMBER": None, "STREET": " OAK DR.", "UNIT": None})
         self.assertEqual("", r["NUMBER"])
         self.assertEqual("OAK DR.", r["STREET"])
         self.assertEqual("", r["UNIT"])
 
-    def test_feat_canonicalize_street_with_no_unit_number(self):
-        r = feat_canonicalize_unit_and_number({}, {"NUMBER": None, "STREET": " OAK DR.", "UNIT": None})
+    def test_row_canonicalize_street_with_no_unit_number(self):
+        r = row_canonicalize_unit_and_number({}, {"NUMBER": None, "STREET": " OAK DR.", "UNIT": None})
         self.assertEqual("", r["NUMBER"])
         self.assertEqual("OAK DR.", r["STREET"])
         self.assertEqual("", r["UNIT"])

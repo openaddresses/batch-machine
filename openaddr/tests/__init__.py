@@ -354,7 +354,6 @@ class TestOA (unittest.TestCase):
             render_geojsonld.side_effect = return_path_in_second_arg_dir
             state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, True, mapbox_key='mapbox-XXXX')
 
-        self.assertTrue(slippymap_gen.mock_calls[0][1][0].endswith('.mbtiles'))
         self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.geojson'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.geojson'))
@@ -366,7 +365,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNotNone(state['cache'])
         self.assertIsNotNone(state['processed'])
         self.assertIsNotNone(state['preview'])
-        self.assertIsNotNone(state['slippymap'])
         self.assertIsNotNone(state['pmtiles'])
         self.assertIsNotNone(state['geojsonld'])
 
@@ -404,7 +402,6 @@ class TestOA (unittest.TestCase):
             render_geojsonld.side_effect = return_path_in_second_arg_dir
             state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, True, mapbox_key='mapbox-XXXX')
 
-        self.assertTrue(slippymap_gen.mock_calls[0][1][0].endswith('.mbtiles'))
         self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.geojson'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.geojson'))
@@ -416,7 +413,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNotNone(state['cache'])
         self.assertIsNotNone(state['processed'])
         self.assertIsNotNone(state['preview'])
-        self.assertIsNotNone(state['slippymap'])
         self.assertIsNotNone(state['pmtiles'])
 
         output_path = join(dirname(state_path), state['processed'])
@@ -453,7 +449,6 @@ class TestOA (unittest.TestCase):
             render_geojsonld.side_effect = return_path_in_second_arg_dir
             state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, True, mapbox_key='mapbox-XXXX')
 
-        self.assertTrue(slippymap_gen.mock_calls[0][1][0].endswith('.mbtiles'))
         self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.geojson'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.geojson'))
@@ -465,7 +460,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNotNone(state['cache'])
         self.assertIsNotNone(state['processed'])
         self.assertIsNotNone(state['preview'])
-        self.assertIsNotNone(state['slippymap'])
         self.assertIsNotNone(state['pmtiles'])
 
         output_path = join(dirname(state_path), state['processed'])
@@ -499,7 +493,6 @@ class TestOA (unittest.TestCase):
             render_geojsonld.side_effect = return_path_in_second_arg_dir
             state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, True, mapbox_key='mapbox-XXXX')
 
-        self.assertTrue(slippymap_gen.mock_calls[0][1][0].endswith('.mbtiles'))
         self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.geojson'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.geojson'))
@@ -511,7 +504,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNotNone(state['cache'])
         self.assertIsNotNone(state['processed'])
         self.assertIsNotNone(state['preview'])
-        self.assertIsNotNone(state['slippymap'])
         self.assertIsNotNone(state['pmtiles'])
 
         output_path = join(dirname(state_path), state['processed'])
@@ -549,7 +541,6 @@ class TestOA (unittest.TestCase):
             render_geojsonld.side_effect = return_path_in_second_arg_dir
             state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, True, mapbox_key='mapbox-XXXX')
 
-        self.assertTrue(slippymap_gen.mock_calls[0][1][0].endswith('.mbtiles'))
         self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.geojson'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
         self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.geojson'))
@@ -562,7 +553,6 @@ class TestOA (unittest.TestCase):
         self.assertEqual(state['fingerprint'], '23082fe4819682a6934b61443560160c')
         self.assertIsNotNone(state['processed'])
         self.assertIsNotNone(state['preview'])
-        self.assertIsNotNone(state['slippymap'])
         self.assertIsNotNone(state['pmtiles'])
 
         with open(join(dirname(state_path), state['processed'])) as file:
@@ -592,7 +582,6 @@ class TestOA (unittest.TestCase):
         self.assertEqual(state['fingerprint'], '1821b2e50a61ed04ac2213fbc7a1984d')
         self.assertIsNotNone(state['processed'])
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         with open(join(dirname(state_path), state['processed'])) as file:
             self.assertTrue('555,CARSON ST' in file.read())
@@ -612,7 +601,6 @@ class TestOA (unittest.TestCase):
         self.assertEqual(state['fingerprint'], '1821b2e50a61ed04ac2213fbc7a1984d')
         self.assertIsNotNone(state['processed'])
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         with open(join(dirname(state_path), state['processed'])) as file:
             self.assertTrue('555,CARSON ST' in file.read())
@@ -631,7 +619,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNone(state['cache'])
         self.assertIsNone(state['processed'])
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         # This test data does not contain a working conform object
         self.assertEqual(state['source problem'], "Missing required ESRI token")
@@ -653,7 +640,6 @@ class TestOA (unittest.TestCase):
         self.assertEqual(state['source problem'], "Unknown source conform format")
         self.assertIsNone(state["processed"])
         self.assertIsNone(state["preview"])
-        self.assertIsNone(state["slippymap"])
 
     def test_single_oak_skip(self):
         ''' Test complete process_one.process on Oakland sample data.
@@ -672,7 +658,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNone(state["cache"])
         self.assertIsNone(state["processed"])
         self.assertIsNone(state["preview"])
-        self.assertIsNone(state["slippymap"])
 
     def test_single_berk(self):
         ''' Test complete process_one.process on Berkeley sample data.
@@ -690,7 +675,6 @@ class TestOA (unittest.TestCase):
         self.assertEqual(state["source problem"], "Source is missing a conform object")
         self.assertIsNone(state["processed"])
         self.assertIsNone(state["preview"])
-        self.assertIsNone(state["slippymap"])
 
 
     def test_single_berk_404(self):
@@ -708,7 +692,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNone(state["cache"])
         self.assertIsNone(state["processed"])
         self.assertIsNone(state["preview"])
-        self.assertIsNone(state["slippymap"])
 
     def test_single_berk_apn(self):
         ''' Test complete process_one.process on Berkeley sample data.
@@ -724,7 +707,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNotNone(state['cache'])
         self.assertIsNotNone(state['processed'])
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         output_path = join(dirname(state_path), state['processed'])
 
@@ -757,7 +739,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNotNone(state['cache'])
         self.assertIsNotNone(state['processed'])
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
     def test_single_pl_l(self):
         ''' Test complete process_one.process on Polish sample data.
@@ -773,7 +754,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNotNone(state['cache'])
         self.assertIsNotNone(state['processed'])
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         output_path = join(dirname(state_path), state['processed'])
 
@@ -803,7 +783,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNone(state["source problem"])
         self.assertIsNotNone(state["processed"])
         self.assertIsNone(state["preview"])
-        self.assertIsNone(state["slippymap"])
 
         with open(join(dirname(state_path), state["processed"]), encoding='utf8') as file:
             rows = list(csv.DictReader(file))
@@ -831,7 +810,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
     def test_single_iceland(self):
         ''' Test complete process_one.process.
@@ -845,7 +823,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
         self.assertIsNotNone(state['processed'])
         self.assertIsNotNone(state['cache'])
         self.assertIsNotNone(state['geojsonld'])
@@ -878,7 +855,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
     def test_single_fr_lareunion(self):
         ''' Test complete process_one.process on data that uses non-UTF8 encoding (issue #136)
@@ -901,7 +877,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
     def test_single_va_statewide(self):
         ''' Test complete process_one.process on data with non-OGR .csv filename.
@@ -915,7 +890,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
 
     def test_single_oh_trumbull(self):
@@ -930,7 +904,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
 
     def test_single_ks_brown(self):
@@ -945,7 +918,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
 
     def test_single_pa_lancaster(self):
@@ -960,7 +932,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         output_path = join(dirname(state_path), state['processed'])
 
@@ -988,7 +959,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
     def test_single_pa_bucks(self):
         ''' Test complete process_one.process on data with ESRI multiPolyline geometries.
@@ -1002,7 +972,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         output_path = join(dirname(state_path), state['processed'])
 
@@ -1030,7 +999,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         output_path = join(dirname(state_path), state['processed'])
 
@@ -1077,7 +1045,6 @@ class TestOA (unittest.TestCase):
         self.assertIsNone(state["source problem"])
         self.assertIsNotNone(state["processed"])
         self.assertIsNone(state["preview"])
-        self.assertIsNone(state["slippymap"])
 
         output_path = join(dirname(state_path), state["processed"])
 
@@ -1171,7 +1138,6 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[2]['STREET'], u'Alte Jakobstra\xdfe')
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
     def test_single_us_or_portland(self):
         ''' Test complete process_one.process on data.
@@ -1377,7 +1343,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         output_path = join(dirname(state_path), state['processed'])
 
@@ -1409,7 +1374,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         output_path = join(dirname(state_path), state['processed'])
 
@@ -1441,7 +1405,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state['preview'])
-        self.assertIsNone(state['slippymap'])
 
         output_path = join(dirname(state_path), state['processed'])
 
@@ -1487,9 +1450,6 @@ class TestState (unittest.TestCase):
         with open(join(self.output_dir, 'preview.png'), 'w') as file:
             preview_path = file.name
 
-        with open(join(self.output_dir, 'slippymap.mbtiles'), 'w') as file:
-            mbtiles_path = file.name
-
         with open(join(self.output_dir, 'slippymap.pmtiles'), 'w') as file:
             pmtiles_path = file.name
 
@@ -1513,7 +1473,7 @@ class TestState (unittest.TestCase):
                     destination=self.output_dir, log_handler=log_handler,
                     cache_result=cache_result, conform_result=conform_result,
                     temp_dir=self.output_dir, preview_path=preview_path,
-                    mbtiles_path=mbtiles_path, pmtiles_path=pmtiles_path,
+                    pmtiles_path=pmtiles_path,
                     geojsonld_path=geojsonld_path,
                     tests_passed=True)
 
@@ -1533,7 +1493,6 @@ class TestState (unittest.TestCase):
         self.assertEqual(state1['process time'], '0:00:01')
         self.assertEqual(state1['output'], 'output.txt')
         self.assertEqual(state1['preview'], 'preview.png')
-        self.assertEqual(state1['slippymap'], 'slippymap.mbtiles')
         self.assertEqual(state1['geojsonld'], 'out.geojson')
         self.assertEqual(state1['tests passed'], True)
 

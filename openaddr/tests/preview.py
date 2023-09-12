@@ -41,32 +41,6 @@ class TestPreview (unittest.TestCase):
         bbox = preview.calculate_bounds(points_filename)
         self.assertEqual(bbox, (-1.04, -1.04, 1.04, 1.04), 'The two outliers are ignored')
 
-    def test_render_zip(self):
-        '''
-        '''
-        def response_content(url, request):
-            if url.hostname == 'a.tiles.mapbox.com' and url.path.startswith('/v4/mapbox.mapbox-streets-v7'):
-                if 'access_token=mapbox-XXXX' not in url.query:
-                    raise ValueError('Missing or wrong API key')
-                data = b'\x1a\'x\x02\n\x05water(\x80 \x12\x19\x18\x03"\x13\t\xe0\x7f\xff\x1f\x1a\x00\xe0\x9f\x01\xdf\x9f\x01\x00\x00\xdf\x9f\x01\x0f\x08\x00'
-                return response(200, data, headers={'Content-Type': 'application/vnd.mapbox-vector-tile'})
-            raise Exception("Uknown URL")
-
-        zip_filename = join(dirname(__file__), 'outputs', 'alameda_geom.zip')
-        handle, png_filename = tempfile.mkstemp(prefix='render-', suffix='.png')
-        os.close(handle)
-
-        try:
-            with HTTMock(response_content):
-                preview.render(zip_filename, png_filename, 668, 1, 'mapbox-XXXX')
-            info = str(subprocess.check_output(('file', png_filename)))
-
-            self.assertTrue('PNG image data' in info)
-            self.assertTrue('668 x 573' in info)
-            self.assertTrue('8-bit/color RGB' in info)
-        finally:
-            os.remove(png_filename)
-
     def test_render_csv(self):
         '''
         '''

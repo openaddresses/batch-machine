@@ -88,20 +88,18 @@ def iterate_file_lonlats(filename):
     ''' Stream (lon, lat) coordinates from an input GeoJSON
     '''
 
-    print('FILENAME', filename)
     with open(filename, 'r') as file:
-        print('FILE', file);
         for line in file:
             try:
                 line = json.loads(line)
                 lon, lat, x = ogr.CreateGeometryFromJson(json.dumps(line['geometry'])).PointOnSurface().GetPoint()
+
+                if -180 <= lon <= 180 and -90 <= lat <= 90:
+                    yield (lon, lat)
             except Exception as e:
                 print('ERROR', e)
             except:
                 continue
-
-            if -180 <= lon <= 180 and -90 <= lat <= 90:
-                yield (lon, lat)
 
 def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, mapbox_key):
     '''
