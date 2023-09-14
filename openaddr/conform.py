@@ -44,9 +44,9 @@ gdal.PushErrorHandler(gdal_error_handler)
 # We add columns to the extracted CSV with our own data with these names.
 GEOM_FIELDNAME = 'OA:GEOM'
 
-ADDRESSES_SCHEMA = [ 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID' ]
-BUILDINGS_SCHEMA = []
-PARCELS_SCHEMA = [ 'PID' ]
+ADDRESSES_SCHEMA = [ 'HASH', 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID' ]
+BUILDINGS_SCHEMA = [ 'HASH']
+PARCELS_SCHEMA = [ 'HASH', 'PID' ]
 RESERVED_SCHEMA = ADDRESSES_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA + [
     "LAT",
     "LON"
@@ -1047,11 +1047,11 @@ def row_fxn_constant(sc, row, key, fxn):
 
 def row_canonicalize_unit_and_number(sc, row):
     "Canonicalize address unit and number"
-    row["unit"] = (row["unit"] or '').strip()
-    row["number"] = (row["number"] or '').strip()
-    if row["number"].endswith(".0"):
-        row["number"] = row["number"][:-2]
-    row["street"] = (row["street"] or '').strip()
+    row["UNIT"] = (row.get("UNIT", '') or '').strip()
+    row["NUMBER"] = (row.get("NUMBER", '') or '').strip()
+    if row["NUMBER"].endswith(".0"):
+        row["NUMBER"] = row["NUMBER"][:-2]
+    row["STREET"] = (row.get("STREET", '') or '').strip()
     return row
 
 def _round_wgs84_to_7(n):
@@ -1082,7 +1082,7 @@ def row_calculate_hash(cache_fingerprint, row):
     '''
     hash = sha1(cache_fingerprint.encode('utf8'))
     hash.update(json.dumps(sorted(row.items()), separators=(',', ':')).encode('utf8'))
-    row.update(HASH=hash.hexdigest()[:16])
+    row.update({'oa:hash': hash.hexdigest()[:16]})
 
     return row
 
@@ -1108,6 +1108,7 @@ def row_convert_to_out(source_config, row):
         else:
             # Get a native field as specified in the conform object
             cfield = source_config.data_source['conform'].get(field.lower())
+
             if cfield:
                 output["properties"][field.lower()] = row.get(cfield.lower())
             else:

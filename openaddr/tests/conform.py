@@ -81,6 +81,7 @@ class TestConformTransforms (unittest.TestCase):
                 "region": "",
                 "district": "",
                 "postcode": "",
+                "hash": "",
                 "id": ""
             },
             "geometry": {
@@ -392,11 +393,12 @@ class TestConformTransforms (unittest.TestCase):
                 "region": "",
                 "district": "",
                 "postcode": "",
-                "id": "",
-                'hash': '9574c16dfc3cc7b1'
+                'hash': '406f6b64991cefda',
+                "id": ""
             },
             'geometry': {
-                'coordinates': (-119.2, 39.3), 'type': 'Point'
+                'coordinates': (-119.2, 39.3),
+                'type': 'Point'
             }
         }, r)
 
@@ -412,16 +414,22 @@ class TestConformTransforms (unittest.TestCase):
 
         r = row_transform_and_convert(d, { "n": "123", "s1": "MAPLE", "s2": "ST", GEOM_FIELDNAME: "POINT(-119.2 39.3)"})
         self.assertEqual({
-            "STREET": "MAPLE ST",
-            "UNIT": "",
-            "NUMBER": "123",
-            "GEOM": "POINT (-119.2 39.3)",
-            "CITY": "",
-            "REGION": "",
-            "DISTRICT": "",
-            "POSTCODE": "",
-            "ID": "",
-            'HASH': '9574c16dfc3cc7b1'
+            'type': 'Feature',
+            'properties': {
+                "street": "MAPLE ST",
+                "unit": "",
+                "number": "123",
+                "city": "",
+                "region": "",
+                "district": "",
+                "postcode": "",
+                "id": "",
+                'hash': '7abe394dfe59bed8'
+            },
+            'geometry': {
+                "type": "Point",
+                "coordinates": (-119.2, 39.3)
+            }
         }, r)
 
         d = SourceConfig(dict({
@@ -449,16 +457,22 @@ class TestConformTransforms (unittest.TestCase):
         }), "addresses", "default")
         r = row_transform_and_convert(d, { "s": "123 MAPLE ST", GEOM_FIELDNAME: "POINT(-119.2 39.3)" })
         self.assertEqual({
-            "STREET": "MAPLE ST",
-            "UNIT": "",
-            "NUMBER": "123",
-            "GEOM": "POINT (-119.2 39.3)",
-            "CITY": "",
-            "REGION": "",
-            "DISTRICT": "",
-            "POSTCODE": "",
-            "ID": "",
-            'HASH': '9574c16dfc3cc7b1'
+            'type': 'Feature',
+            'geometry': {
+                "type": "Point",
+                "coordinates": (-119.2, 39.3)
+            },
+            'properties': {
+                "street": "MAPLE ST",
+                "unit": "",
+                "number": "123",
+                "city": "",
+                "region": "",
+                "district": "",
+                "postcode": "",
+                "id": "",
+                'hash': 'e388ce063150808f'
+            }
         }, r)
 
     def test_row_canonicalize_unit_and_number(self):
