@@ -393,7 +393,7 @@ class TestConformTransforms (unittest.TestCase):
                 "region": "",
                 "district": "",
                 "postcode": "",
-                'hash': '406f6b64991cefda',
+                'hash': '09212154c33070c2',
                 "id": ""
             },
             'geometry': {
@@ -476,10 +476,10 @@ class TestConformTransforms (unittest.TestCase):
         }, r)
 
     def test_row_canonicalize_unit_and_number(self):
-        r = row_canonicalize_unit_and_number({}, {"NUMBER": "324 ", "STREET": " OAK DR.", "UNIT": "1"})
-        self.assertEqual("324", r["NUMBER"])
-        self.assertEqual("OAK DR.", r["STREET"])
-        self.assertEqual("1", r["UNIT"])
+        r = row_canonicalize_unit_and_number({}, {"number": "324 ", "street": " OAK DR.", "unit": "1"})
+        self.assertEqual("324", r["number"])
+        self.assertEqual("OAK DR.", r["street"])
+        self.assertEqual("1", r["unit"])
 
         # Tests for integer conversion
         for e, a in (("324", " 324.0  "),
@@ -487,20 +487,20 @@ class TestConformTransforms (unittest.TestCase):
                      ("3240", "3240"),
                      ("INVALID", "INVALID"),
                      ("324.5", "324.5")):
-            r = row_canonicalize_unit_and_number({}, {"NUMBER": a, "STREET": "", "UNIT": ""})
-            self.assertEqual(e, r["NUMBER"])
+            r = row_canonicalize_unit_and_number({}, {"number": a, "street": "", "unit": ""})
+            self.assertEqual(e, r["number"])
 
     def test_row_canonicalize_street_and_no_number(self):
-        r = row_canonicalize_unit_and_number({}, {"NUMBER": None, "STREET": " OAK DR.", "UNIT": None})
-        self.assertEqual("", r["NUMBER"])
-        self.assertEqual("OAK DR.", r["STREET"])
-        self.assertEqual("", r["UNIT"])
+        r = row_canonicalize_unit_and_number({}, {"number": None, "street": " OAK DR.", "unit": None})
+        self.assertEqual("", r["number"])
+        self.assertEqual("OAK DR.", r["street"])
+        self.assertEqual("", r["unit"])
 
     def test_row_canonicalize_street_with_no_unit_number(self):
-        r = row_canonicalize_unit_and_number({}, {"NUMBER": None, "STREET": " OAK DR.", "UNIT": None})
-        self.assertEqual("", r["NUMBER"])
-        self.assertEqual("OAK DR.", r["STREET"])
-        self.assertEqual("", r["UNIT"])
+        r = row_canonicalize_unit_and_number({}, {"number": None, "street": " OAK DR.", "unit": None})
+        self.assertEqual("", r["number"])
+        self.assertEqual("OAK DR.", r["street"])
+        self.assertEqual("", r["unit"])
 
     def test_row_round_lat_lon(self):
         r = row_round_lat_lon({}, {"GEOM": "POINT (39.14285717777 -121.20)"})
@@ -1730,136 +1730,138 @@ class TestConformCli (unittest.TestCase):
         self.assertEqual(0, rc)
 
         with open(dest_path) as fp:
-            reader = csv.DictReader(fp)
-            self.assertEqual([
-                'GEOM', 'HASH', 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID'
-            ], reader.fieldnames)
+            rows = list(map(json.loads, list(fp)))
 
-            rows = list(reader)
-
-            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.2592497, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.8026126, rows[0]['geometry']['coordinates'][1], places=4)
 
             self.assertEqual(6, len(rows))
-            self.assertEqual(rows[0]['NUMBER'], '5115')
-            self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[1]['NUMBER'], '5121')
-            self.assertEqual(rows[1]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[2]['NUMBER'], '5133')
-            self.assertEqual(rows[2]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[3]['NUMBER'], '5126')
-            self.assertEqual(rows[3]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[4]['NUMBER'], '5120')
-            self.assertEqual(rows[4]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[5]['NUMBER'], '5115')
-            self.assertEqual(rows[5]['STREET'], 'OLD MILL RD')
+            self.assertEqual(rows[0]['properties']['number'], '5115')
+            self.assertEqual(rows[0]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[1]['properties']['number'], '5121')
+            self.assertEqual(rows[1]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[2]['properties']['number'], '5133')
+            self.assertEqual(rows[2]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[3]['properties']['number'], '5126')
+            self.assertEqual(rows[3]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[4]['properties']['number'], '5120')
+            self.assertEqual(rows[4]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[5]['properties']['number'], '5115')
+            self.assertEqual(rows[5]['properties']['street'], 'OLD MILL RD')
 
     def test_lake_man_gdb(self):
         rc, dest_path = self._run_conform_on_source('lake-man-gdb', 'gdb')
         self.assertEqual(0, rc)
 
         with open(dest_path) as fp:
-            reader = csv.DictReader(fp)
-            self.assertEqual([
-                'GEOM', 'HASH', 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID'
-            ], reader.fieldnames)
+            rows = list(map(json.loads, list(fp)))
 
-            rows = list(reader)
-
-            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.2592497, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.8026126, rows[0]['geometry']['coordinates'][1], places=4)
 
             self.assertEqual(6, len(rows))
-            self.assertEqual(rows[0]['NUMBER'], '5115')
-            self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[1]['NUMBER'], '5121')
-            self.assertEqual(rows[1]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[2]['NUMBER'], '5133')
-            self.assertEqual(rows[2]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[3]['NUMBER'], '5126')
-            self.assertEqual(rows[3]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[4]['NUMBER'], '5120')
-            self.assertEqual(rows[4]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[5]['NUMBER'], '5115')
-            self.assertEqual(rows[5]['STREET'], 'OLD MILL RD')
+            self.assertEqual(rows[0]['properties']['number'], '5115')
+            self.assertEqual(rows[0]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[1]['properties']['number'], '5121')
+            self.assertEqual(rows[1]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[2]['properties']['number'], '5133')
+            self.assertEqual(rows[2]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[3]['properties']['number'], '5126')
+            self.assertEqual(rows[3]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[4]['properties']['number'], '5120')
+            self.assertEqual(rows[4]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[5]['properties']['number'], '5115')
+            self.assertEqual(rows[5]['properties']['street'], 'OLD MILL RD')
 
     def test_lake_man_split(self):
         rc, dest_path = self._run_conform_on_source('lake-man-split', 'shp')
         self.assertEqual(0, rc)
 
         with open(dest_path) as fp:
-            rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['NUMBER'], '915')
-            self.assertEqual(rows[0]['STREET'], 'EDWARD AVE')
-            self.assertEqual(rows[1]['NUMBER'], '3273')
-            self.assertEqual(rows[1]['STREET'], 'PETER ST')
-            self.assertEqual(rows[2]['NUMBER'], '976')
-            self.assertEqual(rows[2]['STREET'], 'FORD BLVD')
-            self.assertEqual(rows[3]['NUMBER'], '7055')
-            self.assertEqual(rows[3]['STREET'], 'ST ROSE AVE')
-            self.assertEqual(rows[4]['NUMBER'], '534')
-            self.assertEqual(rows[4]['STREET'], 'WALLACE AVE')
-            self.assertEqual(rows[5]['NUMBER'], '531')
-            self.assertEqual(rows[5]['STREET'], 'SCOFIELD AVE')
+            rows = list(map(json.loads, list(fp)))
+
+            self.assertEqual(rows[0]['properties']['number'], '915')
+            self.assertEqual(rows[0]['properties']['street'], 'EDWARD AVE')
+            self.assertEqual(rows[1]['properties']['number'], '3273')
+            self.assertEqual(rows[1]['properties']['street'], 'PETER ST')
+            self.assertEqual(rows[2]['properties']['number'], '976')
+            self.assertEqual(rows[2]['properties']['street'], 'FORD BLVD')
+            self.assertEqual(rows[3]['properties']['number'], '7055')
+            self.assertEqual(rows[3]['properties']['street'], 'ST ROSE AVE')
+            self.assertEqual(rows[4]['properties']['number'], '534')
+            self.assertEqual(rows[4]['properties']['street'], 'WALLACE AVE')
+            self.assertEqual(rows[5]['properties']['number'], '531')
+            self.assertEqual(rows[5]['properties']['street'], 'SCOFIELD AVE')
 
     def test_lake_man_merge_postcode(self):
         rc, dest_path = self._run_conform_on_source('lake-man-merge-postcode', 'shp')
         self.assertEqual(0, rc)
 
         with open(dest_path) as fp:
-            rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['NUMBER'], '35845')
-            self.assertEqual(rows[0]['STREET'], 'EKLUTNA LAKE RD')
-            self.assertEqual(rows[1]['NUMBER'], '35850')
-            self.assertEqual(rows[1]['STREET'], 'EKLUTNA LAKE RD')
-            self.assertEqual(rows[2]['NUMBER'], '35900')
-            self.assertEqual(rows[2]['STREET'], 'EKLUTNA LAKE RD')
-            self.assertEqual(rows[3]['NUMBER'], '35870')
-            self.assertEqual(rows[3]['STREET'], 'EKLUTNA LAKE RD')
-            self.assertEqual(rows[4]['NUMBER'], '32551')
-            self.assertEqual(rows[4]['STREET'], 'EKLUTNA LAKE RD')
-            self.assertEqual(rows[5]['NUMBER'], '31401')
-            self.assertEqual(rows[5]['STREET'], 'EKLUTNA LAKE RD')
+            rows = list(map(json.loads, list(fp)))
+
+            self.assertEqual(rows[0]['properties']['number'], '35845')
+            self.assertEqual(rows[0]['properties']['street'], 'EKLUTNA LAKE RD')
+            self.assertEqual(rows[1]['properties']['number'], '35850')
+            self.assertEqual(rows[1]['properties']['street'], 'EKLUTNA LAKE RD')
+            self.assertEqual(rows[2]['properties']['number'], '35900')
+            self.assertEqual(rows[2]['properties']['street'], 'EKLUTNA LAKE RD')
+            self.assertEqual(rows[3]['properties']['number'], '35870')
+            self.assertEqual(rows[3]['properties']['street'], 'EKLUTNA LAKE RD')
+            self.assertEqual(rows[4]['properties']['number'], '32551')
+            self.assertEqual(rows[4]['properties']['street'], 'EKLUTNA LAKE RD')
+            self.assertEqual(rows[5]['properties']['number'], '31401')
+            self.assertEqual(rows[5]['properties']['street'], 'EKLUTNA LAKE RD')
 
     def test_lake_man_merge_postcode2(self):
         rc, dest_path = self._run_conform_on_source('lake-man-merge-postcode2', 'shp')
         self.assertEqual(0, rc)
 
         with open(dest_path) as fp:
-            rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['NUMBER'], '85')
-            self.assertEqual(rows[0]['STREET'], 'MAITLAND DR')
-            self.assertEqual(rows[1]['NUMBER'], '81')
-            self.assertEqual(rows[1]['STREET'], 'MAITLAND DR')
-            self.assertEqual(rows[2]['NUMBER'], '92')
-            self.assertEqual(rows[2]['STREET'], 'MAITLAND DR')
-            self.assertEqual(rows[3]['NUMBER'], '92')
-            self.assertEqual(rows[3]['STREET'], 'MAITLAND DR')
-            self.assertEqual(rows[4]['NUMBER'], '92')
-            self.assertEqual(rows[4]['STREET'], 'MAITLAND DR')
-            self.assertEqual(rows[5]['NUMBER'], '92')
-            self.assertEqual(rows[5]['STREET'], 'MAITLAND DR')
+            rows = list(map(json.loads, list(fp)))
+
+            self.assertEqual(rows[0]['properties']['number'], '85')
+            self.assertEqual(rows[0]['properties']['street'], 'MAITLAND DR')
+            self.assertEqual(rows[1]['properties']['number'], '81')
+            self.assertEqual(rows[1]['properties']['street'], 'MAITLAND DR')
+            self.assertEqual(rows[2]['properties']['number'], '92')
+            self.assertEqual(rows[2]['properties']['street'], 'MAITLAND DR')
+            self.assertEqual(rows[3]['properties']['number'], '92')
+            self.assertEqual(rows[3]['properties']['street'], 'MAITLAND DR')
+            self.assertEqual(rows[4]['properties']['number'], '92')
+            self.assertEqual(rows[4]['properties']['street'], 'MAITLAND DR')
+            self.assertEqual(rows[5]['properties']['number'], '92')
+            self.assertEqual(rows[5]['properties']['street'], 'MAITLAND DR')
 
     def test_lake_man_shp_utf8(self):
         rc, dest_path = self._run_conform_on_source('lake-man-utf8', 'shp')
         self.assertEqual(0, rc)
         with open(dest_path, encoding='utf-8') as fp:
-            rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['STREET'], u'PZ ESPA\u00d1A')
+            rows = list(map(json.loads, list(fp)))
+
+            self.assertEqual(rows[0]['properties']['street'], u'PZ ESPA\u00d1A')
 
     def test_lake_man_shp_epsg26943(self):
         rc, dest_path = self._run_conform_on_source('lake-man-epsg26943', 'shp')
         self.assertEqual(0, rc)
 
         with open(dest_path) as fp:
-            rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
+            rows = list(map(json.loads, list(fp)))
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.2592497, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.8026126, rows[0]['geometry']['coordinates'][1], places=4)
 
     def test_lake_man_shp_noprj_epsg26943(self):
         rc, dest_path = self._run_conform_on_source('lake-man-epsg26943-noprj', 'shp')
         self.assertEqual(0, rc)
 
         with open(dest_path) as fp:
-            rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.2592497 37.8026126)')
+            rows = list(map(json.loads, list(fp)))
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.2592497, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.8026126, rows[0]['geometry']['coordinates'][1], places=4)
 
     # TODO: add tests for non-ESRI GeoJSON sources
 
@@ -1869,62 +1871,81 @@ class TestConformCli (unittest.TestCase):
         self.assertEqual(0, rc)
 
         with open(dest_path) as fp:
-            rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['NUMBER'], '1')
-            self.assertEqual(rows[0]['STREET'], 'Spectrum Pointe Dr #320')
-            self.assertEqual(rows[0]['GEOM'], 'POINT (-122.25925 37.802613)')
-            self.assertEqual(rows[1]['NUMBER'], '')
-            self.assertEqual(rows[1]['STREET'], '')
-            self.assertEqual(rows[1]['GEOM'], 'POINT (-122.256718 37.802528)')
-            self.assertEqual(rows[2]['NUMBER'], '300')
-            self.assertEqual(rows[2]['STREET'], 'E Chapman Ave')
-            self.assertEqual(rows[2]['GEOM'], 'POINT (-122.257941 37.802969)')
-            self.assertEqual(rows[3]['NUMBER'], '1')
-            self.assertEqual(rows[3]['STREET'], 'Spectrum Pointe Dr #320')
-            self.assertEqual(rows[3]['GEOM'], 'POINT (-122.258971 37.800748)')
-            self.assertEqual(rows[4]['NUMBER'], '1')
-            self.assertEqual(rows[4]['STREET'], 'Spectrum Pointe Dr #320')
-            self.assertEqual(rows[4]['GEOM'], 'POINT (-122.256954 37.800714)')
-            self.assertEqual(rows[5]['NUMBER'], '1')
-            self.assertEqual(rows[5]['STREET'], 'Spectrum Pointe Dr #320')
-            self.assertEqual(rows[5]['GEOM'], 'POINT (-122.25764 37.804359)')
+            rows = list(map(json.loads, list(fp)))
+            self.assertEqual(rows[0]['properties']['number'], '1')
+            self.assertEqual(rows[0]['properties']['street'], 'Spectrum Pointe Dr #320')
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.25925, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.802613, rows[0]['geometry']['coordinates'][1], places=4)
+
+            self.assertEqual(rows[1]['properties']['number'], '')
+            self.assertEqual(rows[1]['properties']['street'], '')
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.25925, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.802613, rows[0]['geometry']['coordinates'][1], places=4)
+
+            self.assertEqual(rows[2]['properties']['number'], '300')
+            self.assertEqual(rows[2]['properties']['street'], 'E Chapman Ave')
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.25925, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.802613, rows[0]['geometry']['coordinates'][1], places=4)
+
+            self.assertEqual(rows[3]['properties']['number'], '1')
+            self.assertEqual(rows[3]['properties']['street'], 'Spectrum Pointe Dr #320')
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.25925, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.802613, rows[0]['geometry']['coordinates'][1], places=4)
+
+            self.assertEqual(rows[4]['properties']['number'], '1')
+            self.assertEqual(rows[4]['properties']['street'], 'Spectrum Pointe Dr #320')
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.25925, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.802613, rows[0]['geometry']['coordinates'][1], places=4)
+
+            self.assertEqual(rows[5]['properties']['number'], '1')
+            self.assertEqual(rows[5]['properties']['street'], 'Spectrum Pointe Dr #320')
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.25925, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.802613, rows[0]['geometry']['coordinates'][1], places=4)
 
     def test_nara_jp(self):
         "Test case from jp-nara.json"
         rc, dest_path = self._run_conform_on_source('jp-nara', 'csv')
         self.assertEqual(0, rc)
         with open(dest_path) as fp:
-            rows = list(csv.DictReader(fp))
-            self.assertEqual(rows[0]['NUMBER'], '2543-6')
-            self.assertEqual(rows[0]['GEOM'], 'POINT (135.955104 34.607832)')
-            self.assertEqual(rows[0]['STREET'], u'\u91dd\u753a')
-            self.assertEqual(rows[1]['NUMBER'], '202-6')
+            rows = list(map(json.loads, list(fp)))
+            self.assertEqual(rows[0]['properties']['number'], '2543-6')
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(135.955104, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(34.607832, rows[0]['geometry']['coordinates'][1], places=4)
+            self.assertEqual(rows[0]['properties']['street'], u'\u91dd\u753a')
+            self.assertEqual(rows[1]['properties']['number'], '202-6')
 
     def test_lake_man_3740(self):
         "CSV in an oddball SRS"
         rc, dest_path = self._run_conform_on_source('lake-man-3740', 'csv')
         self.assertEqual(0, rc)
         with open(dest_path) as fp:
-            rows = list(csv.DictReader(fp))
-            x,y= wkt_pt(rows[0]['GEOM'])
+            rows = list(map(json.loads, list(fp)))
 
             # POINT (-122.2592495 37.8026123)
-            self.assertAlmostEqual(-122.2592495, x, places=4)
-            self.assertAlmostEqual(37.8026123, y, places=4)
+            self.assertAlmostEqual(-122.2592495, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.8026123, rows[0]['geometry']['coordinates'][1], places=4)
 
-            self.assertEqual(rows[0]['NUMBER'], '5')
-            self.assertEqual(rows[0]['STREET'], u'PZ ESPA\u00d1A')
+            self.assertEqual(rows[0]['properties']['number'], '5')
+            self.assertEqual(rows[0]['properties']['street'], u'PZ ESPA\u00d1A')
 
     def test_lake_man_gml(self):
         "GML XML files"
         rc, dest_path = self._run_conform_on_source('lake-man-gml', 'gml')
         self.assertEqual(0, rc)
         with open(dest_path) as fp:
-            rows = list(csv.DictReader(fp))
+            rows = list(map(json.loads, list(fp)))
             self.assertEqual(6, len(rows))
-            self.assertEqual(rows[0]['GEOM'], 'POINT (37.8026126 -122.2592497)')
-            self.assertEqual(rows[0]['NUMBER'], '5115')
-            self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
+            self.assertAlmostEqual(37.8026126, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(-122.2592497, rows[0]['geometry']['coordinates'][1], places=4)
+            self.assertEqual(rows[0]['properties']['number'], '5115')
+            self.assertEqual(rows[0]['properties']['street'], 'FRUITED PLAINS LN')
 
 
 class TestConformMisc(unittest.TestCase):

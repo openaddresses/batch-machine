@@ -1047,11 +1047,13 @@ def row_fxn_constant(sc, row, key, fxn):
 
 def row_canonicalize_unit_and_number(sc, row):
     "Canonicalize address unit and number"
-    row["UNIT"] = (row.get("UNIT", '') or '').strip()
-    row["NUMBER"] = (row.get("NUMBER", '') or '').strip()
-    if row["NUMBER"].endswith(".0"):
-        row["NUMBER"] = row["NUMBER"][:-2]
-    row["STREET"] = (row.get("STREET", '') or '').strip()
+    row["unit"] = (row.get("unit", '') or '').strip()
+    row["number"] = (row.get("number", '') or '').strip()
+
+    if row["number"].endswith(".0"):
+        row["number"] = row["number"][:-2]
+
+    row["street"] = (row.get("street", '') or '').strip()
     return row
 
 def _round_wgs84_to_7(n):
