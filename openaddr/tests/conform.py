@@ -424,7 +424,7 @@ class TestConformTransforms (unittest.TestCase):
                 "district": "",
                 "postcode": "",
                 "id": "",
-                'hash': '7abe394dfe59bed8'
+                'hash': '3372445616223f37'
             },
             'geometry': {
                 "type": "Point",
@@ -471,7 +471,7 @@ class TestConformTransforms (unittest.TestCase):
                 "district": "",
                 "postcode": "",
                 "id": "",
-                'hash': 'e388ce063150808f'
+                'hash': '7bfd895bef404ea4'
             }
         }, r)
 
