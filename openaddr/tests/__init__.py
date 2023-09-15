@@ -366,7 +366,7 @@ class TestOA (unittest.TestCase):
 
         output_path = join(dirname(state_path), state['processed'])
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[1]['ID'], '')
             self.assertEqual(rows[10]['ID'], '')
             self.assertEqual(rows[100]['ID'], '')
@@ -410,7 +410,7 @@ class TestOA (unittest.TestCase):
 
         output_path = join(dirname(state_path), state['processed'])
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[1]['ID'], '')
             self.assertEqual(rows[10]['ID'], '')
             self.assertEqual(rows[100]['ID'], '')
@@ -455,7 +455,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[1]['ID'], '')
             self.assertEqual(rows[10]['ID'], '')
             self.assertEqual(rows[100]['ID'], '')
@@ -496,7 +496,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[1]['ID'], '')
             self.assertEqual(rows[10]['ID'], '')
             self.assertEqual(rows[100]['ID'], '')
@@ -695,7 +695,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[1]['ID'], '055 188300600')
             self.assertEqual(rows[10]['ID'], '055 189504000')
             self.assertEqual(rows[100]['ID'], '055 188700100')
@@ -742,7 +742,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[1]['NUMBER'], u'5')
             self.assertEqual(rows[10]['NUMBER'], u'8')
             self.assertEqual(rows[100]['NUMBER'], u'5a')
@@ -769,7 +769,7 @@ class TestOA (unittest.TestCase):
         self.assertIsNone(state["preview"])
 
         with open(join(dirname(state_path), state["processed"]), encoding='utf8') as file:
-            rows = list(csv.DictReader(file))
+            rows = list(map(json.loads, list(file)))
 
         self.assertEqual(len(rows), 6)
         self.assertEqual(rows[0]['NUMBER'], u'24-9')
@@ -911,7 +911,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[1]['UNIT'], u'2')
             self.assertEqual(rows[11]['UNIT'], u'11')
             self.assertEqual(rows[21]['UNIT'], u'')
@@ -951,7 +951,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[1]['UNIT'], u'')
             self.assertEqual(rows[10]['UNIT'], u'')
             self.assertEqual(rows[20]['UNIT'], u'')
@@ -978,7 +978,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[1]['UNIT'], u'')
             self.assertEqual(rows[5]['UNIT'], u'')
             self.assertEqual(rows[9]['UNIT'], u'')
@@ -1024,7 +1024,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state["processed"])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[0]['REGION'], u'TX')
             self.assertEqual(rows[0]['ID'], u'')
             self.assertEqual(rows[0]['NUMBER'], u'308')
@@ -1052,16 +1052,18 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state["processed"])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
-            self.assertEqual(rows[0]['ID'], u'')
-            self.assertEqual(rows[0]['NUMBER'], u'162')
-            self.assertEqual(rows[0]['HASH'], u'fa774c4d6e199cb1')
-            self.assertEqual(rows[0]['CITY'], u'')
-            self.assertEqual(rows[0]['GEOM'], u'POINT (-108.7563613 44.7538737)')
-            self.assertEqual(rows[0]['STREET'], u'N CLARK ST')
-            self.assertEqual(rows[0]['POSTCODE'], u'')
-            self.assertEqual(rows[0]['UNIT'], u'')
-            self.assertEqual(rows[0]['DISTRICT'], u'')
+            rows = list(map(json.loads, list(input)))
+            self.assertEqual(rows[0]['properties']['id'], u'')
+            self.assertEqual(rows[0]['properties']['number'], u'162')
+            self.assertEqual(rows[0]['properties']['hash'], u'd666aba81e7f9b01')
+            self.assertEqual(rows[0]['properties']['CITY'], u'')
+            self.assertEqual(rows[0]['geometry']['type'], 'Point');
+            self.assertAlmostEqual(rows[0]['geometry']['coordinates'][0], -108.7563613);
+            self.assertAlmostEqual(rows[0]['geometry']['coordinates'][1], 44.7538737);
+            self.assertEqual(rows[0]['properties']['street'], u'N CLARK ST')
+            self.assertEqual(rows[0]['properties']['postcode'], u'')
+            self.assertEqual(rows[0]['properties']['unit'], u'')
+            self.assertEqual(rows[0]['properties']['district'], u'')
 
     def test_single_ny_orange(self):
         ''' Test complete process_one.process on data NaN values in ESRI response.
@@ -1079,7 +1081,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state["processed"])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[0]['ID'], u'')
             self.assertEqual(rows[0]['NUMBER'], u'434')
             self.assertEqual(rows[0]['HASH'], u'58a4d4fbbf126d86')
@@ -1104,7 +1106,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[0]['NUMBER'], u'72')
             self.assertEqual(rows[1]['NUMBER'], u'3')
             self.assertEqual(rows[2]['NUMBER'], u'75')
@@ -1128,7 +1130,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 12)
             self.assertEqual(rows[2]['NUMBER'], u'1')
             self.assertEqual(rows[3]['NUMBER'], u'10')
@@ -1157,7 +1159,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 8)
             self.assertEqual(rows[0]['NUMBER'], u'34x')
             self.assertEqual(rows[1]['NUMBER'], u'65-x')
@@ -1182,8 +1184,8 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
-            self.assertEqual(len(rows), 666)
+            rows = list(map(json.loads, list(input)))
+            self.assertEqual(len(rows), 665)
             self.assertEqual(rows[0]['NUMBER'], u'2')
             self.assertEqual(rows[0]['STREET'], u'Rue de la Victoire')
             self.assertEqual(rows[1]['NUMBER'], u'16')
@@ -1223,7 +1225,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 19)
             self.assertEqual(rows[0]['NUMBER'], u'33')
             self.assertEqual(rows[0]['STREET'], u'VIA CARLO CARRÀ')
@@ -1249,7 +1251,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 1045)
             self.assertEqual(rows[0]['NUMBER'], u'7')
             self.assertEqual(rows[0]['STREET'], u'Sagamore Avenue')
@@ -1322,7 +1324,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 6)
             self.assertEqual(rows[0]['NUMBER'], '5115')
             self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
@@ -1353,7 +1355,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 6)
             self.assertEqual(rows[0]['NUMBER'], '5115')
             self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
@@ -1384,7 +1386,7 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
 
         with open(output_path, encoding='utf8') as input:
-            rows = list(csv.DictReader(input))
+            rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 6)
             self.assertEqual(rows[0]['NUMBER'], '5115')
             self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')

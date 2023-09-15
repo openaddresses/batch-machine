@@ -146,7 +146,6 @@ def conform(source_config, destdir, extras):
         _L.warning("Error doing conform; skipping", exc_info=True)
         out_path, feat_count = None, 0
 
-    out_path = None
     if out_path is not None and exists(out_path):
         move(out_path, join(destdir, 'out.geojson'))
         out_path = realpath(join(destdir, 'out.geojson'))
