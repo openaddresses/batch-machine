@@ -1,3 +1,9 @@
+2023-09-17 v9.0.0
+- Remove GeoJSONLD Render Functions
+- Remove MBTiles Render Functions
+- Rewrite confrom to natively output GeoJSON+LD
+- Rewrite Preview module to expect GeoJSON+LD
+
 2023-09-06 v8.3.0
 - Update to next major alpine version
 - Remove mock library in favour of unittest.mock

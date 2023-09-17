@@ -1082,10 +1082,14 @@ def row_calculate_hash(cache_fingerprint, row):
 def row_convert_to_out(source_config, row):
     "Convert a row from the source schema to OpenAddresses output schema"
 
+    geom = row.get(GEOM_FIELDNAME.lower(), None)
+    if geom == "POINT EMPTY":
+        geom = None
+
     output = {
         "type": "Feature",
         "properties": {},
-        "geometry": row.get(GEOM_FIELDNAME.lower(), None),
+        "geometry": geom
     }
 
     if output["geometry"] is not None:
