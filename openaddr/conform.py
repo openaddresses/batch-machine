@@ -1210,7 +1210,8 @@ def check_source_tests(source_config):
     for (index, test) in enumerate(acceptance_tests):
         input = row_smash_case(source_config.data_source, test['inputs'])
         output = row_smash_case(source_config.data_source, row_transform_and_convert(source_config, input))
-        actual = {k: v for (k, v) in output.items() if k in test['expected']}
+
+        actual = {k: v for (k, v) in output['properties'].items() if k in test['expected']}
         expected = row_smash_case(source_config.data_source, test['expected'])
 
         if actual != expected:
