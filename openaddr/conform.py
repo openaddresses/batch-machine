@@ -835,13 +835,15 @@ def row_transform_and_convert(source_config, row):
     # Make up a random fingerprint if none exists
     cache_fingerprint = source_config.data_source.get('fingerprint', str(uuid4()))
 
-    if source_config.layer == "addresses":
-        row = row_round_lat_lon(source_config.data_source, row)
-        row = row_canonicalize_unit_and_number(source_config.data_source, row)
-
     row = row_calculate_hash(cache_fingerprint, row)
 
     feat = row_convert_to_out(source_config, row)
+
+    if source_config.layer == "addresses":
+        feat['properties'] = row_canonicalize_unit_and_number(source_config.data_source, feat['properties'])
+
+    if feat['geometry'] and len(feat['geometry']['coordinates']) > 0:
+        feat['geometry']['coordinates'] = set_precision(feat['geometry']['coordinates'], 7)
 
     return feat
 
@@ -1049,33 +1051,22 @@ def row_canonicalize_unit_and_number(sc, row):
     "Canonicalize address unit and number"
     row["unit"] = (row.get("unit", '') or '').strip()
     row["number"] = (row.get("number", '') or '').strip()
+    row["street"] = (row.get("street", '') or '').strip()
 
-    if row["number"].endswith(".0"):
+    if row.get("number", '').endswith('.0'):
         row["number"] = row["number"][:-2]
 
-    row["street"] = (row.get("street", '') or '').strip()
     return row
 
-def _round_wgs84_to_7(n):
-    "Round a WGS84 coordinate to 7 decimal points. Input and output both strings."
+def set_precision(coords, precision):
+    result = []
     try:
-        return "%.12g" % round(float(n), 7)
-    except:
-        return n
+        return round(coords, int(precision))
+    except TypeError:
+        for coord in coords:
+            result.append(set_precision(coord, precision))
 
-def row_round_lat_lon(sc, row):
-    "Round WGS84 coordinates to 1cm precision"
-    if row.get('GEOM') is not None and 'POINT' in row['GEOM']:
-        try:
-            geom = ogr.CreateGeometryFromWkt(row['GEOM'])
-            x = _round_wgs84_to_7(geom.GetX())
-            y = _round_wgs84_to_7(geom.GetY())
-
-            row['GEOM'] = ogr.CreateGeometryFromWkt('POINT ({} {})'.format(x, y)).ExportToWkt()
-        except Exception:
-            pass
-
-    return row
+    return result
 
 def row_calculate_hash(cache_fingerprint, row):
     ''' Calculate row hash based on content and existing fingerprint.

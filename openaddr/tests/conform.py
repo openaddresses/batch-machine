@@ -17,7 +17,7 @@ from .. import SourceConfig
 from ..conform import (
     GEOM_FIELDNAME,
     csv_source_to_csv, find_source_path, row_transform_and_convert,
-    row_fxn_regexp, row_smash_case, row_round_lat_lon, row_merge,
+    row_fxn_regexp, row_smash_case, row_merge,
     row_extract_and_reproject, row_convert_to_out, row_fxn_join, row_fxn_format,
     row_fxn_prefixed_number, row_fxn_postfixed_street,
     row_fxn_postfixed_unit,
@@ -397,7 +397,7 @@ class TestConformTransforms (unittest.TestCase):
                 "id": ""
             },
             'geometry': {
-                'coordinates': (-119.2, 39.3),
+                'coordinates': [-119.2, 39.3],
                 'type': 'Point'
             }
         }, r)
@@ -428,7 +428,7 @@ class TestConformTransforms (unittest.TestCase):
             },
             'geometry': {
                 "type": "Point",
-                "coordinates": (-119.2, 39.3)
+                "coordinates": [-119.2, 39.3]
             }
         }, r)
 
@@ -460,7 +460,7 @@ class TestConformTransforms (unittest.TestCase):
             'type': 'Feature',
             'geometry': {
                 "type": "Point",
-                "coordinates": (-119.2, 39.3)
+                "coordinates": [-119.2, 39.3]
             },
             'properties': {
                 "street": "MAPLE ST",
@@ -501,30 +501,6 @@ class TestConformTransforms (unittest.TestCase):
         self.assertEqual("", r["number"])
         self.assertEqual("OAK DR.", r["street"])
         self.assertEqual("", r["unit"])
-
-    def test_row_round_lat_lon(self):
-        r = row_round_lat_lon({}, {"GEOM": "POINT (39.14285717777 -121.20)"})
-        self.assertEqual({"GEOM": "POINT (39.1428572 -121.2)"}, r)
-        for e, a in ((    ""        ,    ""),
-                     (  "39.3"      ,  "39.3"),
-                     (  "39.3"      ,  "39.3000000"),
-                     ( "-39.3"      , "-39.3000"),
-                     (  "39.1428571",  "39.142857143"),
-                     ( "139.1428572", "139.142857153"),
-                     (  "39.1428572",  "39.142857153"),
-                     (   "3.1428572",   "3.142857153"),
-                     (   "0.1428572",   "0.142857153"),
-                     ("-139.1428572","-139.142857153"),
-                     ( "-39.1428572", "-39.142857153"),
-                     (  "-3.1428572",  "-3.142857153"),
-                     (  "-0.1428572",  "-0.142857153"),
-                     (  "39.1428572",  "39.142857153"),
-                     (   "0"        ,  " 0.00"),
-                     (  "0"        ,  "-0.00"),
-                     ( "180"        ,  "180.0"),
-                     ("-180"        , "-180")):
-            r = row_round_lat_lon({}, {"GEOM": "POINT ({} {})".format(a, a)})
-            self.assertEqual("POINT ({} {})".format(e, e), r["GEOM"])
 
     def test_row_extract_and_reproject(self):
         # CSV lat/lon column names

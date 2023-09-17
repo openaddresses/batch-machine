@@ -367,22 +367,22 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[1]['ID'], '')
-            self.assertEqual(rows[10]['ID'], '')
-            self.assertEqual(rows[100]['ID'], '')
-            self.assertEqual(rows[1000]['ID'], '')
-            self.assertEqual(rows[1]['NUMBER'], '2147')
-            self.assertEqual(rows[10]['NUMBER'], '605')
-            self.assertEqual(rows[100]['NUMBER'], '167')
-            self.assertEqual(rows[1000]['NUMBER'], '322')
-            self.assertEqual(rows[1]['STREET'], 'BROADWAY')
-            self.assertEqual(rows[10]['STREET'], 'HILLSBOROUGH ST')
-            self.assertEqual(rows[100]['STREET'], '8TH ST')
-            self.assertEqual(rows[1000]['STREET'], 'HANOVER AV')
-            self.assertEqual(rows[1]['UNIT'], '')
-            self.assertEqual(rows[10]['UNIT'], '')
-            self.assertEqual(rows[100]['UNIT'], '')
-            self.assertEqual(rows[1000]['UNIT'], '')
+            self.assertEqual(rows[1]['properties']['id'], '')
+            self.assertEqual(rows[10]['properties']['id'], '')
+            self.assertEqual(rows[100]['properties']['id'], '')
+            self.assertEqual(rows[1000]['properties']['id'], '')
+            self.assertEqual(rows[1]['properties']['number'], '2147')
+            self.assertEqual(rows[10]['properties']['number'], '605')
+            self.assertEqual(rows[100]['properties']['number'], '167')
+            self.assertEqual(rows[1000]['properties']['number'], '322')
+            self.assertEqual(rows[1]['properties']['street'], 'BROADWAY')
+            self.assertEqual(rows[10]['properties']['street'], 'HILLSBOROUGH ST')
+            self.assertEqual(rows[100]['properties']['street'], '8TH ST')
+            self.assertEqual(rows[1000]['properties']['street'], 'HANOVER AV')
+            self.assertEqual(rows[1]['properties']['unit'], '')
+            self.assertEqual(rows[10]['properties']['unit'], '')
+            self.assertEqual(rows[100]['properties']['unit'], '')
+            self.assertEqual(rows[1000]['properties']['unit'], '')
 
     def test_single_ac(self):
         ''' Test complete process_one.process on Alameda County sample data.
@@ -411,22 +411,22 @@ class TestOA (unittest.TestCase):
         output_path = join(dirname(state_path), state['processed'])
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[1]['ID'], '')
-            self.assertEqual(rows[10]['ID'], '')
-            self.assertEqual(rows[100]['ID'], '')
-            self.assertEqual(rows[1000]['ID'], '')
-            self.assertEqual(rows[1]['NUMBER'], '2147')
-            self.assertEqual(rows[10]['NUMBER'], '605')
-            self.assertEqual(rows[100]['NUMBER'], '167')
-            self.assertEqual(rows[1000]['NUMBER'], '322')
-            self.assertEqual(rows[1]['STREET'], 'BROADWAY')
-            self.assertEqual(rows[10]['STREET'], 'HILLSBOROUGH ST')
-            self.assertEqual(rows[100]['STREET'], '8TH ST')
-            self.assertEqual(rows[1000]['STREET'], 'HANOVER AV')
-            self.assertEqual(rows[1]['UNIT'], '')
-            self.assertEqual(rows[10]['UNIT'], '')
-            self.assertEqual(rows[100]['UNIT'], '')
-            self.assertEqual(rows[1000]['UNIT'], '')
+            self.assertEqual(rows[1]['properties']['id'], '')
+            self.assertEqual(rows[10]['properties']['id'], '')
+            self.assertEqual(rows[100]['properties']['id'], '')
+            self.assertEqual(rows[1000]['properties']['id'], '')
+            self.assertEqual(rows[1]['properties']['number'], '2147')
+            self.assertEqual(rows[10]['properties']['number'], '605')
+            self.assertEqual(rows[100]['properties']['number'], '167')
+            self.assertEqual(rows[1000]['properties']['number'], '322')
+            self.assertEqual(rows[1]['properties']['street'], 'BROADWAY')
+            self.assertEqual(rows[10]['properties']['street'], 'HILLSBOROUGH ST')
+            self.assertEqual(rows[100]['properties']['street'], '8TH ST')
+            self.assertEqual(rows[1000]['properties']['street'], 'HANOVER AV')
+            self.assertEqual(rows[1]['properties']['unit'], '')
+            self.assertEqual(rows[10]['properties']['unit'], '')
+            self.assertEqual(rows[100]['properties']['unit'], '')
+            self.assertEqual(rows[1000]['properties']['unit'], '')
 
     def test_single_ac_mixedcase(self):
         ''' Test complete process_one.process on Alameda County sample data.
@@ -456,18 +456,18 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[1]['ID'], '')
-            self.assertEqual(rows[10]['ID'], '')
-            self.assertEqual(rows[100]['ID'], '')
-            self.assertEqual(rows[1000]['ID'], '')
-            self.assertEqual(rows[1]['NUMBER'], '2147')
-            self.assertEqual(rows[10]['NUMBER'], '605')
-            self.assertEqual(rows[100]['NUMBER'], '167')
-            self.assertEqual(rows[1000]['NUMBER'], '322')
-            self.assertEqual(rows[1]['STREET'], 'BROADWAY')
-            self.assertEqual(rows[10]['STREET'], 'HILLSBOROUGH ST')
-            self.assertEqual(rows[100]['STREET'], '8TH ST')
-            self.assertEqual(rows[1000]['STREET'], 'HANOVER AV')
+            self.assertEqual(rows[1]['properties']['id'], '')
+            self.assertEqual(rows[10]['properties']['id'], '')
+            self.assertEqual(rows[100]['properties']['id'], '')
+            self.assertEqual(rows[1000]['properties']['id'], '')
+            self.assertEqual(rows[1]['properties']['number'], '2147')
+            self.assertEqual(rows[10]['properties']['number'], '605')
+            self.assertEqual(rows[100]['properties']['number'], '167')
+            self.assertEqual(rows[1000]['properties']['number'], '322')
+            self.assertEqual(rows[1]['properties']['street'], 'BROADWAY')
+            self.assertEqual(rows[10]['properties']['street'], 'HILLSBOROUGH ST')
+            self.assertEqual(rows[100]['properties']['street'], '8TH ST')
+            self.assertEqual(rows[1000]['properties']['street'], 'HANOVER AV')
 
     def test_single_sf(self):
         ''' Test complete process_one.process on San Francisco sample data.
@@ -497,22 +497,22 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[1]['ID'], '')
-            self.assertEqual(rows[10]['ID'], '')
-            self.assertEqual(rows[100]['ID'], '')
-            self.assertEqual(rows[1000]['ID'], '')
-            self.assertEqual(rows[1]['NUMBER'], '27')
-            self.assertEqual(rows[10]['NUMBER'], '42')
-            self.assertEqual(rows[100]['NUMBER'], '209')
-            self.assertEqual(rows[1000]['NUMBER'], '1415')
-            self.assertEqual(rows[1]['STREET'], 'OCTAVIA ST')
-            self.assertEqual(rows[10]['STREET'], 'GOLDEN GATE AVE')
-            self.assertEqual(rows[100]['STREET'], 'OCTAVIA ST')
-            self.assertEqual(rows[1000]['STREET'], 'FOLSOM ST')
-            self.assertEqual(rows[1]['UNIT'], '')
-            self.assertEqual(rows[10]['UNIT'], '')
-            self.assertEqual(rows[100]['UNIT'], '')
-            self.assertEqual(rows[1000]['UNIT'], '')
+            self.assertEqual(rows[1]['properties']['id'], '')
+            self.assertEqual(rows[10]['properties']['id'], '')
+            self.assertEqual(rows[100]['properties']['id'], '')
+            self.assertEqual(rows[1000]['properties']['id'], '')
+            self.assertEqual(rows[1]['properties']['number'], '27')
+            self.assertEqual(rows[10]['properties']['number'], '42')
+            self.assertEqual(rows[100]['properties']['number'], '209')
+            self.assertEqual(rows[1000]['properties']['number'], '1415')
+            self.assertEqual(rows[1]['properties']['street'], 'OCTAVIA ST')
+            self.assertEqual(rows[10]['properties']['street'], 'GOLDEN GATE AVE')
+            self.assertEqual(rows[100]['properties']['street'], 'OCTAVIA ST')
+            self.assertEqual(rows[1000]['properties']['street'], 'FOLSOM ST')
+            self.assertEqual(rows[1]['properties']['unit'], '')
+            self.assertEqual(rows[10]['properties']['unit'], '')
+            self.assertEqual(rows[100]['properties']['unit'], '')
+            self.assertEqual(rows[1000]['properties']['unit'], '')
 
     def test_single_car(self):
         ''' Test complete process_one.process on Carson sample data.
@@ -542,14 +542,14 @@ class TestOA (unittest.TestCase):
         with open(join(dirname(state_path), state['processed'])) as file:
             rows = list(DictReader(file, dialect='excel'))
             self.assertEqual(5, len(rows))
-            self.assertEqual(rows[0]['NUMBER'], '555')
-            self.assertEqual(rows[0]['STREET'], 'CARSON ST')
-            self.assertEqual(rows[0]['UNIT'], '')
-            self.assertEqual(rows[0]['CITY'], 'CARSON, CA')
-            self.assertEqual(rows[0]['POSTCODE'], '90745')
-            self.assertEqual(rows[0]['DISTRICT'], '')
-            self.assertEqual(rows[0]['REGION'], '')
-            self.assertEqual(rows[0]['ID'], '')
+            self.assertEqual(rows[0]['properties']['number'], '555')
+            self.assertEqual(rows[0]['properties']['street'], 'CARSON ST')
+            self.assertEqual(rows[0]['properties']['unit'], '')
+            self.assertEqual(rows[0]['properties']['city'], 'CARSON, CA')
+            self.assertEqual(rows[0]['properties']['postcode'], '90745')
+            self.assertEqual(rows[0]['properties']['district'], '')
+            self.assertEqual(rows[0]['properties']['region'], '')
+            self.assertEqual(rows[0]['properties']['id'], '')
 
     def test_single_car_cached(self):
         ''' Test complete process_one.process on Carson sample data.
@@ -568,7 +568,7 @@ class TestOA (unittest.TestCase):
         self.assertIsNone(state['preview'])
 
         with open(join(dirname(state_path), state['processed'])) as file:
-            self.assertTrue('555,CARSON ST' in file.read())
+            self.assertTrue('555' in file.read())
 
     def test_single_car_old_cached(self):
         ''' Test complete process_one.process on Carson sample data.
@@ -587,7 +587,7 @@ class TestOA (unittest.TestCase):
         self.assertIsNone(state['preview'])
 
         with open(join(dirname(state_path), state['processed'])) as file:
-            self.assertTrue('555,CARSON ST' in file.read())
+            self.assertTrue('555' in file.read())
 
     def test_single_tx_runnels(self):
         ''' Test complete process_one.process on Oakland sample data.
@@ -696,18 +696,18 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[1]['ID'], '055 188300600')
-            self.assertEqual(rows[10]['ID'], '055 189504000')
-            self.assertEqual(rows[100]['ID'], '055 188700100')
-            self.assertEqual(rows[1]['NUMBER'], '2418')
-            self.assertEqual(rows[10]['NUMBER'], '2029')
-            self.assertEqual(rows[100]['NUMBER'], '2298')
-            self.assertEqual(rows[1]['STREET'], 'DANA ST')
-            self.assertEqual(rows[10]['STREET'], 'CHANNING WAY')
-            self.assertEqual(rows[100]['STREET'], 'DURANT AVE')
-            self.assertEqual(rows[1]['UNIT'], u'')
-            self.assertEqual(rows[10]['UNIT'], u'')
-            self.assertEqual(rows[100]['UNIT'], u'')
+            self.assertEqual(rows[1]['properties']['id'], '055 188300600')
+            self.assertEqual(rows[10]['properties']['id'], '055 189504000')
+            self.assertEqual(rows[100]['properties']['id'], '055 188700100')
+            self.assertEqual(rows[1]['properties']['number'], '2418')
+            self.assertEqual(rows[10]['properties']['number'], '2029')
+            self.assertEqual(rows[100]['properties']['number'], '2298')
+            self.assertEqual(rows[1]['properties']['street'], 'DANA ST')
+            self.assertEqual(rows[10]['properties']['street'], 'CHANNING WAY')
+            self.assertEqual(rows[100]['properties']['street'], 'DURANT AVE')
+            self.assertEqual(rows[1]['properties']['unit'], u'')
+            self.assertEqual(rows[10]['properties']['unit'], u'')
+            self.assertEqual(rows[100]['properties']['unit'], u'')
 
     def test_single_pl_ds(self):
         ''' Test complete process_one.process on Polish sample data.
@@ -743,15 +743,15 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[1]['NUMBER'], u'5')
-            self.assertEqual(rows[10]['NUMBER'], u'8')
-            self.assertEqual(rows[100]['NUMBER'], u'5a')
-            self.assertEqual(rows[1]['STREET'], u'Ulica Dolnych Wa\u0142\xf3w  Gliwice')
-            self.assertEqual(rows[10]['STREET'], u'Ulica Dolnych Wa\u0142\xf3w  Gliwice')
-            self.assertEqual(rows[100]['STREET'], u'Plac pl. Inwalid\xf3w Wojennych  Gliwice')
-            self.assertEqual(rows[1]['UNIT'], u'')
-            self.assertEqual(rows[10]['UNIT'], u'')
-            self.assertEqual(rows[100]['UNIT'], u'')
+            self.assertEqual(rows[1]['properties']['number'], u'5')
+            self.assertEqual(rows[10]['properties']['number'], u'8')
+            self.assertEqual(rows[100]['properties']['number'], u'5a')
+            self.assertEqual(rows[1]['properties']['street'], u'Ulica Dolnych Wa\u0142\xf3w  Gliwice')
+            self.assertEqual(rows[10]['properties']['street'], u'Ulica Dolnych Wa\u0142\xf3w  Gliwice')
+            self.assertEqual(rows[100]['properties']['street'], u'Plac pl. Inwalid\xf3w Wojennych  Gliwice')
+            self.assertEqual(rows[1]['properties']['unit'], u'')
+            self.assertEqual(rows[10]['properties']['unit'], u'')
+            self.assertEqual(rows[100]['properties']['unit'], u'')
 
     def test_single_jp_fukushima2(self):
         ''' Test complete process_one.process on Japanese sample data.
@@ -772,15 +772,15 @@ class TestOA (unittest.TestCase):
             rows = list(map(json.loads, list(file)))
 
         self.assertEqual(len(rows), 6)
-        self.assertEqual(rows[0]['NUMBER'], u'24-9')
-        self.assertEqual(rows[0]['STREET'], u'田沢字姥懐')
-        self.assertEqual(rows[1]['NUMBER'], u'16-9')
-        self.assertEqual(rows[1]['STREET'], u'田沢字躑躅ケ森')
-        self.assertEqual(rows[2]['NUMBER'], u'22-9')
-        self.assertEqual(rows[2]['STREET'], u'小田字正夫田')
-        self.assertEqual(rows[0]['GEOM'], 'POINT (140.480007 37.706391)')
-        self.assertEqual(rows[1]['GEOM'], 'POINT (140.486267 37.707664)')
-        self.assertEqual(rows[2]['GEOM'], 'POINT (140.41875 37.710239)')
+        self.assertEqual(rows[0]['properties']['number'], u'24-9')
+        self.assertEqual(rows[0]['properties']['street'], u'田沢字姥懐')
+        self.assertEqual(rows[1]['properties']['number'], u'16-9')
+        self.assertEqual(rows[1]['properties']['street'], u'田沢字躑躅ケ森')
+        self.assertEqual(rows[2]['properties']['number'], u'22-9')
+        self.assertEqual(rows[2]['properties']['street'], u'小田字正夫田')
+        self.assertEqual(rows[0]['geometry']['coordinates'], [140.480007, 37.706391])
+        self.assertEqual(rows[1]['geometry']['coordinates'], [140.486267, 37.707664])
+        self.assertEqual(rows[2]['geometry']['coordinates'], [140.41875, 37.710239])
 
     def test_single_utah(self):
         ''' Test complete process_one.process on data that uses file selection with mixed case (issue #104)
@@ -912,15 +912,15 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[1]['UNIT'], u'2')
-            self.assertEqual(rows[11]['UNIT'], u'11')
-            self.assertEqual(rows[21]['UNIT'], u'')
-            self.assertEqual(rows[1]['NUMBER'], u'423')
-            self.assertEqual(rows[11]['NUMBER'], u'423')
-            self.assertEqual(rows[21]['NUMBER'], u'7')
-            self.assertEqual(rows[1]['STREET'], u'W 28TH DIVISION HWY')
-            self.assertEqual(rows[11]['STREET'], u'W 28TH DIVISION HWY')
-            self.assertEqual(rows[21]['STREET'], u'W 28TH DIVISION HWY')
+            self.assertEqual(rows[1]['unit'], u'2')
+            self.assertEqual(rows[11]['unit'], u'11')
+            self.assertEqual(rows[21]['unit'], u'')
+            self.assertEqual(rows[1]['number'], u'423')
+            self.assertEqual(rows[11]['number'], u'423')
+            self.assertEqual(rows[21]['number'], u'7')
+            self.assertEqual(rows[1]['street'], u'W 28TH DIVISION HWY')
+            self.assertEqual(rows[11]['street'], u'W 28TH DIVISION HWY')
+            self.assertEqual(rows[21]['street'], u'W 28TH DIVISION HWY')
 
     def test_single_ua_kharkiv(self):
         ''' Test complete process_one.process on data with ESRI multiPolyline geometries.
@@ -952,15 +952,15 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[1]['UNIT'], u'')
-            self.assertEqual(rows[10]['UNIT'], u'')
-            self.assertEqual(rows[20]['UNIT'], u'')
-            self.assertEqual(rows[1]['NUMBER'], u'')
-            self.assertEqual(rows[10]['NUMBER'], u'')
-            self.assertEqual(rows[20]['NUMBER'], u'429')
-            self.assertEqual(rows[1]['STREET'], u'STATE RD')
-            self.assertEqual(rows[10]['STREET'], u'STATE RD')
-            self.assertEqual(rows[20]['STREET'], u'WALNUT AVE E')
+            self.assertEqual(rows[1]['properties']['unit'], u'')
+            self.assertEqual(rows[10]['properties']['unit'], u'')
+            self.assertEqual(rows[20]['properties']['unit'], u'')
+            self.assertEqual(rows[1]['properties']['number'], u'')
+            self.assertEqual(rows[10]['properties']['number'], u'')
+            self.assertEqual(rows[20]['properties']['number'], u'429')
+            self.assertEqual(rows[1]['properties']['street'], u'STATE RD')
+            self.assertEqual(rows[10]['properties']['street'], u'STATE RD')
+            self.assertEqual(rows[20]['properties']['street'], u'WALNUT AVE E')
 
     def test_single_nm_washington(self):
         ''' Test complete process_one.process on data without ESRI support for resultRecordCount.
@@ -979,15 +979,15 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[1]['UNIT'], u'')
-            self.assertEqual(rows[5]['UNIT'], u'')
-            self.assertEqual(rows[9]['UNIT'], u'')
-            self.assertEqual(rows[1]['NUMBER'], u'9884')
-            self.assertEqual(rows[5]['NUMBER'], u'3842')
-            self.assertEqual(rows[9]['NUMBER'], u'')
-            self.assertEqual(rows[1]['STREET'], u'5TH STREET LN N')
-            self.assertEqual(rows[5]['STREET'], u'ABERCROMBIE LN')
-            self.assertEqual(rows[9]['STREET'], u'')
+            self.assertEqual(rows[1]['properties']['unit'], u'')
+            self.assertEqual(rows[5]['properties']['unit'], u'')
+            self.assertEqual(rows[9]['properties']['unit'], u'')
+            self.assertEqual(rows[1]['properties']['number'], u'9884')
+            self.assertEqual(rows[5]['properties']['number'], u'3842')
+            self.assertEqual(rows[9]['properties']['number'], u'')
+            self.assertEqual(rows[1]['properties']['street'], u'5TH STREET LN N')
+            self.assertEqual(rows[5]['properties']['street'], u'ABERCROMBIE LN')
+            self.assertEqual(rows[9]['properties']['street'], u'')
 
     def test_single_tx_waco(self):
         ''' Test complete process_one.process on data without ESRI support for resultRecordCount.
@@ -1025,16 +1025,16 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[0]['REGION'], u'TX')
-            self.assertEqual(rows[0]['ID'], u'')
-            self.assertEqual(rows[0]['NUMBER'], u'308')
-            self.assertEqual(rows[0]['HASH'], u'c782a47f7d52d99f')
-            self.assertEqual(rows[0]['CITY'], u'Mcgregor')
-            self.assertEqual(rows[0]['GEOM'], u'POINT (-97.3961768 31.4432706)')
-            self.assertEqual(rows[0]['STREET'], u'PULLEN ST')
-            self.assertEqual(rows[0]['POSTCODE'], u'76657')
-            self.assertEqual(rows[0]['UNIT'], u'')
-            self.assertEqual(rows[0]['DISTRICT'], u'')
+            self.assertEqual(rows[0]['properties']['region'], u'TX')
+            self.assertEqual(rows[0]['properties']['id'], u'')
+            self.assertEqual(rows[0]['properties']['number'], u'308')
+            self.assertEqual(rows[0]['properties']['hash'], u'c782a47f7d52d99f')
+            self.assertEqual(rows[0]['properties']['city'], u'Mcgregor')
+            self.assertEqual(rows[0]['geometry']['coordinates'], [-97.3961768, 31.4432706]),
+            self.assertEqual(rows[0]['properties']['street'], u'PULLEN ST')
+            self.assertEqual(rows[0]['properties']['postcode'], u'76657')
+            self.assertEqual(rows[0]['properties']['unit'], u'')
+            self.assertEqual(rows[0]['properties']['district'], u'')
 
     def test_single_wy_park(self):
         ''' Test complete process_one.process on data without ESRI support for resultRecordCount.
@@ -1055,8 +1055,8 @@ class TestOA (unittest.TestCase):
             rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[0]['properties']['id'], u'')
             self.assertEqual(rows[0]['properties']['number'], u'162')
-            self.assertEqual(rows[0]['properties']['hash'], u'd666aba81e7f9b01')
-            self.assertEqual(rows[0]['properties']['CITY'], u'')
+            self.assertEqual(rows[0]['properties']['hash'], u'730e5ad1893108e4')
+            self.assertEqual(rows[0]['properties']['city'], u'')
             self.assertEqual(rows[0]['geometry']['type'], 'Point');
             self.assertAlmostEqual(rows[0]['geometry']['coordinates'][0], -108.7563613);
             self.assertAlmostEqual(rows[0]['geometry']['coordinates'][1], 44.7538737);
@@ -1082,15 +1082,15 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[0]['ID'], u'')
-            self.assertEqual(rows[0]['NUMBER'], u'434')
-            self.assertEqual(rows[0]['HASH'], u'58a4d4fbbf126d86')
-            self.assertEqual(rows[0]['CITY'], u'MONROE')
-            self.assertEqual(rows[0]['GEOM'], u'POINT (-74.1926686 41.3187728)')
-            self.assertEqual(rows[0]['STREET'], u'')
-            self.assertEqual(rows[0]['POSTCODE'], u'10950')
-            self.assertEqual(rows[0]['UNIT'], u'')
-            self.assertEqual(rows[0]['DISTRICT'], u'')
+            self.assertEqual(rows[0]['properties']['id'], u'')
+            self.assertEqual(rows[0]['properties']['number'], u'434')
+            self.assertEqual(rows[0]['properties']['hash'], u'58a4d4fbbf126d86')
+            self.assertEqual(rows[0]['properties']['city'], u'MONROE')
+            self.assertEqual(rows[0]['geometry']['coordinates'], [-74.1926686, 41.3187728])
+            self.assertEqual(rows[0]['properties']['street'], u'')
+            self.assertEqual(rows[0]['properties']['postcode'], u'10950')
+            self.assertEqual(rows[0]['properties']['unit'], u'')
+            self.assertEqual(rows[0]['properties']['district'], u'')
 
     def test_single_de_berlin(self):
         ''' Test complete process_one.process on data.
@@ -1107,12 +1107,12 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(rows[0]['NUMBER'], u'72')
-            self.assertEqual(rows[1]['NUMBER'], u'3')
-            self.assertEqual(rows[2]['NUMBER'], u'75')
-            self.assertEqual(rows[0]['STREET'], u'Otto-Braun-Stra\xdfe')
-            self.assertEqual(rows[1]['STREET'], u'Dorotheenstra\xdfe')
-            self.assertEqual(rows[2]['STREET'], u'Alte Jakobstra\xdfe')
+            self.assertEqual(rows[0]['properties']['number'], u'72')
+            self.assertEqual(rows[1]['properties']['number'], u'3')
+            self.assertEqual(rows[2]['properties']['number'], u'75')
+            self.assertEqual(rows[0]['properties']['street'], u'Otto-Braun-Stra\xdfe')
+            self.assertEqual(rows[1]['properties']['street'], u'Dorotheenstra\xdfe')
+            self.assertEqual(rows[2]['properties']['street'], u'Alte Jakobstra\xdfe')
 
         self.assertIsNone(state['preview'])
 
@@ -1132,18 +1132,18 @@ class TestOA (unittest.TestCase):
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 12)
-            self.assertEqual(rows[2]['NUMBER'], u'1')
-            self.assertEqual(rows[3]['NUMBER'], u'10')
-            self.assertEqual(rows[-2]['NUMBER'], u'2211')
-            self.assertEqual(rows[-1]['NUMBER'], u'2211')
-            self.assertEqual(rows[2]['STREET'], u'SW RICHARDSON ST')
-            self.assertEqual(rows[3]['STREET'], u'SW PORTER ST')
-            self.assertEqual(rows[-2]['STREET'], u'SE OCHOCO ST')
-            self.assertEqual(rows[-1]['STREET'], u'SE OCHOCO ST')
-            self.assertTrue(bool(rows[2]['GEOM']))
-            self.assertTrue(bool(rows[3]['GEOM']))
-            self.assertFalse(bool(rows[-2]['GEOM']))
-            self.assertTrue(bool(rows[-1]['GEOM']))
+            self.assertEqual(rows[2]['properties']['number'], u'1')
+            self.assertEqual(rows[3]['properties']['number'], u'10')
+            self.assertEqual(rows[-2]['properties']['number'], u'2211')
+            self.assertEqual(rows[-1]['properties']['number'], u'2211')
+            self.assertEqual(rows[2]['properties']['street'], u'SW RICHARDSON ST')
+            self.assertEqual(rows[3]['properties']['street'], u'SW PORTER ST')
+            self.assertEqual(rows[-2]['properties']['street'], u'SE OCHOCO ST')
+            self.assertEqual(rows[-1]['properties']['street'], u'SE OCHOCO ST')
+            self.assertTrue(bool(rows[2]['geometry']))
+            self.assertTrue(bool(rows[3]['geometry']))
+            self.assertFalse(bool(rows[-2]['geometry']))
+            self.assertTrue(bool(rows[-1]['geometry']))
 
     def test_single_nl_countrywide(self):
         ''' Test complete process_one.process on data.
@@ -1161,14 +1161,14 @@ class TestOA (unittest.TestCase):
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 8)
-            self.assertEqual(rows[0]['NUMBER'], u'34x')
-            self.assertEqual(rows[1]['NUMBER'], u'65-x')
-            self.assertEqual(rows[2]['NUMBER'], u'147x-x')
-            self.assertEqual(rows[3]['NUMBER'], u'6')
-            self.assertEqual(rows[4]['NUMBER'], u'279b')
-            self.assertEqual(rows[5]['NUMBER'], u'10')
-            self.assertEqual(rows[6]['NUMBER'], u'601')
-            self.assertEqual(rows[7]['NUMBER'], u'2')
+            self.assertEqual(rows[0]['properties']['number'], u'34x')
+            self.assertEqual(rows[1]['properties']['number'], u'65-x')
+            self.assertEqual(rows[2]['properties']['number'], u'147x-x')
+            self.assertEqual(rows[3]['properties']['number'], u'6')
+            self.assertEqual(rows[4]['properties']['number'], u'279b')
+            self.assertEqual(rows[5]['properties']['number'], u'10')
+            self.assertEqual(rows[6]['properties']['number'], u'601')
+            self.assertEqual(rows[7]['properties']['number'], u'2')
 
     def test_single_be_wa_brussels(self):
         ''' Test complete process_one.process on data.
@@ -1185,31 +1185,27 @@ class TestOA (unittest.TestCase):
 
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
-            self.assertEqual(len(rows), 665)
-            self.assertEqual(rows[0]['NUMBER'], u'2')
-            self.assertEqual(rows[0]['STREET'], u'Rue de la Victoire')
-            self.assertEqual(rows[1]['NUMBER'], u'16')
-            self.assertEqual(rows[1]['STREET'], u'Rue Fontainas')
-            self.assertEqual(rows[2]['NUMBER'], u'23C')
-            self.assertEqual(rows[2]['STREET'], u'Rue Fontainas')
-            self.assertEqual(rows[3]['NUMBER'], u'2')
-            self.assertEqual(rows[3]['STREET'], u"Rue de l'Eglise Saint-Gilles")
+            self.assertEqual(len(rows), 666)
+            self.assertEqual(rows[0]['properties']['number'], u'2')
+            self.assertEqual(rows[0]['properties']['street'], u'Rue de la Victoire')
+            self.assertEqual(rows[1]['properties']['number'], u'16')
+            self.assertEqual(rows[1]['properties']['street'], u'Rue Fontainas')
+            self.assertEqual(rows[2]['properties']['number'], u'23C')
+            self.assertEqual(rows[2]['properties']['street'], u'Rue Fontainas')
+            self.assertEqual(rows[3]['properties']['number'], u'2')
+            self.assertEqual(rows[3]['properties']['street'], u"Rue de l'Eglise Saint-Gilles")
 
-            x,y = wkt_pt(rows[0]['GEOM'])
-            self.assertAlmostEqual(4.3458216, x, places=4)
-            self.assertAlmostEqual(50.8324706, y, places=4)
+            self.assertAlmostEqual(4.3458216, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(50.8324706, rows[0]['geometry']['coordinates'][1], places=4)
 
-            x,y = wkt_pt(rows[1]['GEOM'])
-            self.assertAlmostEqual(4.3412631, x, places=4)
-            self.assertAlmostEqual(50.8330868, y, places=4)
+            self.assertAlmostEqual(4.3412631, rows[1]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(50.8330868, rows[1]['geometry']['coordinates'][1], places=4)
 
-            x,y = wkt_pt(rows[2]['GEOM'])
-            self.assertAlmostEqual(4.3410663, x, places=4)
-            self.assertAlmostEqual(50.8334315, y, places=4)
+            self.assertAlmostEqual(4.3410663, rows[2]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(50.8334315, rows[2]['geometry']['coordinates'][1], places=4)
 
-            x,y = wkt_pt(rows[3]['GEOM'])
-            self.assertAlmostEqual(4.3421632, x, places=4)
-            self.assertAlmostEqual(50.8322201, y, places=4)
+            self.assertAlmostEqual(4.3421632, rows[3]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(50.8322201, rows[3]['geometry']['coordinates'][1], places=4)
 
     def test_single_it_52_statewide(self):
         ''' Test complete process_one.process on data.
@@ -1227,15 +1223,15 @@ class TestOA (unittest.TestCase):
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 19)
-            self.assertEqual(rows[0]['NUMBER'], u'33')
-            self.assertEqual(rows[0]['STREET'], u'VIA CARLO CARRÀ')
-            self.assertEqual(rows[1]['NUMBER'], u'23')
-            self.assertEqual(rows[1]['STREET'], u'VIA CARLO CARRÀ')
-            self.assertEqual(rows[2]['NUMBER'], u'2')
-            self.assertEqual(rows[2]['STREET'], u'VIA MARINO MARINI')
-            self.assertEqual(rows[0]['GEOM'], 'POINT (10.1863188 43.9562646)')
-            self.assertEqual(rows[1]['GEOM'], 'POINT (10.1856048 43.9558156)')
-            self.assertEqual(rows[2]['GEOM'], 'POINT (10.1860548 43.9553626)')
+            self.assertEqual(rows[0]['properties']['number'], u'33')
+            self.assertEqual(rows[0]['properties']['street'], u'VIA CARLO CARRÀ')
+            self.assertEqual(rows[1]['properties']['number'], u'23')
+            self.assertEqual(rows[1]['properties']['street'], u'VIA CARLO CARRÀ')
+            self.assertEqual(rows[2]['properties']['number'], u'2')
+            self.assertEqual(rows[2]['properties']['street'], u'VIA MARINO MARINI')
+            self.assertEqual(rows[0]['geometry']['coordinates'], [10.1863188, 43.9562646])
+            self.assertEqual(rows[1]['geometry']['coordinates'], [10.1856048, 43.9558156])
+            self.assertEqual(rows[2]['geometry']['coordinates'], [10.1860548, 43.9553626])
 
     def test_single_us_nj_statewide(self):
         ''' Test complete process_one.process on data.
@@ -1253,15 +1249,15 @@ class TestOA (unittest.TestCase):
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 1045)
-            self.assertEqual(rows[0]['NUMBER'], u'7')
-            self.assertEqual(rows[0]['STREET'], u'Sagamore Avenue')
-            self.assertEqual(rows[1]['NUMBER'], u'29')
-            self.assertEqual(rows[1]['STREET'], u'Sagamore Avenue')
-            self.assertEqual(rows[2]['NUMBER'], u'47')
-            self.assertEqual(rows[2]['STREET'], u'Seneca Place')
-            self.assertEqual(rows[0]['GEOM'], 'POINT (-74.0012016 40.3201199)')
-            self.assertEqual(rows[1]['GEOM'], 'POINT (-74.0027904 40.3203365)')
-            self.assertEqual(rows[2]['GEOM'], 'POINT (-74.0011386 40.3166497)')
+            self.assertEqual(rows[0]['properties']['number'], u'7')
+            self.assertEqual(rows[0]['properties']['street'], u'Sagamore Avenue')
+            self.assertEqual(rows[1]['properties']['number'], u'29')
+            self.assertEqual(rows[1]['properties']['street'], u'Sagamore Avenue')
+            self.assertEqual(rows[2]['properties']['number'], u'47')
+            self.assertEqual(rows[2]['properties']['street'], u'Seneca Place')
+            self.assertEqual(rows[0]['geometry']['coordinates'], [-74.0012016, 40.3201199]),
+            self.assertEqual(rows[1]['geometry']['coordinates'], [-74.0027904, 40.3203365])
+            self.assertEqual(rows[2]['geometry']['coordinates'], [-74.0011386, 40.3166497])
 
     def test_single_cz_countrywide(self):
         ''' Test complete process_one.process on data.
@@ -1326,18 +1322,18 @@ class TestOA (unittest.TestCase):
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 6)
-            self.assertEqual(rows[0]['NUMBER'], '5115')
-            self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[1]['NUMBER'], '5121')
-            self.assertEqual(rows[1]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[2]['NUMBER'], '5133')
-            self.assertEqual(rows[2]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[3]['NUMBER'], '5126')
-            self.assertEqual(rows[3]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[4]['NUMBER'], '5120')
-            self.assertEqual(rows[4]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[5]['NUMBER'], '5115')
-            self.assertEqual(rows[5]['STREET'], 'OLD MILL RD')
+            self.assertEqual(rows[0]['properties']['number'], '5115')
+            self.assertEqual(rows[0]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[1]['properties']['number'], '5121')
+            self.assertEqual(rows[1]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[2]['properties']['number'], '5133')
+            self.assertEqual(rows[2]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[3]['properties']['number'], '5126')
+            self.assertEqual(rows[3]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[4]['properties']['number'], '5120')
+            self.assertEqual(rows[4]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[5]['properties']['number'], '5115')
+            self.assertEqual(rows[5]['properties']['street'], 'OLD MILL RD')
 
     def test_single_lake_man_gdb_nested(self):
         ''' Test complete process_one.process on data.
@@ -1357,18 +1353,18 @@ class TestOA (unittest.TestCase):
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 6)
-            self.assertEqual(rows[0]['NUMBER'], '5115')
-            self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[1]['NUMBER'], '5121')
-            self.assertEqual(rows[1]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[2]['NUMBER'], '5133')
-            self.assertEqual(rows[2]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[3]['NUMBER'], '5126')
-            self.assertEqual(rows[3]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[4]['NUMBER'], '5120')
-            self.assertEqual(rows[4]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[5]['NUMBER'], '5115')
-            self.assertEqual(rows[5]['STREET'], 'OLD MILL RD')
+            self.assertEqual(rows[0]['properties']['number'], '5115')
+            self.assertEqual(rows[0]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[1]['properties']['number'], '5121')
+            self.assertEqual(rows[1]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[2]['properties']['number'], '5133')
+            self.assertEqual(rows[2]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[3]['properties']['number'], '5126')
+            self.assertEqual(rows[3]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[4]['properties']['number'], '5120')
+            self.assertEqual(rows[4]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[5]['properties']['number'], '5115')
+            self.assertEqual(rows[5]['properties']['street'], 'OLD MILL RD')
 
     def test_single_lake_man_gdb_nested_nodir(self):
         ''' Test complete process_one.process on data.
@@ -1388,18 +1384,18 @@ class TestOA (unittest.TestCase):
         with open(output_path, encoding='utf8') as input:
             rows = list(map(json.loads, list(input)))
             self.assertEqual(len(rows), 6)
-            self.assertEqual(rows[0]['NUMBER'], '5115')
-            self.assertEqual(rows[0]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[1]['NUMBER'], '5121')
-            self.assertEqual(rows[1]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[2]['NUMBER'], '5133')
-            self.assertEqual(rows[2]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[3]['NUMBER'], '5126')
-            self.assertEqual(rows[3]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[4]['NUMBER'], '5120')
-            self.assertEqual(rows[4]['STREET'], 'FRUITED PLAINS LN')
-            self.assertEqual(rows[5]['NUMBER'], '5115')
-            self.assertEqual(rows[5]['STREET'], 'OLD MILL RD')
+            self.assertEqual(rows[0]['properties']['number'], '5115')
+            self.assertEqual(rows[0]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[1]['properties']['number'], '5121')
+            self.assertEqual(rows[1]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[2]['properties']['number'], '5133')
+            self.assertEqual(rows[2]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[3]['properties']['number'], '5126')
+            self.assertEqual(rows[3]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[4]['properties']['number'], '5120')
+            self.assertEqual(rows[4]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[5]['properties']['number'], '5115')
+            self.assertEqual(rows[5]['properties']['street'], 'OLD MILL RD')
 
 class TestState (unittest.TestCase):
 
