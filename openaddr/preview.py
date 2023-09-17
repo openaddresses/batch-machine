@@ -28,16 +28,9 @@ EPSG900913 = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +
 def render(src_filename, png_filename, width, resolution, mapbox_key):
     '''
     '''
-    _, points_filename = mkstemp(prefix='points-', suffix='.bin')
-
     try:
-        _L.info('Writing from {} to {}...'.format(src_filename, points_filename))
-        points = project_lonlats(iterate_file_lonlats(src_filename))
-        write_points(points, points_filename)
-
-        xmin, ymin, xmax, ymax = calculate_bounds(points_filename)
+        xmin, ymin, xmax, ymax = calculate_bounds(src_filename)
     except:
-        os.remove(points_filename)
         raise
 
     surface, context, scale = make_context(xmin, ymin, xmax, ymax, width, resolution)
@@ -73,7 +66,9 @@ def render(src_filename, png_filename, width, resolution, mapbox_key):
 
     context.set_line_width(.25 * muppx)
 
-    for (x, y) in read_points(points_filename):
+    for geom in iterate_file_geoms(src_filename):
+        (x, y, e) = geom.PointOnSurface().GetPoint()
+
         context.arc(x, y, 15, 0, 2 * pi)
         context.set_source_rgb(*point_fill)
         context.fill()
@@ -81,26 +76,29 @@ def render(src_filename, png_filename, width, resolution, mapbox_key):
         context.set_source_rgb(*black)
         context.stroke()
 
-    os.remove(points_filename)
     surface.write_to_png(png_filename)
 
-def iterate_file_lonlats(filename):
-    ''' Stream (lon, lat) coordinates from an input GeoJSON
+def iterate_file_geoms(filename):
+    ''' Stream Geometries from an input GeoJSON+LD File
     '''
 
     with open(filename, 'r') as file:
+        project = get_projection()
+
         for line in file:
             try:
                 line = json.loads(line)
 
-                lon, lat, x = ogr.CreateGeometryFromJson(json.dumps(line['geometry'])).PointOnSurface().GetPoint()
+                geom = ogr.CreateGeometryFromJson(json.dumps(line['geometry']))
 
-                if -180 <= lon <= 180 and -90 <= lat <= 90:
-                    yield (lon, lat)
+                geom.Transform(project)
+
+                yield geom
             except Exception as e:
                 print('ERROR', e)
-            except:
                 continue
+
+    del project, geom
 
 def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, mapbox_key):
     '''
@@ -188,57 +186,29 @@ def get_projection():
     sref_map = osr.SpatialReference(); sref_map.ImportFromProj4(EPSG900913)
     return osr.CoordinateTransformation(sref_geo, sref_map)
 
-def project_lonlats(lonlats):
-    ''' Stream Mercator (x, y) points from a stream of (lon, lat) coordinates.
-    '''
-    project, geom = get_projection(), ogr.Geometry(ogr.wkbPoint)
-
-    for (lon, lat) in lonlats:
-        geom.SetPoint(0, lon, lat)
-        try:
-            geom.Transform(project)
-        except:
-            pass
-        else:
-            yield (geom.GetX(), geom.GetY())
-
-    del project, geom
-
-def write_points(points, points_filename):
-    ''' Write a stream of (x, y) points into a file of packed values.
+def write_geoms(geoms, geoms_filename):
+    ''' Write a stream of geoms into a file of packed values.
     '''
     count = 0
 
-    with open(points_filename, mode='wb') as file:
-        for (x, y) in points:
-            file.write(struct.pack(FORMAT, x, y))
+    with open(geoms_filename, mode='wb') as file:
+        for geom in geoms:
+            file.write(geom)
             count += 1
 
-    _L.info('Wrote {} points to {}'.format(count, points_filename))
+    _L.info('Wrote {} points to {}'.format(count, geoms_filename))
 
-def read_points(points_filename):
-    ''' Read a file of packed values into a stream of (x, y) points.
-    '''
-    _L.debug('Reading from {}'.format(points_filename))
-    chunk_size = struct.calcsize(FORMAT)
-
-    with open(points_filename, mode='rb') as file:
-        while True:
-            chunk = file.read(chunk_size)
-            if chunk:
-                yield struct.unpack(FORMAT, chunk)
-            else:
-                return
-
-def stats(points_filename):
-    ''' Return means and standard deviations for points in file.
+def stats(geoms_filename):
+    ''' Return means and standard deviations for iterator geoms
 
         Uses Welford's numerically stable algorithm from
         https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
     '''
     n, xmean, xM2, ymean, yM2 = 0, 0, 0, 0, 0
 
-    for (x, y) in read_points(points_filename):
+    for geom in iterate_file_geoms(geoms_filename):
+        (x, y, e) = geom.PointOnSurface().GetPoint()
+
         n += 1
 
         xdelta = x - xmean
@@ -264,10 +234,10 @@ def calculate_zoom(scale, resolution):
 
     return zoom
 
-def calculate_bounds(points_filename):
+def calculate_bounds(geoms_filename):
     '''
     '''
-    xmean, xsdev, ymean, ysdev = stats(points_filename)
+    xmean, xsdev, ymean, ysdev = stats(geoms_filename)
 
     # use standard deviation to avoid far-flung mistakes, and look further
     # horizontally to account for Github comment thread image appearance.
@@ -278,7 +248,9 @@ def calculate_bounds(points_filename):
     left, right = xmax, xmin
     bottom, top = ymax, ymin
 
-    for (x, y) in read_points(points_filename):
+    for geom in iterate_file_geoms(geoms_filename):
+        (x, y, e) = geom.PointOnSurface().GetPoint()
+
         if xmin <= x <= xmax:
             left, right = min(left, x), max(right, x)
         if ymin <= y <= ymax:
@@ -374,7 +346,7 @@ def draw_line(ctx, start, points):
 
 parser = ArgumentParser(description='Draw a map of a single source preview.')
 
-parser.add_argument('src_filename', help='Input GeoJSON')
+parser.add_argument('src_geojson', help='Input GeoJSON')
 parser.add_argument('png_filename', help='Output PNG filename.')
 
 parser.set_defaults(resolution=1, width=668)
@@ -401,7 +373,7 @@ parser.add_argument('-q', '--quiet', help='Turn off most logging',
 
 def main():
     args = parser.parse_args()
-    render(args.src_filename, args.png_filename, args.width, args.resolution, args.mapbox_key)
+    render(args.src_geojson, args.png_filename, args.width, args.resolution, args.mapbox_key)
 
 if __name__ == '__main__':
     exit(main())
