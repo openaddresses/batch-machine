@@ -290,7 +290,7 @@ def find_source_path(data_source, source_paths):
                     return c
             _L.warning("Source names file %s but could not find it", source_file_name)
             return None
-    elif format_string == "geojson" and protocol_string != "ESRI":
+    elif format_string == "geojson" or protocol_string == "ESRI":
         candidates = []
         for fn in source_paths:
             basename, ext = os.path.splitext(fn)
@@ -306,9 +306,6 @@ def find_source_path(data_source, source_paths):
             _L.warning("Found more than one JSON file in source, can't pick one")
             # geojson spec currently doesn't include a file attribute. Maybe it should?
             return None
-    elif format_string == "geojson" and protocol_string == "ESRI":
-        # Old style ESRI conform: ESRI downloader should only give us a single cache.csv file
-        return source_paths[0]
     elif format_string == "csv":
         # Return file if it's specified, else return the first file we find
         if "file" in conform:
@@ -1126,20 +1123,17 @@ def extract_to_source_csv(source_config, source_path, extract_path):
     format_string = source_config.data_source["conform"]['format']
     protocol_string = source_config.data_source['protocol']
 
-    if format_string in ("shapefile", "xml", "gdb"):
+    # TODO 2023: Is this true anymore?
+    # 2017: GeoJSON sources have some awkward legacy with ESRI, see issue #34
+    if format_string == "geojson" or protocol_string == "ESRI":
+        _L.info("Non-ESRI GeoJSON source found; converting as a stream.")
+        geojson_source_path = normalize_ogr_filename_case(source_path)
+        geojson_source_to_csv(source_config, geojson_source_path, extract_path)
+    elif format_string in ("shapefile", "xml", "gdb"):
         ogr_source_path = normalize_ogr_filename_case(source_path)
         ogr_source_to_csv(source_config, ogr_source_path, extract_path)
     elif format_string == "csv":
         csv_source_to_csv(source_config, source_path, extract_path)
-    elif format_string == "geojson":
-        # GeoJSON sources have some awkward legacy with ESRI, see issue #34
-        if protocol_string == "ESRI":
-            _L.info("ESRI GeoJSON source found; treating it as CSV")
-            csv_source_to_csv(source_config, source_path, extract_path)
-        else:
-            _L.info("Non-ESRI GeoJSON source found; converting as a stream.")
-            geojson_source_path = normalize_ogr_filename_case(source_path)
-            geojson_source_to_csv(source_config, geojson_source_path, extract_path)
     else:
         raise Exception("Unsupported source format %s" % format_string)
 

@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 import logging; _L = logging.getLogger('openaddr.cache')
 
 import os
+import json
 import errno
 import math
 import mimetypes
