@@ -352,9 +352,8 @@ class TestOA (unittest.TestCase):
             slippymap_gen.side_effect = touch_first_arg_file
             state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, mapbox_key='mapbox-XXXX')
 
-        self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.geojson'))
-        self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
-        self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.geojson'))
+        self.assertTrue(slippymap_gen.mock_calls[0][0].endswith('.geojson'))
+        self.assertTrue(slippymap_gen.mock_calls[1][0].endswith('.pmtiles'))
 
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
@@ -396,9 +395,8 @@ class TestOA (unittest.TestCase):
             slippymap_gen.side_effect = touch_first_arg_file
             state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, mapbox_key='mapbox-XXXX')
 
-        self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.geojson'))
-        self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
-        self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.geojson'))
+        self.assertTrue(slippymap_gen.mock_calls[0][0].endswith('.geojson'))
+        self.assertTrue(slippymap_gen.mock_calls[1][0].endswith('.pmtiles'))
 
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
@@ -440,9 +438,8 @@ class TestOA (unittest.TestCase):
             slippymap_gen.side_effect = touch_first_arg_file
             state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, mapbox_key='mapbox-XXXX')
 
-        self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.geojson'))
-        self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
-        self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.geojson'))
+        self.assertTrue(slippymap_gen.mock_calls[0][0].endswith('.geojson'))
+        self.assertTrue(slippymap_gen.mock_calls[1][0].endswith('.pmtiles'))
 
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
@@ -481,9 +478,8 @@ class TestOA (unittest.TestCase):
             slippymap_gen.side_effect = touch_first_arg_file
             state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, mapbox_key='mapbox-XXXX')
 
-        self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.geojson'))
-        self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
-        self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.geojson'))
+        self.assertTrue(slippymap_gen.mock_calls[0][0].endswith('.geojson'))
+        self.assertTrue(slippymap_gen.mock_calls[1][0].endswith('.pmtiles'))
 
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
@@ -526,9 +522,8 @@ class TestOA (unittest.TestCase):
             slippymap_gen.side_effect = touch_first_arg_file
             state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, mapbox_key='mapbox-XXXX')
 
-        self.assertTrue(slippymap_gen.mock_calls[0][1][1].endswith('.geojson'))
-        self.assertTrue(slippymap_gen.mock_calls[1][1][0].endswith('.pmtiles'))
-        self.assertTrue(slippymap_gen.mock_calls[1][1][1].endswith('.geojson'))
+        self.assertTrue(slippymap_gen.mock_calls[0][0].endswith('.geojson'))
+        self.assertTrue(slippymap_gen.mock_calls[1][0].endswith('.pmtiles'))
 
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
