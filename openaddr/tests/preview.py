@@ -60,7 +60,6 @@ class TestPreview (unittest.TestCase):
             with HTTMock(response_content):
                 preview.render(join(dirname(__file__), 'outputs', 'denver-metro-preview.geojson'), png_filename, 668, 1, 'mapbox-XXXX')
 
-            print(png_filename)
             info = str(subprocess.check_output(('file', png_filename)))
 
             self.assertTrue('PNG image data' in info)

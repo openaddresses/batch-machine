@@ -1295,7 +1295,6 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNone(state["processed"])
-        print(state)
         self.assertEqual(state["source problem"], "Found no features in source data")
 
     def test_single_lake_man_gdb(self):
