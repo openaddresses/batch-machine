@@ -388,7 +388,7 @@ class ConvertToGeojsonTask(object):
             rc = conform_cli(source_config, source_path, dest_path)
             if rc == 0:
                 with open(dest_path) as file:
-                    addr_count = sum(1 for line in file) - 1
+                    addr_count = sum(1 for line in file)
 
                 # Success! Return the path of the output CSV
                 return dest_path, addr_count
