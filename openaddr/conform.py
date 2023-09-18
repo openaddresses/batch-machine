@@ -1083,7 +1083,7 @@ def row_convert_to_out(source_config, row):
     "Convert a row from the source schema to OpenAddresses output schema"
 
     geom = row.get(GEOM_FIELDNAME.lower(), None)
-    if geom == "POINT EMPTY":
+    if geom == "POINT EMPTY" or geom == '':
         geom = None
 
     output = {
