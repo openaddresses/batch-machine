@@ -1,13 +1,8 @@
-from __future__ import division
 import logging; _L = logging.getLogger('openaddr.preview')
 
-from zipfile import ZipFile
-from io import TextIOWrapper
-from csv import DictReader
 from tempfile import mkstemp
 from math import pow, sqrt, pi, log
 from argparse import ArgumentParser
-from urllib.parse import urlparse
 import json, itertools, os, struct
 
 import requests, uritemplate, mapbox_vector_tile
@@ -30,10 +25,9 @@ EPSG4326 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
 # Web Mercator, https://trac.osgeo.org/openlayers/wiki/SphericalMercator
 EPSG900913 = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs'
 
-def render(filename_or_url, png_filename, width, resolution, mapbox_key):
+def render(src_filename, png_filename, width, resolution, mapbox_key):
     '''
     '''
-    src_filename = get_local_filename(filename_or_url)
     _, points_filename = mkstemp(prefix='points-', suffix='.bin')
 
     try:
@@ -90,55 +84,23 @@ def render(filename_or_url, png_filename, width, resolution, mapbox_key):
     os.remove(points_filename)
     surface.write_to_png(png_filename)
 
-def get_local_filename(filename_or_url):
-    '''
-    '''
-    parsed = urlparse(filename_or_url)
-    suffix = os.path.splitext(parsed.path)[1]
-
-    if parsed.scheme in ('', 'file'):
-        return filename_or_url
-
-    if parsed.scheme not in ('http', 'https'):
-        raise ValueError('Unknown URL type: {}'.format(filename_or_url))
-
-    _L.info('Downloading {}...'.format(filename_or_url))
-
-    got = requests.get(filename_or_url)
-    _, filename = mkstemp(prefix='Preview-', suffix=suffix)
-
-    with open(filename, 'wb') as file:
-        file.write(got.content)
-        _L.debug('Saved to {}'.format(filename))
-
-    return filename
-
 def iterate_file_lonlats(filename):
-    ''' Stream (lon, lat) coordinates from an input .csv or .zip file.
+    ''' Stream (lon, lat) coordinates from an input GeoJSON
     '''
-    suffix = os.path.splitext(filename)[1].lower()
 
-    if suffix == '.csv':
-        open_file = open(filename, 'r')
-    elif suffix == '.zip':
-        open_file = open(filename, 'rb')
-
-    with open_file as file:
-        if suffix == '.csv':
-            csv_file = file
-        elif suffix == '.zip':
-            zip = ZipFile(file)
-            csv_names = [name for name in zip.namelist() if name.endswith('.csv')]
-            csv_file = TextIOWrapper(zip.open(csv_names[0]))
-
-        for row in DictReader(csv_file):
+    with open(filename, 'r') as file:
+        for line in file:
             try:
-                lon, lat, x = ogr.CreateGeometryFromWkt(row['GEOM']).PointOnSurface().GetPoint()
+                line = json.loads(line)
+
+                lon, lat, x = ogr.CreateGeometryFromJson(json.dumps(line['geometry'])).PointOnSurface().GetPoint()
+
+                if -180 <= lon <= 180 and -90 <= lat <= 90:
+                    yield (lon, lat)
+            except Exception as e:
+                print('ERROR', e)
             except:
                 continue
-
-            if -180 <= lon <= 180 and -90 <= lat <= 90:
-                yield (lon, lat)
 
 def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, mapbox_key):
     '''
@@ -412,7 +374,7 @@ def draw_line(ctx, start, points):
 
 parser = ArgumentParser(description='Draw a map of a single source preview.')
 
-parser.add_argument('src_filename', help='Input Zip or CSV filename or URL.')
+parser.add_argument('src_filename', help='Input GeoJSON')
 parser.add_argument('png_filename', help='Output PNG filename.')
 
 parser.set_defaults(resolution=1, width=668)

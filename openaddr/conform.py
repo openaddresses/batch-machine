@@ -15,6 +15,9 @@ import osgeo
 
 from .geojson import stream_geojson
 
+from shapely.wkt import loads as wkt_loads
+from shapely.geometry import mapping
+
 from zipfile import ZipFile
 from locale import getpreferredencoding
 from os.path import splitext
@@ -41,9 +44,9 @@ gdal.PushErrorHandler(gdal_error_handler)
 # We add columns to the extracted CSV with our own data with these names.
 GEOM_FIELDNAME = 'OA:GEOM'
 
-ADDRESSES_SCHEMA = [ 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID' ]
-BUILDINGS_SCHEMA = []
-PARCELS_SCHEMA = [ 'PID' ]
+ADDRESSES_SCHEMA = [ 'HASH', 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID' ]
+BUILDINGS_SCHEMA = [ 'HASH']
+PARCELS_SCHEMA = [ 'HASH', 'PID' ]
 RESERVED_SCHEMA = ADDRESSES_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA + [
     "LAT",
     "LON"
@@ -365,7 +368,7 @@ def find_source_path(data_source, source_paths):
         _L.warning("Unknown source conform format %s", format_string)
         return None
 
-class ConvertToCsvTask(object):
+class ConvertToGeojsonTask(object):
     known_types = ('.shp', '.json', '.csv', '.kml', '.gdb')
 
     def convert(self, source_config, source_paths, workdir):
@@ -381,11 +384,11 @@ class ConvertToCsvTask(object):
         source_path = find_source_path(source_config.data_source, source_paths)
         if source_path is not None:
             basename, ext = os.path.splitext(os.path.basename(source_path))
-            dest_path = os.path.join(convert_path, basename + ".csv")
+            dest_path = os.path.join(convert_path, basename + ".geojson")
             rc = conform_cli(source_config, source_path, dest_path)
             if rc == 0:
                 with open(dest_path) as file:
-                    addr_count = sum(1 for line in file) - 1
+                    addr_count = sum(1 for line in file)
 
                 # Success! Return the path of the output CSV
                 return dest_path, addr_count
@@ -832,14 +835,17 @@ def row_transform_and_convert(source_config, row):
     # Make up a random fingerprint if none exists
     cache_fingerprint = source_config.data_source.get('fingerprint', str(uuid4()))
 
-    row = row_convert_to_out(source_config, row)
+    row = row_calculate_hash(cache_fingerprint, row)
+
+    feat = row_convert_to_out(source_config, row)
 
     if source_config.layer == "addresses":
-        row = row_canonicalize_unit_and_number(source_config.data_source, row)
-        row = row_round_lat_lon(source_config.data_source, row)
+        feat['properties'] = row_canonicalize_unit_and_number(source_config.data_source, feat['properties'])
 
-    row = row_calculate_hash(cache_fingerprint, row)
-    return row
+    if feat['geometry'] and len(feat['geometry']['coordinates']) > 0:
+        feat['geometry']['coordinates'] = set_precision(feat['geometry']['coordinates'], 7)
+
+    return feat
 
 def fxn_smash_case(fxn):
     if "field" in fxn:
@@ -1043,33 +1049,24 @@ def row_fxn_constant(sc, row, key, fxn):
 
 def row_canonicalize_unit_and_number(sc, row):
     "Canonicalize address unit and number"
-    row["UNIT"] = (row["UNIT"] or '').strip()
-    row["NUMBER"] = (row["NUMBER"] or '').strip()
-    if row["NUMBER"].endswith(".0"):
-        row["NUMBER"] = row["NUMBER"][:-2]
-    row["STREET"] = (row["STREET"] or '').strip()
+    row["unit"] = (row.get("unit", '') or '').strip()
+    row["number"] = (row.get("number", '') or '').strip()
+    row["street"] = (row.get("street", '') or '').strip()
+
+    if row.get("number", '').endswith('.0'):
+        row["number"] = row["number"][:-2]
+
     return row
 
-def _round_wgs84_to_7(n):
-    "Round a WGS84 coordinate to 7 decimal points. Input and output both strings."
+def set_precision(coords, precision):
+    result = []
     try:
-        return "%.12g" % round(float(n), 7)
-    except:
-        return n
+        return round(coords, int(precision))
+    except TypeError:
+        for coord in coords:
+            result.append(set_precision(coord, precision))
 
-def row_round_lat_lon(sc, row):
-    "Round WGS84 coordinates to 1cm precision"
-    if row.get('GEOM') is not None and 'POINT' in row['GEOM']:
-        try:
-            geom = ogr.CreateGeometryFromWkt(row['GEOM'])
-            x = _round_wgs84_to_7(geom.GetX())
-            y = _round_wgs84_to_7(geom.GetY())
-
-            row['GEOM'] = ogr.CreateGeometryFromWkt('POINT ({} {})'.format(x, y)).ExportToWkt()
-        except Exception:
-            pass
-
-    return row
+    return result
 
 def row_calculate_hash(cache_fingerprint, row):
     ''' Calculate row hash based on content and existing fingerprint.
@@ -1078,29 +1075,41 @@ def row_calculate_hash(cache_fingerprint, row):
     '''
     hash = sha1(cache_fingerprint.encode('utf8'))
     hash.update(json.dumps(sorted(row.items()), separators=(',', ':')).encode('utf8'))
-    row.update(HASH=hash.hexdigest()[:16])
+    row.update({'oa:hash': hash.hexdigest()[:16]})
 
     return row
 
 def row_convert_to_out(source_config, row):
     "Convert a row from the source schema to OpenAddresses output schema"
 
+    geom = row.get(GEOM_FIELDNAME.lower(), None)
+    if geom == "POINT EMPTY" or geom == '':
+        geom = None
+
     output = {
-        "GEOM": row.get(GEOM_FIELDNAME.lower(), None),
+        "type": "Feature",
+        "properties": {},
+        "geometry": geom
     }
+
+    if output["geometry"] is not None:
+        wkt_parsed = wkt_loads(output["geometry"])
+        output["geometry"] = mapping(wkt_parsed)
+
 
     for field in source_config.SCHEMA:
         if row.get('oa:{}'.format(field.lower())) is not None:
             # If there is an OA prefix, it is not a native field and was compiled
             # via an attrib funciton or concatentation
-            output[field] = row.get('oa:{}'.format(field.lower()))
+            output["properties"][field.lower()] = row.get('oa:{}'.format(field.lower()))
         else:
             # Get a native field as specified in the conform object
             cfield = source_config.data_source['conform'].get(field.lower())
+
             if cfield:
-                output[field] = row.get(cfield.lower())
+                output["properties"][field.lower()] = row.get(cfield.lower())
             else:
-                output[field] = ''
+                output["properties"][field.lower()] = ''
 
     return output
 
@@ -1134,8 +1143,8 @@ def extract_to_source_csv(source_config, source_path, extract_path):
     else:
         raise Exception("Unsupported source format %s" % format_string)
 
-def transform_to_out_csv(source_config, extract_path, dest_path):
-    ''' Transform an extracted source CSV to the OpenAddresses output CSV by applying conform rules.
+def transform_to_out_geojson(source_config, extract_path, dest_path):
+    ''' Transform an extracted source CSV to the OpenAddresses output GeoJSON by applying conform rules.
 
         source_config: description of the source, containing the conform object
         extract_path: extracted CSV file to process
@@ -1147,14 +1156,12 @@ def transform_to_out_csv(source_config, extract_path, dest_path):
     # Read through the extract CSV
     with open(extract_path, 'r', encoding='utf-8') as extract_fp:
         reader = csv.DictReader(extract_fp)
-        # Write to the destination CSV
+        # Write to the destination GeoJSON
         with open(dest_path, 'w', encoding='utf-8') as dest_fp:
-            writer = csv.DictWriter(dest_fp, ['GEOM', 'HASH', *source_config.SCHEMA])
-            writer.writeheader()
             # For every row in the extract
             for extract_row in reader:
                 out_row = row_transform_and_convert(source_config, extract_row)
-                writer.writerow(out_row)
+                dest_fp.write(json.dumps(out_row) + '\n')
 
 def conform_cli(source_config, source_path, dest_path):
     "Command line entry point for conforming a downloaded source to an output CSV."
@@ -1176,7 +1183,7 @@ def conform_cli(source_config, source_path, dest_path):
 
     try:
         extract_to_source_csv(source_config, source_path, extract_path)
-        transform_to_out_csv(source_config, extract_path, dest_path)
+        transform_to_out_geojson(source_config, extract_path, dest_path)
     finally:
         os.remove(extract_path)
 
@@ -1203,7 +1210,8 @@ def check_source_tests(source_config):
     for (index, test) in enumerate(acceptance_tests):
         input = row_smash_case(source_config.data_source, test['inputs'])
         output = row_smash_case(source_config.data_source, row_transform_and_convert(source_config, input))
-        actual = {k: v for (k, v) in output.items() if k in test['expected']}
+
+        actual = {k: v for (k, v) in output['properties'].items() if k in test['expected']}
         expected = row_smash_case(source_config.data_source, test['expected'])
 
         if actual != expected:

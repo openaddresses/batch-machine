@@ -6,7 +6,6 @@ import tempfile
 import subprocess
 
 from os.path import join, dirname
-from zipfile import ZipFile
 from shutil import rmtree
 
 from httmock import HTTMock, response
@@ -41,7 +40,7 @@ class TestPreview (unittest.TestCase):
         bbox = preview.calculate_bounds(points_filename)
         self.assertEqual(bbox, (-1.04, -1.04, 1.04, 1.04), 'The two outliers are ignored')
 
-    def test_render_zip(self):
+    def test_render_geojson(self):
         '''
         '''
         def response_content(url, request):
@@ -52,54 +51,22 @@ class TestPreview (unittest.TestCase):
                 return response(200, data, headers={'Content-Type': 'application/vnd.mapbox-vector-tile'})
             raise Exception("Uknown URL")
 
-        zip_filename = join(dirname(__file__), 'outputs', 'alameda_geom.zip')
         handle, png_filename = tempfile.mkstemp(prefix='render-', suffix='.png')
         os.close(handle)
 
         try:
+            temp_dir = tempfile.mkdtemp(prefix='test_render_geojson-')
+
             with HTTMock(response_content):
-                preview.render(zip_filename, png_filename, 668, 1, 'mapbox-XXXX')
+                preview.render(join(dirname(__file__), 'outputs', 'denver-metro-preview.geojson'), png_filename, 668, 1, 'mapbox-XXXX')
+
             info = str(subprocess.check_output(('file', png_filename)))
 
             self.assertTrue('PNG image data' in info)
-            self.assertTrue('668 x 573' in info)
+            self.assertTrue('668 x 493' in info)
             self.assertTrue('8-bit/color RGB' in info)
         finally:
             os.remove(png_filename)
-
-    def test_render_csv(self):
-        '''
-        '''
-        def response_content(url, request):
-            if url.hostname == 'a.tiles.mapbox.com' and url.path.startswith('/v4/mapbox.mapbox-streets-v7'):
-                if 'access_token=mapbox-XXXX' not in url.query:
-                    raise ValueError('Missing or wrong API key')
-                data = b'\x1a\'x\x02\n\x05water(\x80 \x12\x19\x18\x03"\x13\t\xe0\x7f\xff\x1f\x1a\x00\xe0\x9f\x01\xdf\x9f\x01\x00\x00\xdf\x9f\x01\x0f\x08\x00'
-                return response(200, data, headers={'Content-Type': 'application/vnd.mapbox-vector-tile'})
-            raise Exception("Uknown URL")
-
-        zip_filename = join(dirname(__file__), 'outputs', 'portland_metro_geom.zip')
-        handle, png_filename = tempfile.mkstemp(prefix='render-', suffix='.png')
-        os.close(handle)
-
-        try:
-            temp_dir = tempfile.mkdtemp(prefix='test_render_csv-')
-            zipfile = ZipFile(zip_filename)
-
-            with open(join(temp_dir, 'portland.csv'), 'wb') as file:
-                file.write(zipfile.read('portland_metro/us/or/portland_metro.csv'))
-                csv_filename = file.name
-
-            with HTTMock(response_content):
-                preview.render(csv_filename, png_filename, 668, 1, 'mapbox-XXXX')
-            info = str(subprocess.check_output(('file', png_filename)))
-
-            self.assertTrue('PNG image data' in info)
-            self.assertTrue('668 x 289' in info)
-            self.assertTrue('8-bit/color RGB' in info)
-        finally:
-            os.remove(png_filename)
-            os.remove(csv_filename)
             os.rmdir(temp_dir)
 
     def test_get_map_features(self):

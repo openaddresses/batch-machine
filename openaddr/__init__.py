@@ -19,7 +19,7 @@ from .cache import (
 from .conform import (
     ConformResult,
     DecompressionTask,
-    ConvertToCsvTask,
+    ConvertToGeojsonTask,
     elaborate_filenames,
     ADDRESSES_SCHEMA,
     BUILDINGS_SCHEMA,
@@ -134,22 +134,21 @@ def conform(source_config, destdir, extras):
     decompressed_paths = task2.decompress(downloaded_path, workdir, names)
     _L.info("Decompressed to %d files", len(decompressed_paths))
 
-    task4 = ConvertToCsvTask()
+    task4 = ConvertToGeojsonTask()
     try:
-        csv_path, feat_count = task4.convert(source_config, decompressed_paths, workdir)
+        out_path, feat_count = task4.convert(source_config, decompressed_paths, workdir)
         if feat_count > 0:
-            _L.info("Converted to %s with %d features", csv_path, feat_count)
+            _L.info("Converted to %s with %d features", out_path, feat_count)
         else:
             _L.warning('Found no features in source data')
-            csv_path = None
+            out_path = None
     except Exception as e:
         _L.warning("Error doing conform; skipping", exc_info=True)
-        csv_path, feat_count = None, 0
+        out_path, feat_count = None, 0
 
-    out_path = None
-    if csv_path is not None and exists(csv_path):
-        move(csv_path, join(destdir, 'out.csv'))
-        out_path = realpath(join(destdir, 'out.csv'))
+    if out_path is not None and exists(out_path):
+        move(out_path, join(destdir, 'out.geojson'))
+        out_path = realpath(join(destdir, 'out.geojson'))
 
     rmtree(workdir)
 
