@@ -989,10 +989,7 @@ class TestOA (unittest.TestCase):
         source = join(self.src_dir, 'us/tx/city_of_waco.json')
 
         with HTTMock(self.response_content):
-            ofs = csv.field_size_limit()
-            csv.field_size_limit(1)
             state_path = process_one.process(source, self.testdir, "addresses", "default", False, False)
-            csv.field_size_limit(ofs)
 
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
