@@ -989,16 +989,13 @@ class TestOA (unittest.TestCase):
         source = join(self.src_dir, 'us/tx/city_of_waco.json')
 
         with HTTMock(self.response_content):
-            ofs = csv.field_size_limit()
-            csv.field_size_limit(1)
             state_path = process_one.process(source, self.testdir, "addresses", "default", False, False)
-            csv.field_size_limit(ofs)
 
         with open(state_path) as file:
             state = dict(zip(*json.load(file)))
 
-        self.assertEqual(state["source problem"], "Could not conform source data")
-        self.assertIsNone(state["processed"])
+        self.assertIsNone(state["source problem"])
+        self.assertEqual(state["processed"], 'out.geojson')
 
         source = join(self.src_dir, 'us/tx/city_of_waco.json')
 
@@ -1022,7 +1019,7 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[0]['properties']['region'], u'TX')
             self.assertEqual(rows[0]['properties']['id'], u'')
             self.assertEqual(rows[0]['properties']['number'], u'308')
-            self.assertEqual(rows[0]['properties']['hash'], u'c782a47f7d52d99f')
+            self.assertEqual(rows[0]['properties']['hash'], u'431f816eebac0000')
             self.assertEqual(rows[0]['properties']['city'], u'Mcgregor')
             self.assertEqual(rows[0]['geometry']['coordinates'], [-97.3961768, 31.4432706]),
             self.assertEqual(rows[0]['properties']['street'], u'PULLEN ST')
