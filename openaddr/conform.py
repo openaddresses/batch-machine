@@ -388,7 +388,7 @@ class ConvertToGeojsonTask(object):
             rc = conform_cli(source_config, source_path, dest_path)
             if rc == 0:
                 with open(dest_path) as file:
-                    addr_count = sum(1 for line in file) - 1
+                    addr_count = sum(1 for line in file)
 
                 # Success! Return the path of the output CSV
                 return dest_path, addr_count
@@ -1083,7 +1083,7 @@ def row_convert_to_out(source_config, row):
     "Convert a row from the source schema to OpenAddresses output schema"
 
     geom = row.get(GEOM_FIELDNAME.lower(), None)
-    if geom == "POINT EMPTY":
+    if geom == "POINT EMPTY" or geom == '':
         geom = None
 
     output = {
