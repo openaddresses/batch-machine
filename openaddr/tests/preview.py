@@ -1,6 +1,7 @@
 from __future__ import division
 
 import os
+import json
 import unittest
 import tempfile
 import subprocess
@@ -21,24 +22,43 @@ class TestPreview (unittest.TestCase):
         rmtree(self.temp_dir)
 
     def test_stats(self):
-        points = [(n, n) for n in range(-1000, 1001)]
-        points_filename = join(self.temp_dir, 'points.bin')
-        preview.write_points(points, points_filename)
+        points = [(-108 + (n * 0.001), -37 + (n * 0.001)) for n in range(0, 1000)]
+        points_filename = join(self.temp_dir, 'points.geojson')
+
+        with open(points_filename, 'w') as file:
+            for point in points:
+                file.write(json.dumps({
+                    "type": "Feature",
+                    "properties": {},
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": point
+                    }
+                }) + '\n')
 
         xmean, xsdev, ymean, ysdev = preview.stats(points_filename)
-        self.assertAlmostEqual(xmean, 0)
-        self.assertAlmostEqual(xsdev, 577.783263863)
-        self.assertAlmostEqual(ymean, xmean)
-        self.assertAlmostEqual(ysdev, xsdev)
+        self.assertAlmostEqual(xmean, -11966900.920021897)
+        self.assertAlmostEqual(xsdev, 32151.232557143696)
 
     def test_calculate_bounds(self):
-        points = [(-10000, -10000), (10000, 10000)]
-        points += [(-1, -1), (0, 0), (1, 1)] * 100
-        points_filename = join(self.temp_dir, 'points.bin')
-        preview.write_points(points, points_filename)
+        points = [(-108 + (n * 0.001), -37 + (n * 0.001)) for n in range(0, 1000)]
+        points += [(-1, -1), (0, 0), (1, 1)]
+
+        points_filename = join(self.temp_dir, 'points.geojson')
+
+        with open(points_filename, 'w') as file:
+            for point in points:
+                file.write(json.dumps({
+                    "type": "Feature",
+                    "properties": {},
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": point
+                    }
+                }) + '\n')
 
         bbox = preview.calculate_bounds(points_filename)
-        self.assertEqual(bbox, (-1.04, -1.04, 1.04, 1.04), 'The two outliers are ignored')
+        self.assertEqual(bbox, (-12024729.169099594, -4441873.743568107, -11909072.670945017, -4297992.015057018), 'The two outliers are ignored')
 
     def test_render_geojson(self):
         '''
