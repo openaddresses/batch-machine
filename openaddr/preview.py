@@ -40,11 +40,11 @@ def render(src_filename, png_filename, width, resolution, mapbox_key):
     # Map units per reference pixel (http://www.w3.org/TR/css3-values/#reference-pixel)
     muppx = resolution / scale
 
-    feature_fill = 0x74/0xFF, 0xA5/0xFF, 0x78/0xFF
 
     black = 0x00, 0x00, 0x00
     off_white = 0xFF/0xFF, 0xFC/0xFF, 0xF9/0xFF
     water_fill = 0xC7/0xFF, 0xDE/0xFF, 0xF5/0xFF # 0xDD/0xFF, 0xEA/0xFF, 0xF8/0xFF
+    point_fill = 0x74/0xFF, 0xA5/0xFF, 0x78/0xFF
     road_stroke = 0xC0/0xFF, 0xE0/0xFF, 0xE0/0xFF # 0xE0/0xFF, 0xE3/0xFF, 0xE5/0xFF
     park_fill = 0xDD/0xFF, 0xF6/0xFF, 0xDE/0xFF
     orange_over_land = 0xFE/0xFF, 0xCB/0xFF, 0x9F/0xFF
@@ -71,12 +71,12 @@ def render(src_filename, png_filename, width, resolution, mapbox_key):
         if geom.GetGeometryType() == ogr.wkbMultiLineString or geom.GetGeometryType() == ogr.wkbLineString:
             stroke_geometries(context, [geom])
         elif geom.GetGeometryType() == ogr.wkbMultiPolygon or geom.GetGeometryType() == ogr.wkbPolygon:
-            fill_geometries(context, [geom], muppx, feature_fill)
+            fill_geometries(context, [geom], muppx, black)
         else:
             (x, y, e) = geom.PointOnSurface().GetPoint()
 
             context.arc(x, y, 15, 0, 2 * pi)
-            context.set_source_rgb(*feature_fill)
+            context.set_source_rgb(*point_fill)
             context.fill()
             context.arc(x, y, 15, 0, 2 * pi)
             context.set_source_rgb(*black)
@@ -336,8 +336,6 @@ def fill_geometries(ctx, geometries, muppx, rgb):
             parts = [buffer]
         else:
             raise NotImplementedError()
-
-        print(parts)
 
         for part in parts:
             for ring in part:
