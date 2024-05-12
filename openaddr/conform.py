@@ -5,6 +5,7 @@ import logging; _L = logging.getLogger('openaddr.conform')
 
 import os
 import errno
+import gzip
 import tempfile
 import mimetypes
 import json
@@ -53,6 +54,7 @@ RESERVED_SCHEMA = ADDRESSES_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA + [
 ]
 
 UNZIPPED_DIRNAME = 'unzipped'
+UNGZIPPED_DIRNAME = 'ungzipped'
 
 # extracts:
 # - '123' from '123 Main St'
@@ -156,6 +158,8 @@ class DecompressionTask(object):
             return GuessDecompressTask()
         elif format_string.lower() == 'zip':
             return ZipDecompressTask()
+        elif format_string.lower() == 'gzip':
+            return GzipDecompressTask()
         else:
             raise KeyError("I don't know how to decompress for format {}".format(format_string))
 
@@ -172,6 +176,10 @@ class GuessDecompressTask(DecompressionTask):
         if types == {'application/zip'}:
             substitute_task = ZipDecompressTask()
             _L.info('Guessing zip compression based on file names')
+            return substitute_task.decompress(source_paths, workdir, filenames)
+        elif 'gzip' in types:
+            substitute_task = GzipDecompressTask()
+            _L.info('Guessing gzip compression based on file names')
             return substitute_task.decompress(source_paths, workdir, filenames)
 
         _L.warning('Could not guess a single compression from file names')
@@ -218,6 +226,26 @@ class ZipDecompressTask(DecompressionTask):
             for filename in filenames:
                 output_files.append(os.path.join(dirpath, filename))
                 _L.debug("Expanded file {}".format(output_files[-1]))
+
+        return output_files
+
+class GzipDecompressTask(DecompressionTask):
+    def decompress(self, source_paths, workdir, filenames):
+        output_files = []
+        expand_path = os.path.join(workdir, UNGZIPPED_DIRNAME)
+        mkdirsp(expand_path)
+
+        for source_path in source_paths:
+            # Build a file name for the decompressed file without the .gz extension
+            expanded_path = os.path.join(expand_path, os.path.basename(source_path)[:-3])
+
+            with open(expanded_path, 'wb') as temp_fp:
+                with open(source_path, 'rb') as source_fp:
+                    with gzip.open(source_fp, 'rb') as gz_fp:
+                        temp_fp.write(gz_fp.read())
+
+            output_files.append(temp_fp.name)
+            _L.debug("Ungzipped file {}".format(output_files[-1]))
 
         return output_files
 
