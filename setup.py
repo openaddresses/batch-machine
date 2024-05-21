@@ -42,7 +42,7 @@ setup(
         'uritemplate == 4.1.1',
 
         # http://docs.python-requests.org/en/master/
-        'requests == 2.31.0',
+        'requests == 2.32.0',
 
         # https://github.com/patrys/httmock
         'httmock == 1.4.0',
