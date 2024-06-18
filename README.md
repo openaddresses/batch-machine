@@ -56,7 +56,7 @@ You can create an output folder and then run the batch process on the desired la
 
 ```
 mkdir my-output
-openaddr-process-one --layer addresses --layersource state example.json my-output
+openaddr-process-one --skip-preview --layer addresses --layersource state example.json my-output
 ```
 
 Review https://github.com/openaddresses/openaddresses/blob/master/CONTRIBUTING.md for input json syntax.
