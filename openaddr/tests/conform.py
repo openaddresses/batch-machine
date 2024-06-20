@@ -2033,10 +2033,12 @@ class TestConformMisc(unittest.TestCase):
     def test_find_esri_source_path(self):
         # test that the legacy ESRI/GeoJSON style works
         old_conform = {"protocol": "ESRI", "conform": {"format": "geojson"}}
-        self.assertEqual("foo.csv", find_source_path(old_conform, ["foo.csv"]))
-        # test that the new ESRI/CSV style works
-        new_conform = {"protocol": "ESRI", "conform": {"format": "csv"}}
-        self.assertEqual("foo.csv", find_source_path(new_conform, ["foo.csv"]))
+        self.assertEqual("foo.geojson", find_source_path(old_conform, ["foo.geojson"]))
+
+        # test that the legacy ESRI/CSV is ignored
+        old_conform = {"protocol": "ESRI", "conform": {"format": "csv"}}
+        self.assertEqual(None, find_source_path(old_conform, ["foo.csv"]))
+        self.assertEqual("foo.geojson", find_source_path(old_conform, ["foo.geojson"]))
 
     def test_find_csv_source_path(self):
         csv_conform = {"conform": {"format": "csv"}}
