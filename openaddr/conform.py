@@ -807,7 +807,7 @@ def row_function(sc, row, key, fxn):
     elif function == "first_non_empty":
         row = row_fxn_first_non_empty(sc, row, key, fxn)
     elif function == "constant":
-        row = row_fxn_constant(sc, row, key, key, fxn)
+        row = row_fxn_constant(sc, row, key, fxn)
 
     return row
 
