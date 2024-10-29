@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 import logging; _L = logging.getLogger('openaddr.cache')
 
 import os
+import json
 import errno
 import math
 import mimetypes
@@ -303,7 +304,7 @@ class EsriRestDownloadTask(DownloadTask):
         ''' Return a local file path in a directory for a URL.
         '''
         _, host, path, _, _, _ = urlparse(url)
-        hash, path_ext = sha1((host + path).encode('utf-8')), '.csv'
+        hash, path_ext = sha1((host + path).encode('utf-8')), '.geojson'
 
         # With no source prefix like "us-ca-oakland" use the host as a hint.
         name_base = '{}-{}'.format(self.source_prefix or host, hash.hexdigest()[:8])
@@ -376,16 +377,6 @@ class EsriRestDownloadTask(DownloadTask):
 
             metadata = downloader.get_metadata()
 
-            if query_fields is None:
-                field_names = [f['name'] for f in metadata['fields']]
-            else:
-                field_names = query_fields[:]
-
-            if GEOM_FIELDNAME not in field_names:
-                field_names.append(GEOM_FIELDNAME)
-
-            field_names = list(map(lambda x: x.upper(), field_names))
-
             # Get the count of rows in the layer
             try:
                 row_count = downloader.get_feature_count()
@@ -394,9 +385,6 @@ class EsriRestDownloadTask(DownloadTask):
                 _L.info("Source doesn't support count")
 
             with open(file_path, 'w', encoding='utf-8') as f:
-                writer = csv.DictWriter(f, fieldnames=field_names)
-                writer.writeheader()
-
                 for feature in downloader:
                     try:
                         geom = feature.get('geometry') or {}
@@ -407,15 +395,8 @@ class EsriRestDownloadTask(DownloadTask):
                         if any((isinstance(g, float) and math.isnan(g)) for g in traverse(geom)):
                             raise TypeError("Geometry has NaN coordinates")
 
-                        shp = shape(feature['geometry'])
-                        row[GEOM_FIELDNAME] = shp.wkt
+                        f.write(json.dumps(feature) + '\n')
 
-                        r = dict()
-                        for k,v in row.items():
-                            r[k.upper()] =  v
-                        row = r
-
-                        writer.writerow({fn: row.get(fn) for fn in field_names})
                         size += 1
                     except TypeError:
                         _L.debug("Skipping a geometry", exc_info=True)

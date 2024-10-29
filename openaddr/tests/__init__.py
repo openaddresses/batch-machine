@@ -557,7 +557,7 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNotNone(state['cache'])
-        self.assertEqual(state['fingerprint'], '1821b2e50a61ed04ac2213fbc7a1984d')
+        self.assertEqual(state['fingerprint'], '49708e631ccc1eb06c0d10b5966fd1f8')
         self.assertIsNotNone(state['processed'])
         self.assertIsNone(state['preview'])
 
@@ -576,7 +576,7 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNotNone(state['cache'])
-        self.assertEqual(state['fingerprint'], '1821b2e50a61ed04ac2213fbc7a1984d')
+        self.assertEqual(state['fingerprint'], '49708e631ccc1eb06c0d10b5966fd1f8')
         self.assertIsNotNone(state['processed'])
         self.assertIsNone(state['preview'])
 
