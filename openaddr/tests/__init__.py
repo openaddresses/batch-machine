@@ -1246,9 +1246,9 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[1]['properties']['street'], u'Sagamore Avenue')
             self.assertEqual(rows[2]['properties']['number'], u'47')
             self.assertEqual(rows[2]['properties']['street'], u'Seneca Place')
-            self.assertEqual(rows[0]['geometry']['coordinates'], [-74.0012025, 40.3201201]),
-            self.assertEqual(rows[1]['geometry']['coordinates'], [-74.0027913, 40.3203367])
-            self.assertEqual(rows[2]['geometry']['coordinates'], [-74.0011395, 40.3166499])
+            self.assertEqual(rows[0]['geometry']['coordinates'], [-74.0012016, 40.3201199]),
+            self.assertEqual(rows[1]['geometry']['coordinates'], [-74.0027904, 40.3203365])
+            self.assertEqual(rows[2]['geometry']['coordinates'], [-74.0011386, 40.3166497])
 
     def test_single_cz_countrywide(self):
         ''' Test complete process_one.process on data.

@@ -518,7 +518,7 @@ class TestConformTransforms (unittest.TestCase):
                 }]
             }
         }), "addresses", "default")
-        r = row_extract_and_reproject(d, {"OA:GEOM": "POINT (-122.3 39.1)" })
+        r = row_extract_and_reproject(d, {"oa:geom": "POINT (-122.3 39.1)"})
         self.assertEqual({GEOM_FIELDNAME: "POINT (-122.3 39.1)"}, r)
 
         # reprojection
@@ -2248,7 +2248,9 @@ class TestConformCsv(unittest.TestCase):
         # This is an example inspired by the hipsters in us-or-portland
         # Conform says lowercase but the actual header is uppercase.
         # Also the columns are named X and Y in the input
-        c = {"conform": {"lon": "x", "lat": "y", "number": "n", "street": "s", "format": "csv"}, 'protocol': 'test'}
+        # 2024-11-17 (idees): Previously, this was testing that column names
+        # were case-insensitive, but removed in https://github.com/openaddresses/batch-machine/pull/65
+        c = {"conform": {"lon": "X", "lat": "Y", "number": "n", "street": "s", "format": "csv"}, 'protocol': 'test'}
         d = (u'n,s,X,Y'.encode('ascii'),
              u'3203,SE WOODSTOCK BLVD,-122.629314,45.479425'.encode('ascii'))
         r = self._convert(c, d)
@@ -2257,7 +2259,7 @@ class TestConformCsv(unittest.TestCase):
 
     def test_srs(self):
         # This is an example inspired by the hipsters in us-or-portland
-        c = {"conform": {"lon": "x", "lat": "y", "srs": "EPSG:2913", "number": "n", "street": "s", "format": "csv"}, 'protocol': 'test'}
+        c = {"conform": {"lon": "X", "lat": "Y", "srs": "EPSG:2913", "number": "n", "street": "s", "format": "csv"}, 'protocol': 'test'}
         d = (u'n,s,X,Y'.encode('ascii'),
              u'3203,SE WOODSTOCK BLVD,7655634.924,668868.414'.encode('ascii'))
         r = self._convert(c, d)
@@ -2287,7 +2289,7 @@ class TestConformCsv(unittest.TestCase):
         c = { "protocol": "ESRI", "conform": { "format": "geojson", "lat": "theseare", "lon": "ignored" } }
 
         d = (
-            u'STREETNAME,NUMBER,OA:GEOM'.encode('ascii'),
+            u'STREETNAME,NUMBER,oa:geom'.encode('ascii'),
             u'MAPLE ST,123,POINT (-121.2 39.3)'.encode('ascii')
         )
 
@@ -2299,7 +2301,7 @@ class TestConformCsv(unittest.TestCase):
         # Test that the ESRI path works even without lat/lon tags. See issue #91
         c = { "protocol": "ESRI", "conform": { "format": "geojson" } }
         d = (
-            u'STREETNAME,NUMBER,OA:GEOM'.encode('ascii'),
+            u'STREETNAME,NUMBER,oa:geom'.encode('ascii'),
             u'MAPLE ST,123,POINT (-121.2 39.3)'.encode('ascii')
         )
         r = self._convert(c, d)
