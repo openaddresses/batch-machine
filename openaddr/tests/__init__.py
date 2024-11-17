@@ -528,7 +528,7 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNotNone(state['cache'])
-        self.assertEqual(state['fingerprint'], '23082fe4819682a6934b61443560160c')
+        self.assertEqual(state['fingerprint'], '4a8047f90dbfe176c2a2b148837dae36')
         self.assertIsNotNone(state['processed'])
         self.assertIsNotNone(state['preview'])
         self.assertIsNotNone(state['pmtiles'])
@@ -557,7 +557,7 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNotNone(state['cache'])
-        self.assertEqual(state['fingerprint'], '1821b2e50a61ed04ac2213fbc7a1984d')
+        self.assertEqual(state['fingerprint'], '056bdaab3334e709bf29b0b2f1fcf8c4')
         self.assertIsNotNone(state['processed'])
         self.assertIsNone(state['preview'])
 
@@ -576,7 +576,7 @@ class TestOA (unittest.TestCase):
             state = dict(zip(*json.load(file)))
 
         self.assertIsNotNone(state['cache'])
-        self.assertEqual(state['fingerprint'], '1821b2e50a61ed04ac2213fbc7a1984d')
+        self.assertEqual(state['fingerprint'], '056bdaab3334e709bf29b0b2f1fcf8c4')
         self.assertIsNotNone(state['processed'])
         self.assertIsNone(state['preview'])
 
@@ -1019,7 +1019,7 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[0]['properties']['region'], u'TX')
             self.assertEqual(rows[0]['properties']['id'], u'')
             self.assertEqual(rows[0]['properties']['number'], u'308')
-            self.assertEqual(rows[0]['properties']['hash'], u'431f816eebac0000')
+            self.assertEqual(rows[0]['properties']['hash'], u'5b2957c31a02e00e')
             self.assertEqual(rows[0]['properties']['city'], u'Mcgregor')
             self.assertEqual(rows[0]['geometry']['coordinates'], [-97.3961768, 31.4432706]),
             self.assertEqual(rows[0]['properties']['street'], u'PULLEN ST')
@@ -1046,7 +1046,7 @@ class TestOA (unittest.TestCase):
             rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[0]['properties']['id'], u'')
             self.assertEqual(rows[0]['properties']['number'], u'162')
-            self.assertEqual(rows[0]['properties']['hash'], u'730e5ad1893108e4')
+            self.assertEqual(rows[0]['properties']['hash'], u'0488f0771f0ff30f')
             self.assertEqual(rows[0]['properties']['city'], u'')
             self.assertEqual(rows[0]['geometry']['type'], 'Point');
             self.assertAlmostEqual(rows[0]['geometry']['coordinates'][0], -108.7563613);
@@ -1075,7 +1075,7 @@ class TestOA (unittest.TestCase):
             rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[0]['properties']['id'], u'')
             self.assertEqual(rows[0]['properties']['number'], u'434')
-            self.assertEqual(rows[0]['properties']['hash'], u'8cb84b9e793a4986')
+            self.assertEqual(rows[0]['properties']['hash'], u'd129b77ffa481fea')
             self.assertEqual(rows[0]['properties']['city'], u'MONROE')
             self.assertEqual(rows[0]['geometry']['coordinates'], [-74.1926686, 41.3187728])
             self.assertEqual(rows[0]['properties']['street'], u'')
@@ -1246,9 +1246,9 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[1]['properties']['street'], u'Sagamore Avenue')
             self.assertEqual(rows[2]['properties']['number'], u'47')
             self.assertEqual(rows[2]['properties']['street'], u'Seneca Place')
-            self.assertEqual(rows[0]['geometry']['coordinates'], [-74.0012016, 40.3201199]),
-            self.assertEqual(rows[1]['geometry']['coordinates'], [-74.0027904, 40.3203365])
-            self.assertEqual(rows[2]['geometry']['coordinates'], [-74.0011386, 40.3166497])
+            self.assertEqual(rows[0]['geometry']['coordinates'], [-74.0012025, 40.3201201]),
+            self.assertEqual(rows[1]['geometry']['coordinates'], [-74.0027913, 40.3203367])
+            self.assertEqual(rows[2]['geometry']['coordinates'], [-74.0011395, 40.3166499])
 
     def test_single_cz_countrywide(self):
         ''' Test complete process_one.process on data.

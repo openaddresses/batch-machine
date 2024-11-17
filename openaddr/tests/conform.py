@@ -17,13 +17,13 @@ from .. import SourceConfig
 from ..conform import (
     GEOM_FIELDNAME,
     csv_source_to_csv, find_source_path, row_transform_and_convert,
-    row_fxn_regexp, row_smash_case, row_merge,
+    row_fxn_regexp, row_merge,
     row_extract_and_reproject, row_convert_to_out, row_fxn_join, row_fxn_format,
     row_fxn_prefixed_number, row_fxn_postfixed_street,
     row_fxn_postfixed_unit,
     row_fxn_remove_prefix, row_fxn_remove_postfix, row_fxn_chain,
     row_fxn_first_non_empty, row_fxn_constant,
-    row_canonicalize_unit_and_number, conform_smash_case, conform_cli,
+    row_canonicalize_unit_and_number, conform_cli,
     convert_regexp_replace, normalize_ogr_filename_case,
     is_in, geojson_source_to_csv, check_source_tests
     )
@@ -35,24 +35,6 @@ def wkt_pt(pt_str):
 
 class TestConformTransforms (unittest.TestCase):
     "Test low level data transform functions"
-
-    def test_row_smash_case(self):
-        r = row_smash_case(None, {"UPPER": "foo", "lower": "bar", "miXeD": "mixed"})
-        self.assertEqual({"upper": "foo", "lower": "bar", "mixed": "mixed"}, r)
-
-    def test_conform_smash_case(self):
-        d = { "conform": { "street": [ "U", "l", "MiXeD" ], "number": "U", "lat": "Y", "lon": "x",
-                           "city": { "function": "join", "fields": ["ThIs","FiELd"], "separator": "-" },
-                           "district": { "function": "regexp", "field": "ThaT", "pattern": ""},
-                           "postcode": { "function": "join", "fields": ["MiXeD", "UPPER"], "separator": "-" } } }
-        r = conform_smash_case(d)
-
-        self.maxDiff = None
-        self.assertEqual({ "conform": { "street": [ "u", "l", "mixed" ], "number": "u", "lat": "y", "lon": "x",
-                           "city": {"fields": ["this", "field"], "function": "join", "separator": "-"},
-                           "district": { "field": "that", "function": "regexp", "pattern": ""},
-                           "postcode": { "function": "join", "fields": ["mixed", "upper"], "separator": "-" } } },
-                         r)
 
     def test_row_convert_to_out(self):
         d = SourceConfig(dict({
@@ -68,7 +50,7 @@ class TestConformTransforms (unittest.TestCase):
         r = row_convert_to_out(d, {
             "s": "MAPLE LN",
             "n": "123",
-            GEOM_FIELDNAME.lower(): "POINT (-119.2 39.3)"
+            GEOM_FIELDNAME: "POINT (-119.2 39.3)"
         })
 
         self.assertEqual({
@@ -2362,4 +2344,3 @@ class TestConformTests (unittest.TestCase):
             result, message = check_source_tests(source)
             self.assertIsNone(result, 'Tests should not exist in {}'.format(filename))
             self.assertIsNone(message, 'No message expected from {}'.format(filename))
-

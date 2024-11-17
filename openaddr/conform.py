@@ -42,14 +42,14 @@ gdal.PushErrorHandler(gdal_error_handler)
 
 # Field names for use in cached CSV files.
 # We add columns to the extracted CSV with our own data with these names.
-GEOM_FIELDNAME = 'OA:GEOM'
+GEOM_FIELDNAME = 'oa:geom'
 
-ADDRESSES_SCHEMA = [ 'HASH', 'NUMBER', 'STREET', 'UNIT', 'CITY', 'DISTRICT', 'REGION', 'POSTCODE', 'ID' ]
-BUILDINGS_SCHEMA = [ 'HASH']
-PARCELS_SCHEMA = [ 'HASH', 'PID' ]
+ADDRESSES_SCHEMA = [ 'hash', 'number', 'street', 'unit', 'city', 'district', 'region', 'postcode', 'id' ]
+BUILDINGS_SCHEMA = [ 'hash']
+PARCELS_SCHEMA = [ 'hash', 'pid' ]
 RESERVED_SCHEMA = ADDRESSES_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA + [
-    "LAT",
-    "LON"
+    "lat",
+    "lon"
 ]
 
 UNZIPPED_DIRNAME = 'unzipped'
@@ -612,7 +612,6 @@ def csv_source_to_csv(source_config, source_path, dest_path):
                 source_config.data_source["conform"]["lat"]
             ]
 
-            old_ll.extend([s.upper() for s in old_ll])
             out_fieldnames = [fn for fn in reader.fieldnames if fn not in old_ll]
             out_fieldnames.append(GEOM_FIELDNAME)
 
@@ -722,19 +721,12 @@ def row_extract_and_reproject(source_config, source_row):
         lat_name = data_source["conform"]["lat"]
         lon_name = data_source["conform"]["lon"]
 
-        if lon_name in source_row:
-            source_x = source_row[lon_name]
-        else:
-            source_x = source_row[lon_name.upper()]
-
-        if lat_name in source_row:
-            source_y = source_row[lat_name]
-        else:
-            source_y = source_row[lat_name.upper()]
+        source_x = source_row[lon_name]
+        source_y = source_row[lat_name]
 
         # Remove lat/lng name from output row
-        for n in lon_name, lon_name.upper(), lat_name, lat_name.upper():
-            if n in out_row: del out_row[n]
+        for n in (lon_name, lat_name):
+            out_row.pop(n, None)
 
         # Convert commas to periods for decimal numbers. (Not using locale.)
         try:
@@ -750,7 +742,6 @@ def row_extract_and_reproject(source_config, source_row):
             # Add blank data to the output CSV and get out
             out_row[GEOM_FIELDNAME] = None
             return out_row
-
 
     # Reproject the coordinates if necessary
     if "srs" in data_source["conform"] and data_source["conform"]["srs"] != "EPSG:4326":
@@ -818,17 +809,14 @@ def row_function(sc, row, key, fxn):
 def row_transform_and_convert(source_config, row):
     "Apply the full conform transform and extract operations to a row"
 
-    # Some conform specs have fields named with a case different from the source
-    row = row_smash_case(source_config.data_source, row)
-
     c = source_config.data_source["conform"]
 
     "Attribute tags can utilize processing fxns"
     for k, v in c.items():
-        if k.upper() in source_config.SCHEMA and type(v) is list:
+        if k in source_config.SCHEMA and isinstance(v, list):
             "Lists are a concat shortcut to concat fields with spaces"
             row = row_merge(source_config, row, k)
-        if k.upper() in source_config.SCHEMA and type(v) is dict:
+        if k in source_config.SCHEMA and isinstance(v, dict):
             "Dicts are custom processing functions"
             row = row_function(source_config, row, k, v)
 
@@ -846,49 +834,6 @@ def row_transform_and_convert(source_config, row):
         feat['geometry']['coordinates'] = set_precision(feat['geometry']['coordinates'], 7)
 
     return feat
-
-def fxn_smash_case(fxn):
-    if "field" in fxn:
-        fxn["field"] = fxn["field"].lower()
-    if "fields" in fxn:
-        fxn["fields"] = [s.lower() for s in fxn["fields"]]
-    if "field_to_remove" in fxn:
-        fxn["field_to_remove"] = fxn["field_to_remove"].lower()
-    if "functions" in fxn:
-        for sub_fxn in fxn["functions"]:
-            fxn_smash_case(sub_fxn)
-
-def conform_smash_case(data_source):
-    "Convert all named fields in data_source object to lowercase. Returns new object."
-    new_sd = copy.deepcopy(data_source)
-    conform = new_sd["conform"]
-
-    for k, v in conform.items():
-        if type(conform[k]) is str and k.upper() in RESERVED_SCHEMA:
-            conform[k] = v.lower()
-        if type(conform[k]) is list:
-            conform[k] = [s.lower() for s in conform[k]]
-        if type(conform[k]) is dict:
-            fxn_smash_case(conform[k])
-
-            if "functions" in conform[k] and type(conform[k]["functions"]) is list:
-                for function in conform[k]["functions"]:
-                    if type(function) is dict:
-                        if "field" in function:
-                            function["field"] = function["field"].lower()
-
-                        if "fields" in function:
-                            function["fields"] = [s.lower() for s in function["fields"]]
-
-                        if "field_to_remove" in function:
-                            function["field_to_remove"] = function["field_to_remove"].lower()
-
-    return new_sd
-
-def row_smash_case(sc, input):
-    "Convert all field names to lowercase. Slow, but necessary for imprecise conform specs."
-    output = { k.lower() : v for (k, v) in input.items() }
-    return output
 
 def row_merge(sc, row, key):
     "Merge multiple columns like 'Maple','St' to 'Maple St'"
@@ -1016,7 +961,7 @@ def row_fxn_chain(sc, row, key, fxn):
 
     original_key = key
 
-    if var and var.upper().lstrip('OA:') not in sc.SCHEMA and var not in row:
+    if var and var.lstrip('oa:') not in sc.SCHEMA and var not in row:
         row['oa:' + var] = u''
         key = var
 
@@ -1026,7 +971,7 @@ def row_fxn_chain(sc, row, key, fxn):
         if row.get('oa:' + key):
             row[key] = row['oa:' + key]
 
-    row['oa:{}'.format(original_key.lower())] = row['oa:{}'.format(key)]
+    row['oa:{}'.format(original_key)] = row['oa:{}'.format(key)]
 
     return row
 
@@ -1082,7 +1027,7 @@ def row_calculate_hash(cache_fingerprint, row):
 def row_convert_to_out(source_config, row):
     "Convert a row from the source schema to OpenAddresses output schema"
 
-    geom = row.get(GEOM_FIELDNAME.lower(), None)
+    geom = row.get(GEOM_FIELDNAME, None)
     if geom == "POINT EMPTY" or geom == '':
         geom = None
 
@@ -1096,20 +1041,19 @@ def row_convert_to_out(source_config, row):
         wkt_parsed = wkt_loads(output["geometry"])
         output["geometry"] = mapping(wkt_parsed)
 
-
     for field in source_config.SCHEMA:
-        if row.get('oa:{}'.format(field.lower())) is not None:
+        if row.get('oa:{}'.format(field)) is not None:
             # If there is an OA prefix, it is not a native field and was compiled
-            # via an attrib funciton or concatentation
-            output["properties"][field.lower()] = row.get('oa:{}'.format(field.lower()))
+            # via an attrib function or concatenation
+            output["properties"][field] = row.get('oa:{}'.format(field))
         else:
             # Get a native field as specified in the conform object
-            cfield = source_config.data_source['conform'].get(field.lower())
+            cfield = source_config.data_source['conform'].get(field)
 
             if cfield:
-                output["properties"][field.lower()] = row.get(cfield.lower())
+                output["properties"][field] = row.get(cfield)
             else:
-                output["properties"][field.lower()] = ''
+                output["properties"][field] = ''
 
     return output
 
@@ -1150,9 +1094,6 @@ def transform_to_out_geojson(source_config, extract_path, dest_path):
         extract_path: extracted CSV file to process
         dest_path: path for output file in OpenAddress CSV
     '''
-    # Convert all field names in the conform spec to lower case
-    source_config.data_source = conform_smash_case(source_config.data_source)
-
     # Read through the extract CSV
     with open(extract_path, 'r', encoding='utf-8') as extract_fp:
         reader = csv.DictReader(extract_fp)
@@ -1192,13 +1133,6 @@ def conform_cli(source_config, source_path, dest_path):
 def check_source_tests(source_config):
     ''' Return boolean status and a message if any tests failed.
     '''
-    try:
-        # Convert all field names in the conform spec to lower case
-        source_config.data_source = conform_smash_case(source_config.data_source)
-    except:
-        # There may be problems in the source spec - ignore them for now.
-         source_config.data_source = source_config.data_source
-
     source_test = source_config.data_source.get('test', {})
     tests_enabled = source_test.get('enabled', True)
     acceptance_tests = source_test.get('acceptance-tests')
@@ -1208,11 +1142,10 @@ def check_source_tests(source_config):
         return None, None
 
     for (index, test) in enumerate(acceptance_tests):
-        input = row_smash_case(source_config.data_source, test['inputs'])
-        output = row_smash_case(source_config.data_source, row_transform_and_convert(source_config, input))
+        output = row_transform_and_convert(source_config, test['inputs'])
 
         actual = {k: v for (k, v) in output['properties'].items() if k in test['expected']}
-        expected = row_smash_case(source_config.data_source, test['expected'])
+        expected = test['expected']
 
         if actual != expected:
             expected_json = json.dumps(expected, ensure_ascii=False)

@@ -18,10 +18,10 @@
                 "lat": "y",
                 "number": {
                     "function": "regexp",
-                    "field": "address",
+                    "field": "ADDRESS",
                     "pattern": "^(\\S+)"
                     },
-                "street": ["st_name", "st_type"],
+                "street": ["ST_NAME", "ST_TYPE"],
                 "format": "shapefile"
             }
         }]

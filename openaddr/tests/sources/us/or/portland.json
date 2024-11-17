@@ -7,8 +7,8 @@
     "compression": "zip",
     "conform": {
         "number": "address_number",
-        "lon": "x",
-        "lat": "y",
+        "lon": "X",
+        "lat": "Y",
         "format": "csv",
         "street": [
             "str_predir_code",
