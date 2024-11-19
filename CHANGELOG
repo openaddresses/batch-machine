@@ -1,3 +1,6 @@
+2024-11-18 v9.4.0
+- Add support for specifying lat/lon fields with Esri protocol sources in https://github.com/openaddresses/batch-machine/pull/66
+
 2024-11-17 v9.3.0
 - Remove case smashing in https://github.com/openaddresses/batch-machine/pull/65
 
