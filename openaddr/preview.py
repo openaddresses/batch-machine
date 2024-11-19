@@ -14,7 +14,7 @@ except ImportError:
     # http://stackoverflow.com/questions/11491268/install-pycairo-in-virtualenv
     import cairocffi as cairo
 
-TILE_URL = 'https://api.protomaps.com/tiles/v3/{z}/{x}/{y}.mvt{?key}'
+TILE_URL = 'https://api.protomaps.com/tiles/v4/{z}/{x}/{y}.mvt{?key}'
 EARTH_DIAMETER = 6378137 * 2 * pi
 FORMAT = 'ff'
 
@@ -166,7 +166,7 @@ def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, protomaps_key):
             landuse_xform = get_transform(tile['landuse']['extent'], *bounds)
             for feature in tile['landuse']['features']:
                 if 'Polygon' in feature['geometry']['type']:
-                    if feature['properties'].get('class') in ('cemetery', 'forest', 'golf_course', 'grave_yard', 'meadow', 'park', 'pitch', 'wood'):
+                    if feature['properties'].get('kind') in ('cemetery', 'forest', 'golf_course', 'grave_yard', 'meadow', 'park', 'pitch', 'wood'):
                         landuse_geoms.append(projected_geom(feature['geometry'], *landuse_xform))
 
         if 'water' in tile:
@@ -179,7 +179,7 @@ def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, protomaps_key):
             roads_xform = get_transform(tile['roads']['extent'], *bounds)
             for feature in tile['roads']['features']:
                 if 'LineString' in feature['geometry']['type']:
-                    if feature['properties'].get('class') in ('motorway', 'motorway_link', 'trunk', 'primary', 'secondary', 'tertiary', 'link', 'street', 'street_limited', 'pedestrian', 'construction', 'track', 'service', 'major_rail', 'minor_rail'):
+                    if feature['properties'].get('kind') in ('highway') and feature['properties'].get('kind_detail') in ('motorway', 'motorway_link', 'trunk', 'primary', 'secondary', 'tertiary', 'link', 'street', 'street_limited', 'pedestrian', 'construction', 'track', 'service', 'major_rail', 'minor_rail'):
                         roads_geoms.append(projected_geom(feature['geometry'], *roads_xform))
 
     return landuse_geoms, water_geoms, roads_geoms

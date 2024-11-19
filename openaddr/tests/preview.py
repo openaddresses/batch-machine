@@ -64,8 +64,8 @@ class TestPreview (unittest.TestCase):
         '''
         '''
         def response_content(url, request):
-            if url.hostname == 'api.protomaps.com' and url.path.startswith('/tiles/v3'):
-                if 'access_token=protomaps-XXXX' not in url.query:
+            if url.hostname == 'api.protomaps.com' and url.path.startswith('/tiles/v4'):
+                if 'key=protomaps-XXXX' not in url.query:
                     raise ValueError('Missing or wrong API key')
                 data = b'\x1a\'x\x02\n\x05water(\x80 \x12\x19\x18\x03"\x13\t\xe0\x7f\xff\x1f\x1a\x00\xe0\x9f\x01\xdf\x9f\x01\x00\x00\xdf\x9f\x01\x0f\x08\x00'
                 return response(200, data, headers={'Content-Type': 'application/vnd.mapbox-vector-tile'})
@@ -93,13 +93,13 @@ class TestPreview (unittest.TestCase):
         '''
         '''
         def response_content(url, request):
-            if url.hostname == 'api.protomaps.com' and url.path.startswith('/tiles/v3'):
+            if url.hostname == 'api.protomaps.com' and url.path.startswith('/tiles/v4'):
                 if 'key=protomaps-XXXX' not in url.query:
                     raise ValueError('Missing or wrong API key')
-                with open(join(dirname(__file__), 'data', 'mapbox-tile.mvt'), 'rb') as file:
+                with open(join(dirname(__file__), 'data', 'protomaps-tile-7-20-49.mvt'), 'rb') as file:
                     data = file.read()
                 return response(200, data, headers={'Content-Type': 'application/vnd.mapbox-vector-tile'})
-            raise Exception("Uknown URL")
+            raise Exception("Unknown URL")
 
         xmin, ymin, xmax, ymax = -13611952, 4551290, -13609564, 4553048
         scale = 100 / (xmax - xmin)
@@ -108,6 +108,6 @@ class TestPreview (unittest.TestCase):
             landuse_geoms, water_geoms, roads_geoms = \
                 preview.get_map_features(xmin, ymin, xmax, ymax, 2, scale, 'protomaps-XXXX')
 
-        self.assertEqual(len(landuse_geoms), 90, 'Should have 90 landuse geometries')
-        self.assertEqual(len(water_geoms), 1, 'Should have 1 water geometry')
-        self.assertEqual(len(roads_geoms), 792, 'Should have 792 road geometries')
+        self.assertEqual(len(landuse_geoms), 230, 'Should have 230 landuse geometries')
+        self.assertEqual(len(water_geoms), 9, 'Should have 9 water geometry')
+        self.assertEqual(len(roads_geoms), 44, 'Should have 44 road geometries')
