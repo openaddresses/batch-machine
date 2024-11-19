@@ -1,9 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
+import csv
+
 from .. import SourceConfig
 from urllib.parse import urlparse, parse_qs
 from os.path import join, dirname
 
+import json
 import shutil
 import mimetypes
 
@@ -66,6 +69,36 @@ class TestCacheEsriDownload (unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.workdir)
+
+    def response_content(self, url, request):
+        ''' Fake HTTP responses for use with HTTMock in tests.
+        '''
+        scheme, host, path, _, query, _ = urlparse(url.geturl())
+        tests_dirname = dirname(__file__)
+        data_dirname = join(tests_dirname, 'data')
+        local_path = None
+
+        if (host, path) == ('web2.kcsgis.com', '/kcsgis/rest/services/Cullman/VAM_Cullman_FS/FeatureServer/4'):
+            qs = parse_qs(query)
+
+            if qs.get('f') == ['json']:
+                local_path = join(data_dirname, 'us-al-cullman-metadata.json')
+
+        if (host, path) == ('web2.kcsgis.com', '/kcsgis/rest/services/Cullman/VAM_Cullman_FS/FeatureServer/4/query'):
+            qs = parse_qs(query)
+            body_qs = parse_qs(request.body)
+
+            if qs.get('returnCountOnly') == ['true']:
+                local_path = join(data_dirname, 'us-al-cullman-count-only.json')
+            if request.method == 'POST' and body_qs.get('resultOffset') == ['0']:
+                local_path = join(data_dirname, 'us-al-cullman-0.json')
+
+        if local_path:
+            type, _ = mimetypes.guess_type(local_path)
+            with open(local_path, 'rb') as file:
+                return httmock.response(200, file.read(), headers={'Content-Type': type})
+
+        raise NotImplementedError(url.geturl())
 
     def test_download_with_conform(self):
         """ ESRI Caching Will Request With The Minimum Fields Required """
@@ -294,3 +327,31 @@ class TestCacheEsriDownload (unittest.TestCase):
         }), "addresses", "default")
         fields10 = EsriRestDownloadTask.field_names_to_request(conform10)
         self.assertEqual(fields10, ['Street'])
+
+    def test_handle_feature_server_with_lat_lon_in_conform(self):
+        '''
+        '''
+        task = EsriRestDownloadTask('us-fl-palmbeach')
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "lat": "LAT",
+                        "lon": "LON"
+                    }
+                }]
+            }
+        }), "addresses", "default")
+        with httmock.HTTMock(self.response_content):
+            output_path = task.download(["https://web2.kcsgis.com/kcsgis/rest/services/Cullman/VAM_Cullman_FS/FeatureServer/4"], self.workdir, c)
+            self.assertEqual(len(output_path), 1)
+
+            # Load the downloaded CSV and check the geometry
+            with open(output_path[0], 'r') as file:
+                reader = csv.DictReader(file)
+                all_data = list(reader)
+                self.assertEqual(len(all_data),  5)
+                self.assertTrue('oa:geom' in all_data[0])
+                self.assertEqual(all_data[0]['oa:geom'], 'POINT (-86.82960553 34.18671398)')
