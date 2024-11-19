@@ -362,6 +362,7 @@ class EsriRestDownloadTask(DownloadTask):
         mkdirsp(download_path)
 
         query_fields = EsriRestDownloadTask.field_names_to_request(source_config)
+        conform = source_config.data_source.get('conform') or {}
 
         for source_url in source_urls:
             size = 0
@@ -400,12 +401,30 @@ class EsriRestDownloadTask(DownloadTask):
                         geom = feature.get('geometry') or {}
                         row = feature.get('properties') or {}
 
+                        # If the feature doesn't have a geometry, see if the conform has lat and lon fields specified
+                        # and try to build a point geometry from them
+                        if not geom and conform.get('lat') and conform.get('lon'):
+                            lat_field_name = conform['lat']
+                            lon_field_name = conform['lon']
+
+                            # Don't support functions to build the geometry yet
+                            if not isinstance(lat_field_name, str) or not isinstance(lon_field_name, str):
+                                raise TypeError("lat and lon don't support functions yet")
+
+                            try:
+                                geom = {
+                                    'type': 'Point',
+                                    'coordinates': [float(row.get(lon_field_name)), float(row.get(lat_field_name))]
+                                }
+                            except (TypeError, ValueError):
+                                raise TypeError("Couldn't build geometry from lat and lon fields")
+
                         if not geom:
                             raise TypeError("No geometry parsed")
                         if any((isinstance(g, float) and math.isnan(g)) for g in traverse(geom)):
                             raise TypeError("Geometry has NaN coordinates")
 
-                        shp = shape(feature['geometry'])
+                        shp = shape(geom)
                         row[GEOM_FIELDNAME] = shp.wkt
 
                         writer.writerow({fn: row.get(fn) for fn in field_names})
