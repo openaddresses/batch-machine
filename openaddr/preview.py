@@ -1,9 +1,8 @@
 import logging; _L = logging.getLogger('openaddr.preview')
 
-from tempfile import mkstemp
-from math import pow, sqrt, pi, log
+from math import sqrt, pi, log
 from argparse import ArgumentParser
-import json, itertools, os, struct
+import json, itertools
 
 import requests, uritemplate, mapbox_vector_tile
 
@@ -15,7 +14,7 @@ except ImportError:
     # http://stackoverflow.com/questions/11491268/install-pycairo-in-virtualenv
     import cairocffi as cairo
 
-TILE_URL = 'http://a.tiles.mapbox.com/v4/mapbox.mapbox-streets-v7/{z}/{x}/{y}.mvt{?access_token}'
+TILE_URL = 'https://api.protomaps.com/tiles/v3/{z}/{x}/{y}.mvt{?key}'
 EARTH_DIAMETER = 6378137 * 2 * pi
 FORMAT = 'ff'
 
@@ -25,7 +24,7 @@ EPSG4326 = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
 # Web Mercator, https://trac.osgeo.org/openlayers/wiki/SphericalMercator
 EPSG900913 = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs'
 
-def render(src_filename, png_filename, width, resolution, mapbox_key):
+def render(src_filename, png_filename, width, resolution, protomaps_key):
     '''
     '''
     try:
@@ -56,7 +55,7 @@ def render(src_filename, png_filename, width, resolution, mapbox_key):
     context.fill()
 
     landuse_geoms, water_geoms, roads_geoms = \
-        get_map_features(xmin, ymin, xmax, ymax, resolution, scale, mapbox_key)
+        get_map_features(xmin, ymin, xmax, ymax, resolution, scale, protomaps_key)
 
     fill_geometries(context, landuse_geoms, muppx, park_fill)
     fill_geometries(context, water_geoms, muppx, water_fill)
@@ -107,7 +106,7 @@ def iterate_file_geoms(filename):
 
     del project, geom
 
-def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, mapbox_key):
+def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, protomaps_key):
     '''
     '''
     zoom = round(calculate_zoom(scale, resolution))
@@ -155,7 +154,7 @@ def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, mapbox_key):
         return geom
 
     for (row, col) in row_cols:
-        url = uritemplate.expand(TILE_URL, dict(z=zoom, x=col, y=row, access_token=mapbox_key))
+        url = uritemplate.expand(TILE_URL, dict(z=zoom, x=col, y=row, key=protomaps_key))
 
         _L.debug('Getting tile {}'.format(url))
 
@@ -176,12 +175,12 @@ def get_map_features(xmin, ymin, xmax, ymax, resolution, scale, mapbox_key):
                 if 'Polygon' in feature['geometry']['type']:
                     water_geoms.append(projected_geom(feature['geometry'], *water_xform))
 
-        if 'road' in tile:
-            road_xform = get_transform(tile['road']['extent'], *bounds)
-            for feature in tile['road']['features']:
+        if 'roads' in tile:
+            roads_xform = get_transform(tile['roads']['extent'], *bounds)
+            for feature in tile['roads']['features']:
                 if 'LineString' in feature['geometry']['type']:
                     if feature['properties'].get('class') in ('motorway', 'motorway_link', 'trunk', 'primary', 'secondary', 'tertiary', 'link', 'street', 'street_limited', 'pedestrian', 'construction', 'track', 'service', 'major_rail', 'minor_rail'):
-                        roads_geoms.append(projected_geom(feature['geometry'], *road_xform))
+                        roads_geoms.append(projected_geom(feature['geometry'], *roads_xform))
 
     return landuse_geoms, water_geoms, roads_geoms
 
@@ -367,8 +366,8 @@ parser.add_argument('--1x', dest='resolution', action='store_const', const=1,
 parser.add_argument('--width', dest='width', type=int,
                     help='Width in pixels.')
 
-parser.add_argument('--mapbox-key', dest='mapbox_key',
-                    help='Mapbox API Key. See: https://mapbox.com/')
+parser.add_argument('--protomaps-key', dest='protomaps_key',
+                    help='Protomaps API Key. See: https://protomaps.com/dashboard')
 
 parser.add_argument('-v', '--verbose', help='Turn on verbose logging',
                     action='store_const', dest='loglevel',
@@ -380,7 +379,7 @@ parser.add_argument('-q', '--quiet', help='Turn off most logging',
 
 def main():
     args = parser.parse_args()
-    render(args.src_geojson, args.png_filename, args.width, args.resolution, args.mapbox_key)
+    render(args.src_geojson, args.png_filename, args.width, args.resolution, args.protomaps_key)
 
 if __name__ == '__main__':
     exit(main())

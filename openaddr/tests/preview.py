@@ -64,8 +64,8 @@ class TestPreview (unittest.TestCase):
         '''
         '''
         def response_content(url, request):
-            if url.hostname == 'a.tiles.mapbox.com' and url.path.startswith('/v4/mapbox.mapbox-streets-v7'):
-                if 'access_token=mapbox-XXXX' not in url.query:
+            if url.hostname == 'api.protomaps.com' and url.path.startswith('/tiles/v3'):
+                if 'access_token=protomaps-XXXX' not in url.query:
                     raise ValueError('Missing or wrong API key')
                 data = b'\x1a\'x\x02\n\x05water(\x80 \x12\x19\x18\x03"\x13\t\xe0\x7f\xff\x1f\x1a\x00\xe0\x9f\x01\xdf\x9f\x01\x00\x00\xdf\x9f\x01\x0f\x08\x00'
                 return response(200, data, headers={'Content-Type': 'application/vnd.mapbox-vector-tile'})
@@ -78,7 +78,7 @@ class TestPreview (unittest.TestCase):
             temp_dir = tempfile.mkdtemp(prefix='test_render_geojson-')
 
             with HTTMock(response_content):
-                preview.render(join(dirname(__file__), 'outputs', 'denver-metro-preview.geojson'), png_filename, 668, 1, 'mapbox-XXXX')
+                preview.render(join(dirname(__file__), 'outputs', 'denver-metro-preview.geojson'), png_filename, 668, 1, 'protomaps-XXXX')
 
             info = str(subprocess.check_output(('file', png_filename)))
 
@@ -93,8 +93,8 @@ class TestPreview (unittest.TestCase):
         '''
         '''
         def response_content(url, request):
-            if url.hostname == 'a.tiles.mapbox.com' and url.path.startswith('/v4/mapbox.mapbox-streets-v7'):
-                if 'access_token=mapbox-XXXX' not in url.query:
+            if url.hostname == 'api.protomaps.com' and url.path.startswith('/tiles/v3'):
+                if 'key=protomaps-XXXX' not in url.query:
                     raise ValueError('Missing or wrong API key')
                 with open(join(dirname(__file__), 'data', 'mapbox-tile.mvt'), 'rb') as file:
                     data = file.read()
@@ -106,10 +106,8 @@ class TestPreview (unittest.TestCase):
 
         with HTTMock(response_content):
             landuse_geoms, water_geoms, roads_geoms = \
-                preview.get_map_features(xmin, ymin, xmax, ymax, 2, scale, 'mapbox-XXXX')
+                preview.get_map_features(xmin, ymin, xmax, ymax, 2, scale, 'protomaps-XXXX')
 
         self.assertEqual(len(landuse_geoms), 90, 'Should have 90 landuse geometries')
         self.assertEqual(len(water_geoms), 1, 'Should have 1 water geometry')
         self.assertEqual(len(roads_geoms), 792, 'Should have 792 road geometries')
-
-
