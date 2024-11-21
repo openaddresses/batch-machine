@@ -57,7 +57,7 @@ def boolstr(value):
 
 def process(source, destination, layer, layersource,
             do_preview, do_pmtiles,
-            mapbox_key=None, extras=dict()):
+            protomaps_key=None, extras=dict()):
     ''' Process a single source and destination, return path to JSON state file.
 
         Creates a new directory and files under destination.
@@ -155,8 +155,8 @@ def process(source, destination, layer, layersource,
                     else:
                         _L.info('Processed data in {}'.format(conform_result.path))
 
-                        if do_preview and mapbox_key:
-                            preview_path = render_preview(conform_result.path, temp_dir, mapbox_key)
+                        if do_preview and protomaps_key:
+                            preview_path = render_preview(conform_result.path, temp_dir, protomaps_key)
 
                         if not preview_path:
                             _L.warning('Nothing previewed')
@@ -209,11 +209,11 @@ def upgrade_source_schema(schema):
 
     return v2
 
-def render_preview(csv_filename, temp_dir, mapbox_key):
+def render_preview(csv_filename, temp_dir, protomaps_key):
     '''
     '''
     png_filename = join(temp_dir, 'preview.png')
-    preview.render(csv_filename, png_filename, 668, 2, mapbox_key)
+    preview.render(csv_filename, png_filename, 668, 2, protomaps_key)
 
     return png_filename
 
@@ -415,8 +415,8 @@ parser.add_argument('--render-preview', help="Render a map preview",
                     action='store_const', dest='render_preview',
                     const=True, default=True)
 
-parser.add_argument('--mapbox-key', dest='mapbox_key',
-                    help='Mapbox API Key. See: https://mapbox.com/')
+parser.add_argument('--protomaps-key', dest='protomaps_key',
+                    help='Protomaps API Key. See: https://protomaps.com/dashboard')
 
 parser.add_argument('-l', '--logfile', help='Optional log file name.')
 
@@ -451,9 +451,9 @@ def main():
 
     args = parser.parse_args()
 
-    # Can't generate preview without Mapbox key
-    if args.render_preview and not args.mapbox_key:
-        _L.error('Mapbox key is required to generate preview')
+    # Can't generate preview without Protomaps key
+    if args.render_preview and not args.protomaps_key:
+        _L.error('Protomaps key is required to generate preview')
         return 1
 
     # Allow CSV files with very long fields
@@ -464,7 +464,7 @@ def main():
                                  args.layer, args.layersource,
                                  args.render_preview,
                                  args.render_preview,
-                                 mapbox_key=args.mapbox_key)
+                                 protomaps_key=args.protomaps_key)
     except Exception as e:
         _L.error(e, exc_info=True)
         return 1
