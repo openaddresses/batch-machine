@@ -349,7 +349,7 @@ class TestOA (unittest.TestCase):
              mock.patch('openaddr.slippymap.generate') as slippymap_gen:
             preview_ren.side_effect = touch_second_arg_file
             slippymap_gen.side_effect = touch_first_arg_file
-            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, mapbox_key='mapbox-XXXX')
+            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, protomaps_key='protomaps-XXXX')
 
         self.assertTrue(list(slippymap_gen.mock_calls[0])[1][0].endswith('.pmtiles'))
         self.assertTrue(list(slippymap_gen.mock_calls[0])[1][1].endswith('.geojson'))
@@ -392,7 +392,7 @@ class TestOA (unittest.TestCase):
              mock.patch('openaddr.slippymap.generate') as slippymap_gen:
             preview_ren.side_effect = touch_second_arg_file
             slippymap_gen.side_effect = touch_first_arg_file
-            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, mapbox_key='mapbox-XXXX')
+            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, protomaps_key='protomaps-XXXX')
 
         self.assertTrue(list(slippymap_gen.mock_calls[0])[1][0].endswith('.pmtiles'))
         self.assertTrue(list(slippymap_gen.mock_calls[0])[1][1].endswith('.geojson'))
@@ -435,7 +435,7 @@ class TestOA (unittest.TestCase):
              mock.patch('openaddr.slippymap.generate') as slippymap_gen:
             preview_ren.side_effect = touch_second_arg_file
             slippymap_gen.side_effect = touch_first_arg_file
-            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, mapbox_key='mapbox-XXXX')
+            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, protomaps_key='protomaps-XXXX')
 
         self.assertTrue(list(slippymap_gen.mock_calls[0])[1][0].endswith('.pmtiles'))
         self.assertTrue(list(slippymap_gen.mock_calls[0])[1][1].endswith('.geojson'))
@@ -475,7 +475,7 @@ class TestOA (unittest.TestCase):
              mock.patch('openaddr.slippymap.generate') as slippymap_gen:
             preview_ren.side_effect = touch_second_arg_file
             slippymap_gen.side_effect = touch_first_arg_file
-            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, mapbox_key='mapbox-XXXX')
+            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, protomaps_key='protomaps-XXXX')
 
         self.assertTrue(list(slippymap_gen.mock_calls[0])[1][0].endswith('.pmtiles'))
         self.assertTrue(list(slippymap_gen.mock_calls[0])[1][1].endswith('.geojson'))
@@ -519,7 +519,7 @@ class TestOA (unittest.TestCase):
              mock.patch('openaddr.slippymap.generate') as slippymap_gen:
             preview_ren.side_effect = touch_second_arg_file
             slippymap_gen.side_effect = touch_first_arg_file
-            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, mapbox_key='mapbox-XXXX')
+            state_path = process_one.process(source, self.testdir, "addresses", "default", True, True, protomaps_key='protomaps-XXXX')
 
         self.assertTrue(list(slippymap_gen.mock_calls[0])[1][0].endswith('.pmtiles'))
         self.assertTrue(list(slippymap_gen.mock_calls[0])[1][1].endswith('.geojson'))
