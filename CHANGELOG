@@ -1,3 +1,6 @@
+2024-11-20 v9.7.0
+- Use protomaps for basemap tiles on process-one preview image in https://github.com/openaddresses/batch-machine/pull/68
+
 2024-11-19 v9.6.0
 - Use protomaps for basemap tiles on preview images in https://github.com/openaddresses/batch-machine/pull/67
 
