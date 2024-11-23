@@ -457,6 +457,44 @@ class TestConformTransforms (unittest.TestCase):
             }
         }, r)
 
+        "Test first_non_empty function with nothing found"
+        d = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "first_non_empty",
+                            "fields": ["a", "b"]
+                        },
+                        "lon": "y",
+                        "lat": "x",
+                    },
+                    "fingerprint": "0000"
+                }]
+            }
+        }), "addresses", "default")
+        r = row_transform_and_convert(d, { "a": "", "b": "", GEOM_FIELDNAME: "POINT(-119.2 39.3)" })
+        self.assertEqual({
+            'type': 'Feature',
+            'geometry': {
+                "type": "Point",
+                "coordinates": [-119.2, 39.3]
+            },
+            'properties': {
+                "street": "",
+                "unit": "",
+                "number": "",
+                "city": "",
+                "region": "",
+                "district": "",
+                "postcode": "",
+                "id": "",
+                'hash': '7b1dc0b74cbc0162'
+            }
+        }, r)
+
     def test_row_canonicalize_unit_and_number(self):
         r = row_canonicalize_unit_and_number({}, {"number": "324 ", "street": " OAK DR.", "unit": "1"})
         self.assertEqual("324", r["number"])
