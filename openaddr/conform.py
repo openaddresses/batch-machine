@@ -1078,7 +1078,10 @@ def row_convert_to_out(source_config, row):
             # Get a native field as specified in the conform object
             cfield = source_config.data_source['conform'].get(field)
 
-            if cfield:
+            # If the field is a string, it is a direct mapping to the source
+            # It might not be a string if it's a function that failed to
+            # resolve to an oa:-prefixed field.
+            if cfield and isinstance(cfield, str):
                 output["properties"][field] = row.get(cfield)
             else:
                 output["properties"][field] = ''
