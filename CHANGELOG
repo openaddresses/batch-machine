@@ -1,3 +1,6 @@
+2024-11-23 v9.8.0
+- Fix output generation when first_non_empty function doesn't generate output in https://github.com/openaddresses/batch-machine/pull/69
+
 2024-11-20 v9.7.0
 - Use protomaps for basemap tiles on process-one preview image in https://github.com/openaddresses/batch-machine/pull/68
 
