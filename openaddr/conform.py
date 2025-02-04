@@ -13,6 +13,7 @@ import copy
 import csv
 import re
 import osgeo
+import shutil
 
 from .geojson import stream_geojson
 
@@ -240,9 +241,8 @@ class GzipDecompressTask(DecompressionTask):
             expanded_path = os.path.join(expand_path, os.path.basename(source_path)[:-3])
 
             with open(expanded_path, 'wb') as temp_fp:
-                with open(source_path, 'rb') as source_fp:
-                    with gzip.open(source_fp, 'rb') as gz_fp:
-                        temp_fp.write(gz_fp.read())
+                with gzip.open(source_path, 'rb') as source_fp:
+                    shutil.copyfileobj(source_fp, temp_fp)
 
             output_files.append(temp_fp.name)
             _L.debug("Ungzipped file {}".format(output_files[-1]))
