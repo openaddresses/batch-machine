@@ -1,3 +1,6 @@
+2025-02-07 v9.9.0
+- Fix bug leading to excessive memory consumotion when gunziping streams
+
 2024-11-23 v9.8.0
 - Fix output generation when first_non_empty function doesn't generate output in https://github.com/openaddresses/batch-machine/pull/69
 
