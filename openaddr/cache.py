@@ -316,7 +316,7 @@ class EsriRestDownloadTask(DownloadTask):
     def fields_from_conform_function(cls, v):
         fxn = v.get('function')
         if not fxn:
-            return None
+            return set()
 
         if fxn in ('join', 'format'):
             # Join and format functions are a list of fields
@@ -331,7 +331,7 @@ class EsriRestDownloadTask(DownloadTask):
             return fields
         elif fxn == 'constant':
             # Constant function doesn't use any fields
-            return None
+            return set()
         else:
             return set([v.get('field')])
 
