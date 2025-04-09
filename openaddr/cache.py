@@ -315,18 +315,25 @@ class EsriRestDownloadTask(DownloadTask):
     @classmethod
     def fields_from_conform_function(cls, v):
         fxn = v.get('function')
-        if fxn:
-            if fxn in ('join', 'format'):
-                return set(v['fields'])
-            elif fxn == 'chain':
-                fields = set()
-                user_vars = set([v['variable']])
-                for func in v['functions']:
-                    if isinstance(func, dict) and 'function' in func:
-                        fields |= cls.fields_from_conform_function(func) - user_vars
-                return fields
-            else:
-                return set([v.get('field')])
+        if not fxn:
+            return None
+
+        if fxn in ('join', 'format'):
+            # Join and format functions are a list of fields
+            return set(v['fields'])
+        elif fxn == 'chain':
+            # Chain function is a list of functions that we should recurse into for field names
+            fields = set()
+            user_vars = set([v['variable']])
+            for func in v['functions']:
+                if isinstance(func, dict) and 'function' in func:
+                    fields |= cls.fields_from_conform_function(func) - user_vars
+            return fields
+        elif fxn == 'constant':
+            # Constant function doesn't use any fields
+            return None
+        else:
+            return set([v.get('field')])
 
     @classmethod
     def field_names_to_request(cls, source_config):
@@ -352,6 +359,7 @@ class EsriRestDownloadTask(DownloadTask):
                     fields.add(v)
 
         if fields:
+            # Remove any blank or None values
             return list(filter(None, sorted(fields)))
         else:
             return None
