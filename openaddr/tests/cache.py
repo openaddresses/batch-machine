@@ -328,6 +328,24 @@ class TestCacheEsriDownload (unittest.TestCase):
         fields10 = EsriRestDownloadTask.field_names_to_request(conform10)
         self.assertEqual(fields10, ['Street'])
 
+        conform11 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "street": ["Number", "Street"],
+                        "number": {
+                            "function": "constant",
+                            "value": "123",
+                        },
+                    }
+                }]
+            }
+        }), "addresses", "default")
+        fields11 = EsriRestDownloadTask.field_names_to_request(conform11)
+        self.assertEqual(fields11, ['Number', 'Street'])
+
     def test_handle_feature_server_with_lat_lon_in_conform(self):
         '''
         '''
