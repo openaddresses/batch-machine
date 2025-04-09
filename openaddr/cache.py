@@ -348,11 +348,11 @@ class EsriRestDownloadTask(DownloadTask):
                 elif isinstance(v, list):
                     # It's a list of field names
                     fields |= set(v)
-                else:
+                else if v is not None:
                     fields.add(v)
 
         if fields:
-            return list(filter(None, sorted(fields)))
+            return list(sorted(fields))
         else:
             return None
 
