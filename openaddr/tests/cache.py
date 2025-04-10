@@ -334,17 +334,36 @@ class TestCacheEsriDownload (unittest.TestCase):
                 "addresses": [{
                     "name": "default",
                     "conform": {
-                        "street": ["Number", "Street"],
+                        "format": "geojson",
+                        "accuracy": 2,
                         "number": {
-                            "function": "constant",
-                            "value": "123",
+                            "function": "prefixed_number",
+                            "field": "site_address"
                         },
+                        "street": {
+                            "function": "postfixed_street",
+                            "field": "site_address"
+                        },
+                        "city": {
+                            "function": "regexp",
+                            "field": "site_csz",
+                            "pattern": "^.+(?= IL)"
+                        },
+                        "region": {
+                            "function": "constant",
+                            "value": "IL"
+                        },
+                        "postcode": {
+                            "function": "regexp",
+                            "field": "site_csz",
+                            "pattern": "\\d{5}(-\\d{4})?$"
+                        }
                     }
                 }]
             }
         }), "addresses", "default")
         fields11 = EsriRestDownloadTask.field_names_to_request(conform11)
-        self.assertEqual(fields11, ['Number', 'Street'])
+        self.assertEqual(fields11, ['site_address', 'site_csz'])
 
     def test_handle_feature_server_with_lat_lon_in_conform(self):
         '''
