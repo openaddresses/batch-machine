@@ -360,7 +360,7 @@ class EsriRestDownloadTask(DownloadTask):
 
         if fields:
             # Remove any blank or None values
-            return list(filter(None, sorted(fields)))
+            return list(sorted(filter(None, fields)))
         else:
             return None
 
