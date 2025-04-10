@@ -885,17 +885,17 @@ def row_fxn_regexp(sc, row, key, fxn):
     replace = fxn.get('replace', False)
     if replace:
         match = re.sub(pattern, convert_regexp_replace(replace), row[fxn["field"]])
-        row["oa:{}".format(key)] = match;
+        row["oa:{}".format(key)] = match
     else:
         match = pattern.search(row[fxn["field"]])
-        row["oa:{}".format(key)] = ''.join(match.groups()) if match else '';
+        row["oa:{}".format(key)] = ''.join(match.groups()) if match else ''
     return row
 
 def row_fxn_prefixed_number(sc, row, key, fxn):
     "Extract '123' from '123 Maple St'"
 
     match = prefixed_number_pattern.search(row[fxn["field"]])
-    row["oa:{}".format(key)] = ''.join(match.groups()) if match else '';
+    row["oa:{}".format(key)] = ''.join(match.groups()) if match else ''
 
     return row
 
@@ -909,7 +909,7 @@ def row_fxn_postfixed_street(sc, row, key, fxn):
     else:
         match = postfixed_street_pattern.search(row[fxn["field"]])
 
-    row["oa:{}".format(key)] = ''.join(match.groups()) if match else '';
+    row["oa:{}".format(key)] = ''.join(match.groups()) if match else ''
 
     return row
 
@@ -917,7 +917,7 @@ def row_fxn_postfixed_unit(sc, row, key, fxn):
     "Extract 'Suite 300' from '123 Maple St Suite 300'"
 
     match = postfixed_unit_pattern.search(row[fxn["field"]])
-    row["oa:{}".format(key)] = ''.join(match.groups()) if match else '';
+    row["oa:{}".format(key)] = ''.join(match.groups()) if match else ''
 
     return row
 

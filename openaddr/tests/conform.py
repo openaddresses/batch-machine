@@ -2303,7 +2303,7 @@ class TestConformCsv(unittest.TestCase):
         r = self._convert(c, d)
         self.assertEqual(r[0], u'n,s,{GEOM_FIELDNAME}'.format(**globals()))
 
-        r = r[1].split(',');
+        r = r[1].split(',')
         self.assertEquals(r[0], '3203')
         self.assertEquals(r[1], 'SE WOODSTOCK BLVD')
 
