@@ -339,13 +339,13 @@ class TestCacheEsriDownload (unittest.TestCase):
                             "function": "constant",
                             "value": "123",
                         },
-                        "state": "StateColumn",
+                        "region": "StateColumn",
                     }
                 }]
             }
         }), "addresses", "default")
         fields11 = EsriRestDownloadTask.field_names_to_request(conform11)
-        self.assertEqual(fields11, ['Number', 'Street', 'StateColumn'])
+        self.assertEqual(fields11, ['Number', 'StateColumn', 'Street'])
 
     def test_handle_feature_server_with_lat_lon_in_conform(self):
         '''
