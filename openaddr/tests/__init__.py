@@ -1048,9 +1048,9 @@ class TestOA (unittest.TestCase):
             self.assertEqual(rows[0]['properties']['number'], u'162')
             self.assertEqual(rows[0]['properties']['hash'], u'0488f0771f0ff30f')
             self.assertEqual(rows[0]['properties']['city'], u'')
-            self.assertEqual(rows[0]['geometry']['type'], 'Point');
-            self.assertAlmostEqual(rows[0]['geometry']['coordinates'][0], -108.7563613);
-            self.assertAlmostEqual(rows[0]['geometry']['coordinates'][1], 44.7538737);
+            self.assertEqual(rows[0]['geometry']['type'], 'Point')
+            self.assertAlmostEqual(rows[0]['geometry']['coordinates'][0], -108.7563613)
+            self.assertAlmostEqual(rows[0]['geometry']['coordinates'][1], 44.7538737)
             self.assertEqual(rows[0]['properties']['street'], u'N CLARK ST')
             self.assertEqual(rows[0]['properties']['postcode'], u'')
             self.assertEqual(rows[0]['properties']['unit'], u'')
