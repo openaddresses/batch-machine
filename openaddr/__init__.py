@@ -129,10 +129,15 @@ def conform(source_config, destdir, extras):
     downloaded_path = task1.download(source_urls, workdir, source_config)
     _L.info("Downloaded to %s", downloaded_path)
 
-    task2 = DecompressionTask.from_format_string(source_config.data_source.get('compression'))
-    names = elaborate_filenames(source_config.data_source.get('conform', {}).get('file', None))
-    decompressed_paths = task2.decompress(downloaded_path, workdir, names)
-    _L.info("Decompressed to %d files", len(decompressed_paths))
+    compression = source_config.data_source.get('compression')
+    if compression:
+        task2 = DecompressionTask.from_format_string(compression)
+        names = elaborate_filenames(source_config.data_source.get('conform', {}).get('file', None))
+        decompressed_paths = task2.decompress(downloaded_path, workdir, names)
+        _L.info("Decompressed to %d files", len(decompressed_paths))
+    else:
+        decompressed_paths = downloaded_path
+        _L.info("No decompression requested")
 
     task4 = ConvertToGeojsonTask()
     try:

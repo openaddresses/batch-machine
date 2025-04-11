@@ -14,6 +14,7 @@
         "addresses": [{
             "name": "default",
             "data": "https://data.openaddresses.io/cache/uploads/nvkelso/5a5bf6/ParkCountyADDRESS_POINTS_point.zip",
+            "compression": "zip",
             "protocol": "http",
             "conform": {
                 "format": "shapefile",
