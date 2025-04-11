@@ -136,7 +136,7 @@ def conform(source_config, destdir, extras):
         decompressed_paths = task2.decompress(downloaded_path, workdir, names)
         _L.info("Decompressed to %d files", len(decompressed_paths))
     else:
-        decompressed_paths = [downloaded_path]
+        decompressed_paths = downloaded_path
         _L.info("No decompression requested")
 
     task4 = ConvertToGeojsonTask()

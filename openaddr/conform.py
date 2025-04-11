@@ -183,7 +183,7 @@ class GuessDecompressTask(DecompressionTask):
             _L.info('Guessing gzip compression based on file names')
             return substitute_task.decompress(source_paths, workdir, filenames)
 
-        _L.warning('Could not guess a single compression from file names')
+        _L.info('Could not guess a single compression from file names')
         return source_paths
 
 def is_in(path, names):
