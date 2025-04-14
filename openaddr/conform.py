@@ -846,7 +846,11 @@ def row_transform_and_convert(source_config, row):
             row = row_merge(source_config, row, k)
         if k in source_config.SCHEMA and isinstance(v, dict):
             "Dicts are custom processing functions"
-            row = row_function(source_config, row, k, v)
+            try:
+                row = row_function(source_config, row, k, v)
+            except Exception as e:
+                _L.error("Error processing function for key '%s' in row %s", k, row)
+                raise
 
     # Make up a random fingerprint if none exists
     cache_fingerprint = source_config.data_source.get('fingerprint', str(uuid4()))
