@@ -892,7 +892,7 @@ def row_fxn_regexp(sc, row, key, fxn):
         row["oa:{}".format(key)] = match
     else:
         match = pattern.search(row[fxn["field"]])
-        row["oa:{}".format(key)] = ''.join(match.groups()) if match else ''
+        row["oa:{}".format(key)] = ''.join(filter(None, match.groups())) if match else ''
     return row
 
 def row_fxn_prefixed_number(sc, row, key, fxn):
