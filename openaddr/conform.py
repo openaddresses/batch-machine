@@ -846,7 +846,11 @@ def row_transform_and_convert(source_config, row):
             row = row_merge(source_config, row, k)
         if k in source_config.SCHEMA and isinstance(v, dict):
             "Dicts are custom processing functions"
-            row = row_function(source_config, row, k, v)
+            try:
+                row = row_function(source_config, row, k, v)
+            except Exception as e:
+                _L.error("Error processing function for key '%s' in row %s", k, row)
+                raise
 
     # Make up a random fingerprint if none exists
     cache_fingerprint = source_config.data_source.get('fingerprint', str(uuid4()))
@@ -888,7 +892,7 @@ def row_fxn_regexp(sc, row, key, fxn):
         row["oa:{}".format(key)] = match
     else:
         match = pattern.search(row[fxn["field"]])
-        row["oa:{}".format(key)] = ''.join(match.groups()) if match else ''
+        row["oa:{}".format(key)] = ''.join(filter(None, match.groups())) if match else ''
     return row
 
 def row_fxn_prefixed_number(sc, row, key, fxn):
