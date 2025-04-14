@@ -1,5 +1,14 @@
+2025-04-13 v9.11.0
+- Make regexp function slightly more resilient in https://github.com/openaddresses/batch-machine/pull/78
+- Remove semicolons at the end of lines in https://github.com/openaddresses/batch-machine/pull/77
+- Only perform decompress step if requested in conform in https://github.com/openaddresses/batch-machine/pull/76
+- Move filter to the right spot when calculating field names to request in https://github.com/openaddresses/batch-machine/pull/75
+
+2025-04-08 v9.10.0
+- Handle field names for constant function in https://github.com/openaddresses/batch-machine/pull/74
+
 2025-02-07 v9.9.0
-- Fix bug leading to excessive memory consumotion when gunziping streams
+- Fix bug leading to excessive memory consumotion when gunziping streams in https://github.com/openaddresses/batch-machine/pull/70
 
 2024-11-23 v9.8.0
 - Fix output generation when first_non_empty function doesn't generate output in https://github.com/openaddresses/batch-machine/pull/69
