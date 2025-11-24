@@ -153,7 +153,12 @@ def guess_url_file_extension(url):
     mimetypes.add_type('application/vnd.geo+json', '.json', False)
 
     _, likely_ext = os.path.splitext(path)
-    bad_extensions = '', '.cgi', '.php', '.aspx', '.asp', '.do'
+    if likely_ext == '.gz':
+        _, compressed_ext = os.path.splitext(path[:-3])
+        if compressed_ext:
+            likely_ext = compressed_ext + likely_ext
+
+    bad_extensions = "", ".cgi", ".php", ".aspx", ".asp", ".do"
 
     if not query and likely_ext not in bad_extensions:
         #
