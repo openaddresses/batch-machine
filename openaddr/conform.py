@@ -827,6 +827,8 @@ def row_function(sc, row, key, fxn):
         row = row_fxn_first_non_empty(sc, row, key, fxn)
     elif function == "constant":
         row = row_fxn_constant(sc, row, key, fxn)
+    elif function == "map":
+        row = row_fxn_map(sc, row, key, fxn)
 
     return row
 
@@ -1021,6 +1023,22 @@ def row_fxn_constant(sc, row, key, fxn):
     value  = fxn['value']
 
     row['oa:{}'.format(key)] = value
+
+    return row
+
+def row_fxn_map(sc, row, key, fxn):
+    "Map a value from a source column to a new value using a dictionary"
+    field = fxn.get('field', False)
+    mapping = fxn.get('mapping', {})
+
+    if field and field in row:
+        val = row[field]
+        if val in mapping:
+            row['oa:{}'.format(key)] = mapping[val]
+        elif 'else' in fxn:
+            row['oa:{}'.format(key)] = fxn['else']
+        else:
+            row['oa:{}'.format(key)] = ''
 
     return row
 
