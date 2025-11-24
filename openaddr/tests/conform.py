@@ -22,7 +22,7 @@ from ..conform import (
     row_fxn_prefixed_number, row_fxn_postfixed_street,
     row_fxn_postfixed_unit,
     row_fxn_remove_prefix, row_fxn_remove_postfix, row_fxn_chain,
-    row_fxn_first_non_empty, row_fxn_constant,
+    row_fxn_first_non_empty, row_fxn_constant, row_fxn_map,
     row_canonicalize_unit_and_number, conform_cli,
     convert_regexp_replace, normalize_ogr_filename_case,
     is_in, geojson_source_to_csv, check_source_tests
@@ -64,7 +64,8 @@ class TestConformTransforms (unittest.TestCase):
                 "district": "",
                 "postcode": "",
                 "hash": "",
-                "id": ""
+                "id": "",
+                "accuracy": "",
             },
             "geometry": {
                 "type": "Point",
@@ -376,7 +377,8 @@ class TestConformTransforms (unittest.TestCase):
                 "district": "",
                 "postcode": "",
                 'hash': 'b3af08e447c7ed16',
-                "id": ""
+                "id": "",
+                "accuracy": "",
             },
             'geometry': {
                 'coordinates': [-119.2, 39.3],
@@ -406,7 +408,8 @@ class TestConformTransforms (unittest.TestCase):
                 "district": "",
                 "postcode": "",
                 "id": "",
-                'hash': 'd4681f7e1d34e6ed'
+                'hash': 'd4681f7e1d34e6ed',
+                "accuracy": "",
             },
             'geometry': {
                 "type": "Point",
@@ -453,7 +456,8 @@ class TestConformTransforms (unittest.TestCase):
                 "district": "",
                 "postcode": "",
                 "id": "",
-                'hash': '591d7970b5753b0d'
+                'hash': '591d7970b5753b0d',
+                "accuracy": "",
             }
         }, r)
 
@@ -491,7 +495,8 @@ class TestConformTransforms (unittest.TestCase):
                 "district": "",
                 "postcode": "",
                 "id": "",
-                'hash': '7b1dc0b74cbc0162'
+                'hash': '7b1dc0b74cbc0162',
+                "accuracy": "",
             }
         }, r)
 
@@ -2384,3 +2389,81 @@ class TestConformTests (unittest.TestCase):
             result, message = check_source_tests(source)
             self.assertIsNone(result, 'Tests should not exist in {}'.format(filename))
             self.assertIsNone(message, 'No message expected from {}'.format(filename))
+
+class TestAccuracyMap(unittest.TestCase):
+    def test_row_fxn_map(self):
+        "Map function"
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "accuracy": {
+                            "function": "map",
+                            "field": "ACC",
+                            "mapping": {
+                                "rooftop": "1",
+                                "interpolated": "4"
+                            }
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
+
+        d = { "ACC": "rooftop" }
+        e = copy.deepcopy(d)
+        e.update({ "oa:accuracy": "1" })
+
+        d = row_fxn_map(c, d, "accuracy", c.data_source["conform"]["accuracy"])
+        self.assertEqual(e, d)
+
+        d = { "ACC": "interpolated" }
+        e = copy.deepcopy(d)
+        e.update({ "oa:accuracy": "4" })
+
+        d = row_fxn_map(c, d, "accuracy", c.data_source["conform"]["accuracy"])
+        self.assertEqual(e, d)
+
+        d = { "ACC": "3" }
+        e = copy.deepcopy(d)
+        e.update({ "oa:accuracy": "" }) # Default to empty if not found
+
+        d = row_fxn_map(c, d, "accuracy", c.data_source["conform"]["accuracy"])
+        self.assertEqual(e, d)
+
+    def test_row_fxn_map_else(self):
+        "Map function with else"
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "accuracy": {
+                            "function": "map",
+                            "field": "ACC",
+                            "mapping": {
+                                "rooftop": "1"
+                            },
+                            "else": "0"
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
+
+        d = { "ACC": "rooftop" }
+        e = copy.deepcopy(d)
+        e.update({ "oa:accuracy": "1" })
+
+        d = row_fxn_map(c, d, "accuracy", c.data_source["conform"]["accuracy"])
+        self.assertEqual(e, d)
+
+        d = { "ACC": "unknown" }
+        e = copy.deepcopy(d)
+        e.update({ "oa:accuracy": "0" })
+
+        d = row_fxn_map(c, d, "accuracy", c.data_source["conform"]["accuracy"])
+        self.assertEqual(e, d)
