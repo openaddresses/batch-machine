@@ -871,8 +871,8 @@ def row_transform_and_convert(source_config, row):
 
 def row_merge(sc, row, key):
     "Merge multiple columns like 'Maple','St' to 'Maple St'"
-    merge_data = [row[field] for field in sc.data_source["conform"][key]]
-    row["oa:{}".format(key)] = ' '.join(merge_data)
+    merge_data = [(row.get(field, '') or '').strip() for field in sc.data_source["conform"][key]]
+    row["oa:{}".format(key)] = ' '.join([part for part in merge_data if part])
     return row
 
 def row_fxn_join(sc, row, key, fxn):
