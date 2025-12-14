@@ -347,6 +347,24 @@ class TestCacheEsriDownload (unittest.TestCase):
         fields11 = EsriRestDownloadTask.field_names_to_request(conform11)
         self.assertEqual(fields11, ['Number', 'StateColumn', 'Street'])
 
+        # Test that integer accuracy values are skipped (not treated as field names)
+        # The 'accuracy' field can be an integer constant indicating a fixed accuracy level
+        conform12 = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "street": "StreetName",
+                        "number": "HouseNumber",
+                        "accuracy": 1,
+                    }
+                }]
+            }
+        }), "addresses", "default")
+        fields12 = EsriRestDownloadTask.field_names_to_request(conform12)
+        self.assertEqual(fields12, ['HouseNumber', 'StreetName'])
+
     def test_handle_feature_server_with_lat_lon_in_conform(self):
         '''
         '''

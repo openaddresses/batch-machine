@@ -360,8 +360,13 @@ class EsriRestDownloadTask(DownloadTask):
                 elif isinstance(v, list):
                     # It's a list of field names
                     fields |= set(v)
-                else:
+                elif isinstance(v, str):
+                    # It's a direct field name mapping
                     fields.add(v)
+                # Note: We intentionally skip non-string scalar values (e.g., integers) because
+                # Esri only supports string field names. Also, the 'accuracy' field can be
+                # set to an integer constant (like 1) to indicate a fixed accuracy level,
+                # rather than a field name to fetch from the source.
 
         if fields:
             # Remove any blank or None values
