@@ -47,7 +47,7 @@ gdal.PushErrorHandler(gdal_error_handler)
 GEOM_FIELDNAME = 'oa:geom'
 
 ADDRESSES_SCHEMA = [ 'hash', 'number', 'street', 'unit', 'city', 'district', 'region', 'postcode', 'id', 'accuracy' ]
-BUILDINGS_SCHEMA = [ 'hash']
+BUILDINGS_SCHEMA = [ 'hash', 'height', 'levels']
 PARCELS_SCHEMA = [ 'hash', 'pid' ]
 RESERVED_SCHEMA = ADDRESSES_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA + [
     "lat",
