@@ -1,3 +1,12 @@
+2025-12-14 v9.13.0
+- Handle accuracy as an integer when building fields to download in Esri https://github.com/openaddresses/batch-machine/pull/84
+- Prevent extra spaces in join function https://github.com/openaddresses/batch-machine/pull/83
+
+2025-11-24 v9.12.0
+- Support for accuracy column in row https://github.com/openaddresses/batch-machine/pull/82
+- Keep filename extension if present in case of .gz files https://github.com/openaddresses/batch-machine/pull/81
+- Upgrade protobuf and requests https://github.com/openaddresses/batch-machine/pull/79 and https://github.com/openaddresses/batch-machine/pull/80
+
 2025-04-13 v9.11.0
 - Make regexp function slightly more resilient in https://github.com/openaddresses/batch-machine/pull/78
 - Remove semicolons at the end of lines in https://github.com/openaddresses/batch-machine/pull/77
