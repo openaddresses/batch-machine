@@ -1,7 +1,9 @@
 # coding=ascii
 
 from __future__ import absolute_import, division, print_function
-import logging; _L = logging.getLogger('openaddr.conform')
+import logging
+
+_L = logging.getLogger("openaddr.conform")
 
 import os
 import errno
@@ -27,35 +29,72 @@ from hashlib import sha1
 from uuid import uuid4
 
 from osgeo import ogr, osr, gdal
+
 ogr.UseExceptions()
+
 
 def gdal_error_handler(err_class, err_num, err_msg):
     errtype = {
-            gdal.CE_None:'None',
-            gdal.CE_Debug:'Debug',
-            gdal.CE_Warning:'Warning',
-            gdal.CE_Failure:'Failure',
-            gdal.CE_Fatal:'Fatal'
+        gdal.CE_None: "None",
+        gdal.CE_Debug: "Debug",
+        gdal.CE_Warning: "Warning",
+        gdal.CE_Failure: "Failure",
+        gdal.CE_Fatal: "Fatal",
     }
-    err_msg = err_msg.replace('\n',' ')
-    err_class = errtype.get(err_class, 'None')
+    err_msg = err_msg.replace("\n", " ")
+    err_class = errtype.get(err_class, "None")
     _L.error("GDAL gave %s %s: %s", err_class, err_num, err_msg)
+
+
 gdal.PushErrorHandler(gdal_error_handler)
 
 # Field names for use in cached CSV files.
 # We add columns to the extracted CSV with our own data with these names.
-GEOM_FIELDNAME = 'oa:geom'
+GEOM_FIELDNAME = "oa:geom"
 
-ADDRESSES_SCHEMA = [ 'hash', 'number', 'street', 'unit', 'city', 'district', 'region', 'postcode', 'id', 'accuracy' ]
-BUILDINGS_SCHEMA = [ 'hash', 'height', 'levels']
-PARCELS_SCHEMA = [ 'hash', 'pid' ]
-RESERVED_SCHEMA = ADDRESSES_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA + [
-    "lat",
-    "lon"
+ADDRESSES_SCHEMA = [
+    "hash",
+    "number",
+    "street",
+    "unit",
+    "city",
+    "district",
+    "region",
+    "postcode",
+    "id",
+    "accuracy",
 ]
+NAD_SCHEMA = [
+    "hash",
+    "AddNo_Full",
+    "AddNum_Pre",
+    "Add_Number",
+    "AddNum_Suf",
+    "StNam_Full",
+    "St_PreMod",
+    "St_PreDir",
+    "St_PreTyp",
+    "St_PreSep",
+    "St_Name",
+    "St_PosTyp",
+    "St_PosDir",
+    "St_PosMod",
+    "unit",
+    "city",
+    "district",
+    "region",
+    "postcode",
+    "id",
+    "accuracy",
+]
+BUILDINGS_SCHEMA = ["hash"]
+PARCELS_SCHEMA = ["hash", "pid"]
+RESERVED_SCHEMA = (
+    ADDRESSES_SCHEMA + NAD_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA + ["lat", "lon"]
+)
 
-UNZIPPED_DIRNAME = 'unzipped'
-UNGZIPPED_DIRNAME = 'ungzipped'
+UNZIPPED_DIRNAME = "unzipped"
+UNGZIPPED_DIRNAME = "ungzipped"
 
 # extracts:
 # - '123' from '123 Main St'
@@ -70,7 +109,9 @@ UNGZIPPED_DIRNAME = 'ungzipped'
 # - just digits with optional fractional
 # - two groups of digits separated by a hyphen (for queens-style addresses, eg - 69-15 51st Ave)
 # - digits and a letter, optionally separated by a hyphen
-prefixed_number_pattern = re.compile("^\s*(\d+(?:[ -]\d/\d)?|\d+-\d+|\d+-?[A-Z])\s+", re.IGNORECASE)
+prefixed_number_pattern = re.compile(
+    "^\s*(\d+(?:[ -]\d/\d)?|\d+-\d+|\d+-?[A-Z])\s+", re.IGNORECASE
+)
 
 # extracts:
 # - 'Main St' from '123 Main St'
@@ -82,7 +123,9 @@ prefixed_number_pattern = re.compile("^\s*(\d+(?:[ -]\d/\d)?|\d+-\d+|\d+-?[A-Z])
 # - 'Main St' from 'Main St'
 #
 # like prefixed_number_pattern, this regex can be optimized but this is cleaner
-postfixed_street_pattern = re.compile("^(?:\s*(?:\d+(?:[ -]\d/\d)?|\d+-\d+|\d+-?[A-Z])\s+)?(.*)", re.IGNORECASE)
+postfixed_street_pattern = re.compile(
+    "^(?:\s*(?:\d+(?:[ -]\d/\d)?|\d+-\d+|\d+-?[A-Z])\s+)?(.*)", re.IGNORECASE
+)
 
 # extracts:
 # - 'Main Street' from '123 Main Street Unit 3'
@@ -100,7 +143,10 @@ postfixed_street_pattern = re.compile("^(?:\s*(?:\d+(?:[ -]\d/\d)?|\d+-\d+|\d+-?
 # - 'Main Street' from '123 Main Street # 3'
 # This regex contains 3 groups: optional house number, street, optional unit
 # only street is a matching group, house number and unit are non-matching
-postfixed_street_with_units_pattern = re.compile("^(?:\s*(?:\d+(?:[ -]\d/\d)?|\d+-\d+|\d+-?[A-Z])\s+)?(.+?)(?:\s+(?:(?:UNIT|APARTMENT|APT\.?|SUITE|STE\.?|BUILDING|BLDG\.?|LOT)\s+|#).+)?$", re.IGNORECASE)
+postfixed_street_with_units_pattern = re.compile(
+    "^(?:\s*(?:\d+(?:[ -]\d/\d)?|\d+-\d+|\d+-?[A-Z])\s+)?(.+?)(?:\s+(?:(?:UNIT|APARTMENT|APT\.?|SUITE|STE\.?|BUILDING|BLDG\.?|LOT)\s+|#).+)?$",
+    re.IGNORECASE,
+)
 
 # extracts:
 # - 'Unit 3' from 'Main Street Unit 3'
@@ -116,7 +162,11 @@ postfixed_street_with_units_pattern = re.compile("^(?:\s*(?:\d+(?:[ -]\d/\d)?|\d
 # - 'Lot 3' from 'Main Street Lot 3'
 # - '#3' from 'Main Street #3'
 # - '# 3' from 'Main Street # 3'
-postfixed_unit_pattern = re.compile("\s((?:(?:UNIT|APARTMENT|APT\.?|SUITE|STE\.?|BUILDING|BLDG\.?|LOT)\s+|#).+)$", re.IGNORECASE)
+postfixed_unit_pattern = re.compile(
+    "\s((?:(?:UNIT|APARTMENT|APT\.?|SUITE|STE\.?|BUILDING|BLDG\.?|LOT)\s+|#).+)$",
+    re.IGNORECASE,
+)
+
 
 def mkdirsp(path):
     try:
@@ -152,54 +202,58 @@ class ConformResult:
 class DecompressionError(Exception):
     pass
 
+
 class DecompressionTask(object):
     @classmethod
     def from_format_string(clz, format_string):
         if format_string == None:
             return GuessDecompressTask()
-        elif format_string.lower() == 'zip':
+        elif format_string.lower() == "zip":
             return ZipDecompressTask()
-        elif format_string.lower() == 'gzip':
+        elif format_string.lower() == "gzip":
             return GzipDecompressTask()
         else:
-            raise KeyError("I don't know how to decompress for format {}".format(format_string))
+            raise KeyError(
+                "I don't know how to decompress for format {}".format(format_string)
+            )
 
     def decompress(self, source_paths):
         raise NotImplementedError()
 
 
 class GuessDecompressTask(DecompressionTask):
-    ''' Decompression task that tries to guess compression from file names.
-    '''
+    """Decompression task that tries to guess compression from file names."""
+
     def decompress(self, source_paths, workdir, filenames):
         types = {type for (type, _) in map(mimetypes.guess_type, source_paths)}
 
-        if types == {'application/zip'}:
+        if types == {"application/zip"}:
             substitute_task = ZipDecompressTask()
-            _L.info('Guessing zip compression based on file names')
+            _L.info("Guessing zip compression based on file names")
             return substitute_task.decompress(source_paths, workdir, filenames)
-        elif 'gzip' in types:
+        elif "gzip" in types:
             substitute_task = GzipDecompressTask()
-            _L.info('Guessing gzip compression based on file names')
+            _L.info("Guessing gzip compression based on file names")
             return substitute_task.decompress(source_paths, workdir, filenames)
 
-        _L.info('Could not guess a single compression from file names')
+        _L.info("Could not guess a single compression from file names")
         return source_paths
 
+
 def is_in(path, names):
-    '''
-    '''
+    """ """
     if path.lower() in names:
         # Found it!
         return True
 
     for name in names:
         # Maybe one of the names is an enclosing directory?
-        if not os.path.relpath(path.lower(), name).startswith('..'):
+        if not os.path.relpath(path.lower(), name).startswith(".."):
             # Yes, that's it.
             return True
 
     return False
+
 
 class ZipDecompressTask(DecompressionTask):
     def decompress(self, source_paths, workdir, filenames):
@@ -209,7 +263,7 @@ class ZipDecompressTask(DecompressionTask):
 
         # Extract contents of zip file into expand_path directory.
         for source_path in source_paths:
-            with ZipFile(source_path, 'r') as z:
+            with ZipFile(source_path, "r") as z:
                 for name in z.namelist():
                     if len(filenames) and not is_in(name, filenames):
                         # Download only the named file, if any.
@@ -219,9 +273,9 @@ class ZipDecompressTask(DecompressionTask):
                     z.extract(name, expand_path)
 
         # Collect names of directories and files in expand_path directory.
-        for (dirpath, dirnames, filenames) in os.walk(expand_path):
+        for dirpath, dirnames, filenames in os.walk(expand_path):
             for dirname in dirnames:
-                if os.path.splitext(dirname)[-1].lower() == '.gdb':
+                if os.path.splitext(dirname)[-1].lower() == ".gdb":
                     output_files.append(os.path.join(dirpath, dirname))
                     _L.debug("Expanded directory {}".format(output_files[-1]))
             for filename in filenames:
@@ -229,6 +283,7 @@ class ZipDecompressTask(DecompressionTask):
                 _L.debug("Expanded file {}".format(output_files[-1]))
 
         return output_files
+
 
 class GzipDecompressTask(DecompressionTask):
     def decompress(self, source_paths, workdir, filenames):
@@ -238,10 +293,12 @@ class GzipDecompressTask(DecompressionTask):
 
         for source_path in source_paths:
             # Build a file name for the decompressed file without the .gz extension
-            expanded_path = os.path.join(expand_path, os.path.basename(source_path)[:-3])
+            expanded_path = os.path.join(
+                expand_path, os.path.basename(source_path)[:-3]
+            )
 
-            with open(expanded_path, 'wb') as temp_fp:
-                with gzip.open(source_path, 'rb') as source_fp:
+            with open(expanded_path, "wb") as temp_fp:
+                with gzip.open(source_path, "rb") as source_fp:
                     shutil.copyfileobj(source_fp, temp_fp)
 
             output_files.append(temp_fp.name)
@@ -249,49 +306,53 @@ class GzipDecompressTask(DecompressionTask):
 
         return output_files
 
-def elaborate_filenames(filename):
-    ''' Return a list of filenames for a single name from conform file tag.
 
-        Used to expand example.shp with example.shx, example.dbf, and example.prj.
-    '''
+def elaborate_filenames(filename):
+    """Return a list of filenames for a single name from conform file tag.
+
+    Used to expand example.shp with example.shx, example.dbf, and example.prj.
+    """
     if filename is None:
         return []
 
     filename = filename.lower()
     base, original_ext = splitext(filename)
 
-    if original_ext == '.shp':
-        return [base + ext for ext in (original_ext, '.shx', '.dbf', '.prj')]
+    if original_ext == ".shp":
+        return [base + ext for ext in (original_ext, ".shx", ".dbf", ".prj")]
 
     return [filename]
 
+
 def guess_source_encoding(datasource, layer):
-    ''' Guess at a string encoding using hints from OGR and locale().
+    """Guess at a string encoding using hints from OGR and locale().
 
-        Duplicate the process used in Fiona, described and implemented here:
+    Duplicate the process used in Fiona, described and implemented here:
 
-        https://github.com/openaddresses/machine/issues/42#issuecomment-69693143
-        https://github.com/Toblerity/Fiona/blob/53df35dc70fb/docs/encoding.txt
-        https://github.com/Toblerity/Fiona/blob/53df35dc70fb/fiona/ogrext.pyx#L386
-    '''
+    https://github.com/openaddresses/machine/issues/42#issuecomment-69693143
+    https://github.com/Toblerity/Fiona/blob/53df35dc70fb/docs/encoding.txt
+    https://github.com/Toblerity/Fiona/blob/53df35dc70fb/fiona/ogrext.pyx#L386
+    """
     ogr_recoding = layer.TestCapability(ogr.OLCStringsAsUTF8)
-    is_shapefile = datasource.GetDriver().GetName() == 'ESRI Shapefile'
+    is_shapefile = datasource.GetDriver().GetName() == "ESRI Shapefile"
 
-    return (ogr_recoding and 'UTF-8') \
-        or (is_shapefile and 'ISO-8859-1') \
+    return (
+        (ogr_recoding and "UTF-8")
+        or (is_shapefile and "ISO-8859-1")
         or getpreferredencoding()
+    )
+
 
 def find_source_path(data_source, source_paths):
-    ''' Figure out which of the possible paths is the actual source
-    '''
+    """Figure out which of the possible paths is the actual source"""
     try:
         conform = data_source["conform"]
     except KeyError:
-        _L.warning('Source is missing a conform object')
+        _L.warning("Source is missing a conform object")
         raise
 
-    format_string = conform.get('format')
-    protocol_string = data_source.get('protocol')
+    format_string = conform.get("format")
+    protocol_string = data_source.get("protocol")
 
     if format_string in ("shapefile"):
         # TODO this code is too complicated; see XML variant below for simpler option
@@ -310,7 +371,9 @@ def find_source_path(data_source, source_paths):
         else:
             # Multiple candidates; look for the one named by the file attribute
             if "file" not in conform:
-                _L.warning("Multiple shapefiles found, but source has no file attribute.")
+                _L.warning(
+                    "Multiple shapefiles found, but source has no file attribute."
+                )
                 return None
             source_file_name = conform["file"]
             for c in candidates:
@@ -344,18 +407,20 @@ def find_source_path(data_source, source_paths):
                 # Consider it a match if the basename matches; directory names are a mess
                 if os.path.basename(conform["file"]) == os.path.basename(fn):
                     return fn
-            _L.warning("Conform named %s as file but we could not find it." % conform["file"])
+            _L.warning(
+                "Conform named %s as file but we could not find it." % conform["file"]
+            )
             return None
         # See if a file has a CSV extension
         for fn in source_paths:
-            if os.path.splitext(fn)[1].lower() == '.csv':
+            if os.path.splitext(fn)[1].lower() == ".csv":
                 return fn
         # Nothing else worked so just return the first one.
         return source_paths[0]
     elif format_string == "gdb":
         candidates = []
         for fn in source_paths:
-            fn = re.sub('\.gdb.*', '.gdb', fn)
+            fn = re.sub("\.gdb.*", ".gdb", fn)
             basename, ext = os.path.splitext(fn)
             if ext.lower() == ".gdb" and fn not in candidates:
                 candidates.append(fn)
@@ -383,7 +448,9 @@ def find_source_path(data_source, source_paths):
                 # Consider it a match if the basename matches; directory names are a mess
                 if os.path.basename(conform["file"]) == os.path.basename(fn):
                     return fn
-            _L.warning("Conform named %s as file but we could not find it." % conform["file"])
+            _L.warning(
+                "Conform named %s as file but we could not find it." % conform["file"]
+            )
             return None
         else:
             for fn in source_paths:
@@ -396,8 +463,9 @@ def find_source_path(data_source, source_paths):
         _L.warning("Unknown source conform format %s", format_string)
         return None
 
+
 class ConvertToGeojsonTask(object):
-    known_types = ('.shp', '.json', '.csv', '.kml', '.gdb')
+    known_types = (".shp", ".json", ".csv", ".kml", ".gdb")
 
     def convert(self, source_config, source_paths, workdir):
         "Convert a list of source_paths and write results in workdir"
@@ -405,7 +473,7 @@ class ConvertToGeojsonTask(object):
 
         # Create a subdirectory "converted" to hold results
         output_file = None
-        convert_path = os.path.join(workdir, 'converted')
+        convert_path = os.path.join(workdir, "converted")
         mkdirsp(convert_path)
 
         # Find the source and convert it
@@ -424,28 +492,29 @@ class ConvertToGeojsonTask(object):
         # Conversion must have failed
         return None, 0
 
+
 def convert_regexp_replace(replace):
-    ''' Convert regular expression replace string from $ syntax to slash-syntax.
+    """Convert regular expression replace string from $ syntax to slash-syntax.
 
-        Replace one kind of replacement, then call self recursively to find others.
-    '''
-    if re.search(r'\$\d+\b', replace):
+    Replace one kind of replacement, then call self recursively to find others.
+    """
+    if re.search(r"\$\d+\b", replace):
         # $dd* back-reference followed by a word break.
-        return convert_regexp_replace(re.sub(r'\$(\d+)\b', r'\\\g<1>', replace))
+        return convert_regexp_replace(re.sub(r"\$(\d+)\b", r"\\\g<1>", replace))
 
-    if re.search(r'\$\d+\D', replace):
+    if re.search(r"\$\d+\D", replace):
         # $dd* back-reference followed by an non-digit character.
-        return convert_regexp_replace(re.sub(r'\$(\d+)(\D)', r'\\\g<1>\g<2>', replace))
+        return convert_regexp_replace(re.sub(r"\$(\d+)(\D)", r"\\\g<1>\g<2>", replace))
 
-    if re.search(r'\$\{\d+\}', replace):
+    if re.search(r"\$\{\d+\}", replace):
         # ${dd*} back-reference.
-        return convert_regexp_replace(re.sub(r'\$\{(\d+)\}', r'\\g<\g<1>>', replace))
+        return convert_regexp_replace(re.sub(r"\$\{(\d+)\}", r"\\g<\g<1>>", replace))
 
     return replace
 
+
 def normalize_ogr_filename_case(source_path):
-    '''
-    '''
+    """ """
     base, ext = splitext(source_path)
 
     if ext == ext.lower():
@@ -461,7 +530,7 @@ def normalize_ogr_filename_case(source_path):
     os.link(source_path, normal_path)
 
     # May need to deal with some additional files.
-    extras = {'.Shp': ('.Shx', '.Dbf', '.Prj'), '.SHP': ('.SHX', '.DBF', '.PRJ')}
+    extras = {".Shp": (".Shx", ".Dbf", ".Prj"), ".SHP": (".SHX", ".DBF", ".PRJ")}
 
     if ext in extras:
         for other_ext in extras[ext]:
@@ -470,12 +539,12 @@ def normalize_ogr_filename_case(source_path):
 
     return normal_path
 
+
 # TODO rip out a bunch of this and replace with call to row_extract_and_reproject
 def ogr_source_to_csv(source_config, source_path, dest_path):
-    ''' Convert a single shapefile or GeoJSON in source_path and put it in dest_path
-    '''
+    """Convert a single shapefile or GeoJSON in source_path and put it in dest_path"""
     in_datasource = ogr.Open(source_path, 0)
-    layer_id = source_config.data_source['conform'].get('layer', 0)
+    layer_id = source_config.data_source["conform"].get("layer", 0)
 
     if isinstance(layer_id, int):
         in_layer = in_datasource.GetLayerByIndex(layer_id)
@@ -485,7 +554,10 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
         _L.info("Converting layer name %s", layer_id)
 
     if not in_layer:
-        _L.error("Requested layer not found among layers: %s", ", ".join([l.GetName() for l in in_datasource]))
+        _L.error(
+            "Requested layer not found among layers: %s",
+            ", ".join([l.GetName() for l in in_datasource]),
+        )
         raise Exception("Layer %s not found")
 
     # Determine the appropriate SRS
@@ -495,7 +567,7 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
     # Skip Transformation is the EPSG code is superfluous
     if srs is not None:
         # OGR may have a projection, but use the explicit SRS instead
-        if srs.startswith(u"EPSG:"):
+        if srs.startswith("EPSG:"):
             _L.debug("SRS tag found specifying %s", srs)
             inSpatialRef = osr.SpatialReference()
             inSpatialRef.ImportFromEPSG(int(srs[5:]))
@@ -509,7 +581,7 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
     # https://github.com/openaddresses/machine/issues/42
     if in_layer.TestCapability(ogr.OLCStringsAsUTF8):
         # OGR turned this to UTF 8 for us
-        shp_encoding = 'utf-8'
+        shp_encoding = "utf-8"
     elif "encoding" in source_config.data_source["conform"]:
         shp_encoding = source_config.data_source["conform"]["encoding"]
     else:
@@ -536,7 +608,7 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
     coordTransform = osr.CoordinateTransformation(inSpatialRef, outSpatialRef)
 
     # Write a CSV file with one row per feature in the OGR source
-    with open(dest_path, 'w', encoding='utf-8') as f:
+    with open(dest_path, "w", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=out_fieldnames)
         writer.writeheader()
 
@@ -560,11 +632,15 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
                     try:
                         centroid = geom.PointOnSurface()
                     except RuntimeError as e:
-                        if 'Invalid number of points in LinearRing found' not in str(e):
+                        if "Invalid number of points in LinearRing found" not in str(e):
                             raise
                         xmin, xmax, ymin, ymax = geom.GetEnvelope()
 
-                        centroid = ogr.CreateGeometryFromWkt("POINT ({} {})".format(xmin/2 + xmax/2, ymin/2 + ymax/2))
+                        centroid = ogr.CreateGeometryFromWkt(
+                            "POINT ({} {})".format(
+                                xmin / 2 + xmax / 2, ymin / 2 + ymax / 2
+                            )
+                        )
 
                     row[GEOM_FIELDNAME] = centroid.ExportToWkt()
                 else:
@@ -579,6 +655,7 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
 
     in_datasource.Destroy()
 
+
 def csv_source_to_csv(source_config, source_path, dest_path):
     "Convert a source CSV file to an intermediate form, coerced to UTF-8 and EPSG:4326"
     _L.info("Converting source CSV %s", source_path)
@@ -591,19 +668,19 @@ def csv_source_to_csv(source_config, source_path, dest_path):
 
     # Extract the source CSV, applying conversions to deal with oddball CSV formats
     # Also convert encoding to utf-8 and reproject to EPSG:4326 in X and Y columns
-    with open(source_path, 'r', encoding=enc) as source_fp:
-        in_fieldnames = None   # in most cases, we let the csv module figure these out
+    with open(source_path, "r", encoding=enc) as source_fp:
+        in_fieldnames = None  # in most cases, we let the csv module figure these out
 
         # headers processing tag
         if "headers" in source_config.data_source["conform"]:
             headers = source_config.data_source["conform"]["headers"]
-            if (headers == -1):
+            if headers == -1:
                 # Read a row off the file to see how many columns it has
                 temp_reader = csv.reader(source_fp, delimiter=str(delim))
                 first_row = next(temp_reader)
                 num_columns = len(first_row)
                 source_fp.seek(0)
-                in_fieldnames = ["COLUMN%d" % n for n in range(1, num_columns+1)]
+                in_fieldnames = ["COLUMN%d" % n for n in range(1, num_columns + 1)]
                 _L.debug("Synthesized header %s", in_fieldnames)
             else:
                 # partial implementation of headers and skiplines,
@@ -622,29 +699,29 @@ def csv_source_to_csv(source_config, source_path, dest_path):
         reader = csv.DictReader(source_fp, delimiter=delim, fieldnames=in_fieldnames)
         num_fields = len(reader.fieldnames)
 
-        protocol_string = source_config.data_source['protocol']
+        protocol_string = source_config.data_source["protocol"]
 
         # Construct headers for the extracted CSV file
         if protocol_string == "ESRI":
             # ESRI sources: just copy what the downloader gave us. (Already has OA:GEOM)
             out_fieldnames = list(reader.fieldnames)
 
-            out_fieldnames = list(map(lambda f: (
-                GEOM_FIELDNAME if f == "OA:geom" else f
-            ), out_fieldnames))
+            out_fieldnames = list(
+                map(lambda f: (GEOM_FIELDNAME if f == "OA:geom" else f), out_fieldnames)
+            )
 
         else:
             # CSV sources: replace the source's lat/lon columns with OA:GEOM
             old_ll = [
                 source_config.data_source["conform"]["lon"],
-                source_config.data_source["conform"]["lat"]
+                source_config.data_source["conform"]["lat"],
             ]
 
             out_fieldnames = [fn for fn in reader.fieldnames if fn not in old_ll]
             out_fieldnames.append(GEOM_FIELDNAME)
 
         # Write the extracted CSV file
-        with open(dest_path, 'w', encoding='utf-8') as dest_fp:
+        with open(dest_path, "w", encoding="utf-8") as dest_fp:
             writer = csv.DictWriter(dest_fp, out_fieldnames)
             writer.writeheader()
             # For every row in the source CSV
@@ -652,36 +729,40 @@ def csv_source_to_csv(source_config, source_path, dest_path):
             for source_row in reader:
                 row_number += 1
                 if len(source_row) != num_fields:
-                    _L.debug("Skipping row. Got %d columns, expected %d", len(source_row), num_fields)
+                    _L.debug(
+                        "Skipping row. Got %d columns, expected %d",
+                        len(source_row),
+                        num_fields,
+                    )
                     continue
                 try:
                     out_row = row_extract_and_reproject(source_config, source_row)
                 except Exception as e:
-                    _L.error('Error in row {}: {}'.format(row_number, e))
+                    _L.error("Error in row {}: {}".format(row_number, e))
                     raise
                 else:
                     writer.writerow(out_row)
 
+
 def geojson_source_to_csv(source_config, source_path, dest_path):
-    '''
-    '''
+    """ """
     # For every row in the source GeoJSON
     with open(source_path) as file:
         # Write the extracted CSV file
-        with open(dest_path, 'w', encoding='utf-8') as dest_fp:
+        with open(dest_path, "w", encoding="utf-8") as dest_fp:
             writer = None
-            for (row_number, feature) in enumerate(stream_geojson(file)):
+            for row_number, feature in enumerate(stream_geojson(file)):
                 if writer is None:
-                    out_fieldnames = list(feature['properties'].keys())
+                    out_fieldnames = list(feature["properties"].keys())
                     out_fieldnames.append(GEOM_FIELDNAME)
                     writer = csv.DictWriter(dest_fp, out_fieldnames)
                     writer.writeheader()
 
                 try:
-                    row = feature['properties']
-                    if feature['geometry'] is None:
+                    row = feature["properties"]
+                    if feature["geometry"] is None:
                         continue
-                    geom = ogr.CreateGeometryFromJson(json.dumps(feature['geometry']))
+                    geom = ogr.CreateGeometryFromJson(json.dumps(feature["geometry"]))
                     if not geom:
                         continue
 
@@ -690,13 +771,16 @@ def geojson_source_to_csv(source_config, source_path, dest_path):
                         geom = geom.PointOnSurface()
 
                 except Exception as e:
-                    _L.error('Error in row {}: {}'.format(row_number, e))
+                    _L.error("Error in row {}: {}".format(row_number, e))
                     raise
                 else:
                     row.update({GEOM_FIELDNAME: geom.ExportToWkt()})
                     writer.writerow(row)
 
+
 _transform_cache = {}
+
+
 def _transform_to_4326(srs):
     "Given a string like EPSG:2913, return an OGR transform object to turn it in to EPSG:4326"
     if srs not in _transform_cache:
@@ -714,16 +798,18 @@ def _transform_to_4326(srs):
             in_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
             out_spatial_ref.SetAxisMappingStrategy(osgeo.osr.OAMS_TRADITIONAL_GIS_ORDER)
 
-        _transform_cache[srs] = osr.CoordinateTransformation(in_spatial_ref, out_spatial_ref)
+        _transform_cache[srs] = osr.CoordinateTransformation(
+            in_spatial_ref, out_spatial_ref
+        )
     return _transform_cache[srs]
 
+
 def row_extract_and_reproject(source_config, source_row):
-    ''' Find geometries in source CSV data and store it in ESPG:4326
-    '''
+    """Find geometries in source CSV data and store it in ESPG:4326"""
     data_source = source_config.data_source
 
-    format_string = data_source["conform"].get('format')
-    protocol_string = data_source['protocol']
+    format_string = data_source["conform"].get("format")
+    protocol_string = data_source["protocol"]
 
     # Prepare an output row
     out_row = copy.deepcopy(source_row)
@@ -733,18 +819,22 @@ def row_extract_and_reproject(source_config, source_row):
     # Set local variables lon_name, source_x, lat_name, source_y
     if source_row.get(GEOM_FIELDNAME) is not None:
         source_geom = source_row[GEOM_FIELDNAME]
-    elif source_row.get(GEOM_FIELDNAME.replace('GEOM', 'geom')):
-        source_row[GEOM_FIELDNAME] = source_row[GEOM_FIELDNAME.replace('GEOM', 'geom')]
+    elif source_row.get(GEOM_FIELDNAME.replace("GEOM", "geom")):
+        source_row[GEOM_FIELDNAME] = source_row[GEOM_FIELDNAME.replace("GEOM", "geom")]
         source_geom = source_row[GEOM_FIELDNAME]
 
-    if source_row.get(GEOM_FIELDNAME.replace('GEOM', 'geom')) is not None:
-        del out_row[GEOM_FIELDNAME.replace('GEOM', 'geom')]
+    if source_row.get(GEOM_FIELDNAME.replace("GEOM", "geom")) is not None:
+        del out_row[GEOM_FIELDNAME.replace("GEOM", "geom")]
 
     if source_geom == "POINT (nan nan)":
         out_row[GEOM_FIELDNAME] = None
         return out_row
 
-    if source_geom is None and data_source["conform"].get('lat') is not None and data_source["conform"].get('lon') is not None:
+    if (
+        source_geom is None
+        and data_source["conform"].get("lat") is not None
+        and data_source["conform"].get("lon") is not None
+    ):
         # Conforms can name the lat/lon columns from the original source data
         lat_name = data_source["conform"]["lat"]
         lon_name = data_source["conform"]["lon"]
@@ -758,8 +848,8 @@ def row_extract_and_reproject(source_config, source_row):
 
         # Convert commas to periods for decimal numbers. (Not using locale.)
         try:
-            source_x = source_x.replace(',', '.')
-            source_y = source_y.replace(',', '.')
+            source_x = source_x.replace(",", ".")
+            source_y = source_y.replace(",", ".")
 
             source_geom = "POINT ({} {})".format(source_x, source_y)
 
@@ -789,11 +879,13 @@ def row_extract_and_reproject(source_config, source_row):
         try:
             centroid = geom.PointOnSurface()
         except RuntimeError as e:
-            if 'Invalid number of points in LinearRing found' not in str(e):
+            if "Invalid number of points in LinearRing found" not in str(e):
                 raise
             xmin, xmax, ymin, ymax = geom.GetEnvelope()
 
-            centroid = ogr.CreateGeometryFromWkt("POINT ({} {})".format(xmin/2 + xmax/2, ymin/2 + ymax/2))
+            centroid = ogr.CreateGeometryFromWkt(
+                "POINT ({} {})".format(xmin / 2 + xmax / 2, ymin / 2 + ymax / 2)
+            )
 
         source_geom = centroid.ExportToWkt()
 
@@ -833,7 +925,6 @@ def row_function(sc, row, key, fxn):
     return row
 
 
-
 ### Row-level conform code. Inputs and outputs are individual rows in a CSV file.
 ### The input row may or may not be modified in place. The output row is always returned.
 def row_transform_and_convert(source_config, row):
@@ -855,101 +946,128 @@ def row_transform_and_convert(source_config, row):
                 raise
 
     # Make up a random fingerprint if none exists
-    cache_fingerprint = source_config.data_source.get('fingerprint', str(uuid4()))
+    cache_fingerprint = source_config.data_source.get("fingerprint", str(uuid4()))
 
     row = row_calculate_hash(cache_fingerprint, row)
 
     feat = row_convert_to_out(source_config, row)
 
     if source_config.layer == "addresses":
-        feat['properties'] = row_canonicalize_unit_and_number(source_config.data_source, feat['properties'])
+        feat["properties"] = row_canonicalize_unit_and_number(
+            source_config.data_source, feat["properties"]
+        )
 
-    if feat['geometry'] and len(feat['geometry']['coordinates']) > 0:
-        feat['geometry']['coordinates'] = set_precision(feat['geometry']['coordinates'], 7)
+    if feat["geometry"] and len(feat["geometry"]["coordinates"]) > 0:
+        feat["geometry"]["coordinates"] = set_precision(
+            feat["geometry"]["coordinates"], 7
+        )
 
     return feat
 
+
 def row_merge(sc, row, key):
     "Merge multiple columns like 'Maple','St' to 'Maple St'"
-    merge_data = [(row.get(field, '') or '').strip() for field in sc.data_source["conform"][key]]
-    row["oa:{}".format(key)] = ' '.join([part for part in merge_data if part])
+    merge_data = [
+        (row.get(field, "") or "").strip() for field in sc.data_source["conform"][key]
+    ]
+    row["oa:{}".format(key)] = " ".join([part for part in merge_data if part])
+    merge_data = [
+        (row.get(field, "") or "").strip() for field in sc.data_source["conform"][key]
+    ]
+    row["oa:{}".format(key)] = " ".join([part for part in merge_data if part])
     return row
+
 
 def row_fxn_join(sc, row, key, fxn):
     "Create new columns by merging arbitrary other columns with a separator"
     separator = fxn.get("separator", " ")
     try:
-        fields = [(row[n] or u'').strip() for n in fxn["fields"]]
+        fields = [(row[n] or "").strip() for n in fxn["fields"]]
         row["oa:{}".format(key)] = separator.join([f for f in fields if f])
     except Exception as e:
         _L.debug("Failure to merge row %r %s", e, row)
     return row
 
+
 def row_fxn_regexp(sc, row, key, fxn):
     "Split addresses like '123 Maple St' into '123' and 'Maple St'"
     pattern = re.compile(fxn.get("pattern", False))
-    replace = fxn.get('replace', False)
+    replace = fxn.get("replace", False)
     if replace:
         match = re.sub(pattern, convert_regexp_replace(replace), row[fxn["field"]])
         row["oa:{}".format(key)] = match
     else:
         match = pattern.search(row[fxn["field"]])
-        row["oa:{}".format(key)] = ''.join(filter(None, match.groups())) if match else ''
+        row["oa:{}".format(key)] = (
+            "".join(filter(None, match.groups())) if match else ""
+        )
     return row
+
 
 def row_fxn_prefixed_number(sc, row, key, fxn):
     "Extract '123' from '123 Maple St'"
 
     match = prefixed_number_pattern.search(row[fxn["field"]])
-    row["oa:{}".format(key)] = ''.join(match.groups()) if match else ''
+    row["oa:{}".format(key)] = "".join(match.groups()) if match else ""
 
     return row
+
 
 def row_fxn_postfixed_street(sc, row, key, fxn):
     "Extract 'Maple St' from '123 Maple St'"
 
-    may_contain_units = fxn.get('may_contain_units', False)
+    may_contain_units = fxn.get("may_contain_units", False)
 
     if may_contain_units:
         match = postfixed_street_with_units_pattern.search(row[fxn["field"]])
     else:
         match = postfixed_street_pattern.search(row[fxn["field"]])
 
-    row["oa:{}".format(key)] = ''.join(match.groups()) if match else ''
+    row["oa:{}".format(key)] = "".join(match.groups()) if match else ""
 
     return row
+
 
 def row_fxn_postfixed_unit(sc, row, key, fxn):
     "Extract 'Suite 300' from '123 Maple St Suite 300'"
 
     match = postfixed_unit_pattern.search(row[fxn["field"]])
-    row["oa:{}".format(key)] = ''.join(match.groups()) if match else ''
+    row["oa:{}".format(key)] = "".join(match.groups()) if match else ""
 
     return row
+
 
 def row_fxn_remove_prefix(sc, row, key, fxn):
     "Remove a 'field_to_remove' from the beginning of 'field' if it is a prefix"
     if row[fxn["field"]].startswith(row[fxn["field_to_remove"]]):
-        row["oa:{}".format(key)] = row[fxn["field"]][len(row[fxn["field_to_remove"]]):].lstrip(' ')
+        row["oa:{}".format(key)] = row[fxn["field"]][
+            len(row[fxn["field_to_remove"]]) :
+        ].lstrip(" ")
     else:
         row["oa:{}".format(key)] = row[fxn["field"]]
 
     return row
+
 
 def row_fxn_remove_postfix(sc, row, key, fxn):
     "Remove a 'field_to_remove' from the end of 'field' if it is a postfix"
-    if row[fxn["field_to_remove"]] != "" and row[fxn["field"]].endswith(row[fxn["field_to_remove"]]):
-        row["oa:{}".format(key)] = row[fxn["field"]][0:len(row[fxn["field_to_remove"]])*-1].rstrip(' ')
+    if row[fxn["field_to_remove"]] != "" and row[fxn["field"]].endswith(
+        row[fxn["field_to_remove"]]
+    ):
+        row["oa:{}".format(key)] = row[fxn["field"]][
+            0 : len(row[fxn["field_to_remove"]]) * -1
+        ].rstrip(" ")
     else:
         row["oa:{}".format(key)] = row[fxn["field"]]
 
     return row
 
+
 def row_fxn_format(sc, row, key, fxn):
     "Format multiple fields using a user-specified format string"
-    format_var_pattern = re.compile('\$([0-9]+)')
+    format_var_pattern = re.compile("\$([0-9]+)")
 
-    fields = [(row[n] or u'').strip() for n in fxn["fields"]]
+    fields = [(row[n] or "").strip() for n in fxn["fields"]]
 
     parts = []
 
@@ -983,11 +1101,12 @@ def row_fxn_format(sc, row, key, fxn):
 
     if num_fields_added > 0:
         parts.append(format_str[idx:])
-        row["oa:{}".format(key)] = u''.join(parts)
+        row["oa:{}".format(key)] = "".join(parts)
     else:
-        row["oa:{}".format(key)] = u''
+        row["oa:{}".format(key)] = ""
 
     return row
+
 
 def row_fxn_chain(sc, row, key, fxn):
     functions = fxn["functions"]
@@ -995,63 +1114,68 @@ def row_fxn_chain(sc, row, key, fxn):
 
     original_key = key
 
-    if var and var.lstrip('oa:') not in sc.SCHEMA and var not in row:
-        row['oa:' + var] = u''
+    if var and var.lstrip("oa:") not in sc.SCHEMA and var not in row:
+        row["oa:" + var] = ""
         key = var
 
     for func in functions:
         row = row_function(sc, row, key, func)
 
-        if row.get('oa:' + key):
-            row[key] = row['oa:' + key]
+        if row.get("oa:" + key):
+            row[key] = row["oa:" + key]
 
-    row['oa:{}'.format(original_key)] = row['oa:{}'.format(key)]
+    row["oa:{}".format(original_key)] = row["oa:{}".format(key)]
 
     return row
 
+
 def row_fxn_first_non_empty(sc, row, key, fxn):
     "Iterate all fields looking for first that has a non-empty value"
-    for field in fxn.get('fields', []):
+    for field in fxn.get("fields", []):
         if row[field] and row[field].strip():
             row["oa:{}".format(key)] = row[field]
             break
 
     return row
 
+
 def row_fxn_constant(sc, row, key, fxn):
     "Set an attribute to a constant value"
-    value  = fxn['value']
+    value = fxn["value"]
 
-    row['oa:{}'.format(key)] = value
+    row["oa:{}".format(key)] = value
 
     return row
 
+
 def row_fxn_map(sc, row, key, fxn):
     "Map a value from a source column to a new value using a dictionary"
-    field = fxn.get('field', False)
-    mapping = fxn.get('mapping', {})
+    field = fxn.get("field", False)
+    mapping = fxn.get("mapping", {})
 
     if field and field in row:
         val = row[field]
         if val in mapping:
-            row['oa:{}'.format(key)] = mapping[val]
-        elif 'else' in fxn:
-            row['oa:{}'.format(key)] = fxn['else']
+            row["oa:{}".format(key)] = mapping[val]
+        elif "else" in fxn:
+            row["oa:{}".format(key)] = fxn["else"]
         else:
-            row['oa:{}'.format(key)] = ''
+            row["oa:{}".format(key)] = ""
 
     return row
+
 
 def row_canonicalize_unit_and_number(sc, row):
     "Canonicalize address unit and number"
-    row["unit"] = (row.get("unit", '') or '').strip()
-    row["number"] = (row.get("number", '') or '').strip()
-    row["street"] = (row.get("street", '') or '').strip()
+    row["unit"] = (row.get("unit", "") or "").strip()
+    row["number"] = (row.get("number", "") or "").strip()
+    row["street"] = (row.get("street", "") or "").strip()
 
-    if row.get("number", '').endswith('.0'):
+    if row.get("number", "").endswith(".0"):
         row["number"] = row["number"][:-2]
 
     return row
+
 
 def set_precision(coords, precision):
     result = []
@@ -1063,42 +1187,40 @@ def set_precision(coords, precision):
 
     return result
 
-def row_calculate_hash(cache_fingerprint, row):
-    ''' Calculate row hash based on content and existing fingerprint.
 
-        16 chars of SHA-1 gives a 64-bit value, plenty for all addresses.
-    '''
-    hash = sha1(cache_fingerprint.encode('utf8'))
-    hash.update(json.dumps(sorted(row.items()), separators=(',', ':')).encode('utf8'))
-    row.update({'oa:hash': hash.hexdigest()[:16]})
+def row_calculate_hash(cache_fingerprint, row):
+    """Calculate row hash based on content and existing fingerprint.
+
+    16 chars of SHA-1 gives a 64-bit value, plenty for all addresses.
+    """
+    hash = sha1(cache_fingerprint.encode("utf8"))
+    hash.update(json.dumps(sorted(row.items()), separators=(",", ":")).encode("utf8"))
+    row.update({"oa:hash": hash.hexdigest()[:16]})
 
     return row
+
 
 def row_convert_to_out(source_config, row):
     "Convert a row from the source schema to OpenAddresses output schema"
 
     geom = row.get(GEOM_FIELDNAME, None)
-    if geom == "POINT EMPTY" or geom == '':
+    if geom == "POINT EMPTY" or geom == "":
         geom = None
 
-    output = {
-        "type": "Feature",
-        "properties": {},
-        "geometry": geom
-    }
+    output = {"type": "Feature", "properties": {}, "geometry": geom}
 
     if output["geometry"] is not None:
         wkt_parsed = wkt_loads(output["geometry"])
         output["geometry"] = mapping(wkt_parsed)
 
     for field in source_config.SCHEMA:
-        if row.get('oa:{}'.format(field)) is not None:
+        if row.get("oa:{}".format(field)) is not None:
             # If there is an OA prefix, it is not a native field and was compiled
             # via an attrib function or concatenation
-            output["properties"][field] = row.get('oa:{}'.format(field))
+            output["properties"][field] = row.get("oa:{}".format(field))
         else:
             # Get a native field as specified in the conform object
-            cfield = source_config.data_source['conform'].get(field)
+            cfield = source_config.data_source["conform"].get(field)
 
             # If the field is a string, it is a direct mapping to the source
             # It might not be a string if it's a function that failed to
@@ -1106,11 +1228,13 @@ def row_convert_to_out(source_config, row):
             if cfield and isinstance(cfield, str):
                 output["properties"][field] = row.get(cfield)
             else:
-                output["properties"][field] = ''
+                output["properties"][field] = ""
 
     return output
 
+
 ### File-level conform code. Inputs and outputs are filenames.
+
 
 def extract_to_source_csv(source_config, source_path, extract_path):
     """Extract arbitrary downloaded sources to an extracted CSV in the source schema.
@@ -1120,8 +1244,8 @@ def extract_to_source_csv(source_config, source_path, extract_path):
     The extracted file will be in UTF-8 and will have X and Y columns corresponding
     to longitude and latitude in EPSG:4326.
     """
-    format_string = source_config.data_source["conform"]['format']
-    protocol_string = source_config.data_source['protocol']
+    format_string = source_config.data_source["conform"]["format"]
+    protocol_string = source_config.data_source["protocol"]
 
     if format_string in ("shapefile", "xml", "gdb"):
         ogr_source_path = normalize_ogr_filename_case(source_path)
@@ -1140,22 +1264,24 @@ def extract_to_source_csv(source_config, source_path, extract_path):
     else:
         raise Exception("Unsupported source format %s" % format_string)
 
-def transform_to_out_geojson(source_config, extract_path, dest_path):
-    ''' Transform an extracted source CSV to the OpenAddresses output GeoJSON by applying conform rules.
 
-        source_config: description of the source, containing the conform object
-        extract_path: extracted CSV file to process
-        dest_path: path for output file in OpenAddress CSV
-    '''
+def transform_to_out_geojson(source_config, extract_path, dest_path):
+    """Transform an extracted source CSV to the OpenAddresses output GeoJSON by applying conform rules.
+
+    source_config: description of the source, containing the conform object
+    extract_path: extracted CSV file to process
+    dest_path: path for output file in OpenAddress CSV
+    """
     # Read through the extract CSV
-    with open(extract_path, 'r', encoding='utf-8') as extract_fp:
+    with open(extract_path, "r", encoding="utf-8") as extract_fp:
         reader = csv.DictReader(extract_fp)
         # Write to the destination GeoJSON
-        with open(dest_path, 'w', encoding='utf-8') as dest_fp:
+        with open(dest_path, "w", encoding="utf-8") as dest_fp:
             # For every row in the extract
             for extract_row in reader:
                 out_row = row_transform_and_convert(source_config, extract_row)
-                dest_fp.write(json.dumps(out_row) + '\n')
+                dest_fp.write(json.dumps(out_row) + "\n")
+
 
 def conform_cli(source_config, source_path, dest_path):
     "Command line entry point for conforming a downloaded source to an output CSV."
@@ -1164,16 +1290,16 @@ def conform_cli(source_config, source_path, dest_path):
     if "conform" not in source_config.data_source:
         return 1
 
-    format_string = source_config.data_source["conform"].get('format')
+    format_string = source_config.data_source["conform"].get("format")
 
     if not format_string in ["shapefile", "geojson", "csv", "xml", "gdb"]:
         _L.warning("Skipping file with unknown conform: %s", source_path)
         return 1
 
     # Create a temporary filename for the intermediate extracted source CSV
-    fd, extract_path = tempfile.mkstemp(prefix='openaddr-extracted-', suffix='.csv')
+    fd, extract_path = tempfile.mkstemp(prefix="openaddr-extracted-", suffix=".csv")
     os.close(fd)
-    _L.debug('extract temp file %s', extract_path)
+    _L.debug("extract temp file %s", extract_path)
 
     try:
         extract_to_source_csv(source_config, source_path, extract_path)
@@ -1183,28 +1309,32 @@ def conform_cli(source_config, source_path, dest_path):
 
     return 0
 
+
 def check_source_tests(source_config):
-    ''' Return boolean status and a message if any tests failed.
-    '''
-    source_test = source_config.data_source.get('test', {})
-    tests_enabled = source_test.get('enabled', True)
-    acceptance_tests = source_test.get('acceptance-tests')
+    """Return boolean status and a message if any tests failed."""
+    source_test = source_config.data_source.get("test", {})
+    tests_enabled = source_test.get("enabled", True)
+    acceptance_tests = source_test.get("acceptance-tests")
 
     if not tests_enabled or not acceptance_tests:
         # There is nothing to be done here.
         return None, None
 
-    for (index, test) in enumerate(acceptance_tests):
-        output = row_transform_and_convert(source_config, test['inputs'])
+    for index, test in enumerate(acceptance_tests):
+        output = row_transform_and_convert(source_config, test["inputs"])
 
-        actual = {k: v for (k, v) in output['properties'].items() if k in test['expected']}
-        expected = test['expected']
+        actual = {
+            k: v for (k, v) in output["properties"].items() if k in test["expected"]
+        }
+        expected = test["expected"]
 
         if actual != expected:
             expected_json = json.dumps(expected, ensure_ascii=False)
             actual_json = json.dumps(actual, ensure_ascii=False)
-            description = test.get('description', 'test {}'.format(index))
-            return False, 'For {}, expected {} but got {}'.format(description, expected_json, actual_json)
+            description = test.get("description", "test {}".format(index))
+            return False, "For {}, expected {} but got {}".format(
+                description, expected_json, actual_json
+            )
 
     # Yay, everything passed.
     return True, None

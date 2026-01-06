@@ -22,6 +22,7 @@ from .conform import (
     ConvertToGeojsonTask,
     elaborate_filenames,
     ADDRESSES_SCHEMA,
+    NAD_SCHEMA,
     BUILDINGS_SCHEMA,
     PARCELS_SCHEMA,
 )
@@ -44,6 +45,8 @@ class SourceConfig:
 
         if self.layer == 'addresses':
             self.SCHEMA = ADDRESSES_SCHEMA
+        elif self.layer == 'NAD':
+            self.SCHEMA = NAD_SCHEMA
         elif self.layer == "buildings":
             self.SCHEMA = BUILDINGS_SCHEMA
         elif self.layer == 'parcels':

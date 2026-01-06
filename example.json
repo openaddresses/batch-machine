@@ -1,0 +1,93 @@
+
+{
+    "coverage": {
+        "US Census": {
+            "geoid": "27005",
+            "name": "Becker County",
+            "state": "Minnesota"
+        },
+        "country": "us",
+        "state": "mn",
+        "county": "Becker"
+    },
+    "schema": 2,
+    "layers": {
+        "addresses": [
+            {
+                "name": "county",
+                "website": "https://www.co.becker.mn.us/online_services/GIS_data.aspx",
+                "data": "https://gis-server.co.becker.mn.us/data/gis/shapefiles/AddressPoints.zip",
+                "compression": "zip",
+                "protocol": "http",
+                "conform": {
+                    "format": "shapefile",
+                    "number": "BLD_NUM",
+                    "unit": "UNIT",
+                    "street": [
+                        "ST_PRE_MOD",
+                        "ST_PRE_DIR",
+                        "ST_PRE_TYP",
+                        "ST_PRE_SEP",
+                        "BASENAME",
+                        "ST_POS_TYP",
+                        "ST_POS_DIR",
+                        "ST_POS_MOD"
+                    ],
+                    "city": "CITY",
+                    "district": "CO_NAME",
+                    "postcode": "ZIP",
+                    "region": "STATE"
+                }
+            }
+        ],
+        "parcels": [
+            {
+                "name": "county",
+                "website": "https://www.co.becker.mn.us/online_services/GIS_data.aspx",
+                "data": "https://gis-server.co.becker.mn.us/data/gis/shapefiles/parcels.zip",
+                "compression": "zip",
+                "protocol": "http",
+                "conform": {
+                    "format": "shapefile",
+                    "pid": "PIN"
+                }
+            }
+        ],
+        "NAD": [
+            {
+                "name": "county",
+                "website": "https://www.co.becker.mn.us/online_services/GIS_data.aspx",
+                "data": "https://gis-server.co.becker.mn.us/data/gis/shapefiles/AddressPoints.zip",
+                "compression": "zip",
+                "protocol": "http",
+                "conform": {
+                    "format": "shapefile",
+                    "AddNo_Full": "BLD_NUM",
+                    "unit": "UNIT",
+                    "StNam_Full": [
+                        "ST_PRE_MOD",
+                        "ST_PRE_DIR",
+                        "ST_PRE_TYP",
+                        "ST_PRE_SEP",
+                        "BASENAME",
+                        "ST_POS_TYP",
+                        "ST_POS_DIR",
+                        "ST_POS_MOD"
+                    ],
+                    "St_PreMod": "ST_PRE_MOD",
+                    "St_PreDir": "ST_PRE_DIR",
+                    "St_PreTyp": "ST_PRE_TYP",
+                    "St_PreSep": "ST_PRE_SEP",
+                    "St_Name": "BASENAME",
+                    "St_PosTyp": "ST_POS_TYP",
+                    "St_PosDir": "ST_POS_DIR",
+                    "St_PosMod": "ST_POS_MOD",
+                    "city": "CITY",
+                    "district": "CO_NAME",
+                    "postcode": "ZIP",
+                    "region": "STATE"
+                }
+            }
+        ]
+    }
+}
