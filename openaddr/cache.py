@@ -12,7 +12,7 @@ import csv
 from os import mkdir
 from hashlib import md5
 from os.path import join, basename, exists, abspath, splitext
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 from subprocess import check_output
 from tempfile import mkstemp
 from hashlib import sha1
@@ -391,7 +391,18 @@ class EsriRestDownloadTask(DownloadTask):
                 _L.debug("File exists %s", file_path)
                 continue
 
-            downloader = EsriDumper(source_url, parent_logger=_L, timeout=300)
+            url = urlparse(source_url)
+            query = parse_qs(url.query)
+
+            for k, v in query.items():
+                query[k] = v[0]
+
+            downloader = EsriDumper(
+                source_url,
+                extra_query_args=url.query,
+                parent_logger=_L,
+                timeout=300
+            )
 
             metadata = downloader.get_metadata()
 
