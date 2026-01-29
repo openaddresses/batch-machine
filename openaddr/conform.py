@@ -404,6 +404,28 @@ def find_source_path(data_source, source_paths):
                     return c
             _L.warning("Source names file %s but could not find it", source_file_name)
             return None
+    elif format_string == "gpkg":
+        candidates = []
+        for fn in source_paths:
+            basename, ext = os.path.splitext(fn)
+            if ext.lower() == ".gpkg":
+                candidates.append(fn)
+        if len(candidates) == 0:
+            _L.warning("No GPKG found in %s", source_paths)
+            return None
+        elif len(candidates) == 1:
+            _L.debug("Selected %s for source", candidates[0])
+            return candidates[0]
+        else:
+            if "file" not in conform:
+                _L.warning("Multiple GPKGs found, but source has no file attribute.")
+                return None
+            source_file_name = conform["file"]
+            for c in candidates:
+                if source_file_name == os.path.basename(c):
+                    return c
+            _L.warning("Source names file %s but could not find it", source_file_name)
+            return None
     elif format_string == "xml":
         # Return file if it's specified, else return the first .gml file we find
         if "file" in conform:
@@ -425,7 +447,7 @@ def find_source_path(data_source, source_paths):
         return None
 
 class ConvertToGeojsonTask(object):
-    known_types = ('.shp', '.json', '.csv', '.kml', '.gdb')
+    known_types = ('.shp', '.json', '.csv', '.kml', '.gdb', '.gpkg')
 
     def convert(self, source_config, source_paths, workdir):
         "Convert a list of source_paths and write results in workdir"
@@ -1151,7 +1173,7 @@ def extract_to_source_csv(source_config, source_path, extract_path):
     format_string = source_config.data_source["conform"]['format']
     protocol_string = source_config.data_source['protocol']
 
-    if format_string in ("shapefile", "xml", "gdb"):
+    if format_string in ("shapefile", "xml", "gdb", "gpkg"):
         ogr_source_path = normalize_ogr_filename_case(source_path)
         ogr_source_to_csv(source_config, ogr_source_path, extract_path)
     elif format_string == "csv":
@@ -1194,7 +1216,7 @@ def conform_cli(source_config, source_path, dest_path):
 
     format_string = source_config.data_source["conform"].get('format')
 
-    if not format_string in ["shapefile", "geojson", "csv", "xml", "gdb"]:
+    if not format_string in ["shapefile", "geojson", "csv", "xml", "gdb", "gpkg"]:
         _L.warning("Skipping file with unknown conform: %s", source_path)
         return 1
 

@@ -1776,6 +1776,36 @@ class TestConformCli (unittest.TestCase):
             self.assertEqual(rows[5]['properties']['number'], '5115')
             self.assertEqual(rows[5]['properties']['street'], 'OLD MILL RD')
 
+    def test_lake_man_gpkg(self):
+        with open(os.path.join(self.conforms_dir, "lake-man-gpkg.json")) as file:
+            source_config = SourceConfig(json.load(file), "addresses", "default")
+        source_path = os.path.join(self.conforms_dir, "lake-man.gpkg")
+        dest_path = os.path.join(self.testdir, 'lake-man-gpkg-conformed.csv')
+
+        rc = conform_cli(source_config, source_path, dest_path)
+        self.assertEqual(0, rc)
+
+        with open(dest_path) as fp:
+            rows = list(map(json.loads, list(fp)))
+
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.2592497, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.8026126, rows[0]['geometry']['coordinates'][1], places=4)
+
+            self.assertEqual(6, len(rows))
+            self.assertEqual(rows[0]['properties']['number'], '5115')
+            self.assertEqual(rows[0]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[1]['properties']['number'], '5121')
+            self.assertEqual(rows[1]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[2]['properties']['number'], '5133')
+            self.assertEqual(rows[2]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[3]['properties']['number'], '5126')
+            self.assertEqual(rows[3]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[4]['properties']['number'], '5120')
+            self.assertEqual(rows[4]['properties']['street'], 'FRUITED PLAINS LN')
+            self.assertEqual(rows[5]['properties']['number'], '5115')
+            self.assertEqual(rows[5]['properties']['street'], 'OLD MILL RD')
+
     def test_lake_man_split(self):
         rc, dest_path = self._run_conform_on_source('lake-man-split', 'shp')
         self.assertEqual(0, rc)
@@ -2309,8 +2339,8 @@ class TestConformCsv(unittest.TestCase):
         self.assertEqual(r[0], u'n,s,{GEOM_FIELDNAME}'.format(**globals()))
 
         r = r[1].split(',')
-        self.assertEquals(r[0], '3203')
-        self.assertEquals(r[1], 'SE WOODSTOCK BLVD')
+        self.assertEqual(r[0], '3203')
+        self.assertEqual(r[1], 'SE WOODSTOCK BLVD')
 
         x,y = wkt_pt(r[2])
         self.assertAlmostEqual(-122.630842186651, x, places=4)

@@ -60,3 +60,5 @@ openaddr-process-one --skip-preview --layer addresses --layersource state exampl
 ```
 
 Review https://github.com/openaddresses/openaddresses/blob/master/CONTRIBUTING.md for input json syntax.
+
+Supported conform formats include `shapefile`, `geojson`, `csv`, `xml`, `gdb`, and `gpkg`.
