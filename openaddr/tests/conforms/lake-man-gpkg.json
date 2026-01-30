@@ -1,0 +1,18 @@
+{
+    "schema": 2,
+    "layers": {
+        "addresses": [{
+            "name": "default",
+            "data": "http://fake-web/lake-man.gpkg",
+            "cache": "http://fake-cache/lake-man.gpkg",
+            "protocol": "http",
+            "conform": {
+                "lon": "X",
+                "lat": "Y",
+                "number": "NUMBER",
+                "street": "STRNAME",
+                "format": "gpkg"
+            }
+        }]
+    }
+}
