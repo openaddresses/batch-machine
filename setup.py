@@ -51,7 +51,7 @@ setup(
         'esridump == 1.13.0',
 
         # Used in openaddr.parcels
-        'Shapely == 2.0.1',
+        'Shapely >= 2.0.1, < 3',
 
         # https://github.com/tilezen/mapbox-vector-tile
         'mapbox-vector-tile == 2.0.1',
