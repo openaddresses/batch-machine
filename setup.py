@@ -56,6 +56,6 @@ setup(
         # https://github.com/tilezen/mapbox-vector-tile
         'mapbox-vector-tile == 2.0.1',
         'future==0.18.3',
-        'protobuf==5.29.6',
+        'protobuf>=4.21, <5',
     ]
 )
