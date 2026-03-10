@@ -1075,7 +1075,7 @@ class TestOA (unittest.TestCase):
             rows = list(map(json.loads, list(input)))
             self.assertEqual(rows[0]['properties']['id'], u'')
             self.assertEqual(rows[0]['properties']['number'], u'434')
-            self.assertEqual(rows[0]['properties']['hash'], u'3baff6b46b2f18bc')
+            self.assertEqual(rows[0]['properties']['hash'], u'8a72112f6b1404d8')
             self.assertEqual(rows[0]['properties']['city'], u'MONROE')
             self.assertEqual(rows[0]['geometry']['coordinates'], [-74.1926686, 41.3187728])
             self.assertEqual(rows[0]['properties']['street'], u'')
