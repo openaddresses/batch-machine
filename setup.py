@@ -34,7 +34,7 @@ setup(
     },
     test_suite = 'openaddr.tests',
     install_requires = [
-        'gdal == 3.7.1',
+        # Note: gdal must be installed separately (provided by base Docker image)
 
         'dateutils == 0.6.12', 'ijson == 2.4',
 
@@ -51,10 +51,10 @@ setup(
         'esridump == 1.13.0',
 
         # Used in openaddr.parcels
-        'Shapely == 2.0.1',
+        'Shapely >= 2.0.1',
 
         # https://github.com/tilezen/mapbox-vector-tile
-        'mapbox-vector-tile == 2.0.1',
+        'mapbox-vector-tile == 2.1.0',
         'future==0.18.3',
         'protobuf==5.29.6',
     ]
