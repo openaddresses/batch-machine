@@ -59,6 +59,8 @@ mkdir my-output
 openaddr-process-one --skip-preview --layer addresses --layersource state example.json my-output
 ```
 
+Supported layer types are `addresses`, `parcels`, `buildings`, and `centerlines`.
+
 Review https://github.com/openaddresses/openaddresses/blob/master/CONTRIBUTING.md for input json syntax.
 
 Supported conform formats include `shapefile`, `geojson`, `csv`, `xml`, `gdb`, and `gpkg`.
