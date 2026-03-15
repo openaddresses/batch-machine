@@ -23,6 +23,7 @@ from .conform import (
     elaborate_filenames,
     ADDRESSES_SCHEMA,
     BUILDINGS_SCHEMA,
+    CENTERLINES_SCHEMA,
     PARCELS_SCHEMA,
 )
 
@@ -48,6 +49,8 @@ class SourceConfig:
             self.SCHEMA = BUILDINGS_SCHEMA
         elif self.layer == 'parcels':
             self.SCHEMA = PARCELS_SCHEMA
+        elif self.layer == 'centerlines':
+            self.SCHEMA = CENTERLINES_SCHEMA
 
 def cache(source_config, destdir, extras):
     ''' Python wrapper for openaddress-cache.

@@ -106,8 +106,8 @@ def process(source, destination, layer, layersource,
                     _L.error('explicit --layersource arg is required for v2 sources')
                     raise ValueError('explicit --layersource arg is required for v2 sources')
 
-                # Only Address Layers are supported right now
-                if (layer != 'addresses' and layer != 'parcels' and layer != 'buildings'):
+                # Only these layers are supported right now
+                if layer not in ('addresses', 'parcels', 'buildings', 'centerlines'):
                     _L.error('Nothing processed: \'{}\' layer not currently supported'.format(layer))
                     raise ValueError('Nothing processed: \'{}\' layer not currently supported')
                 elif source['layers'].get(layer, None) == None:
