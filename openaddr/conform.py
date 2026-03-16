@@ -49,7 +49,7 @@ GEOM_FIELDNAME = 'oa:geom'
 ADDRESSES_SCHEMA = [ 'hash', 'number', 'street', 'unit', 'city', 'district', 'region', 'postcode', 'id', 'accuracy' ]
 BUILDINGS_SCHEMA = [ 'hash', 'height', 'levels']
 PARCELS_SCHEMA = [ 'hash', 'pid' ]
-CENTERLINES_SCHEMA = [ 'hash', 'id', 'name' ]
+CENTERLINES_SCHEMA = [ 'hash', 'id', 'name', 'oneway', 'speed', 'classification', 'surface', 'addr_from_left', 'addr_to_left', 'addr_from_right', 'addr_to_right', 'zip_left', 'zip_right' ]
 RESERVED_SCHEMA = ADDRESSES_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA + CENTERLINES_SCHEMA + [
     "lat",
     "lon"
@@ -880,6 +880,8 @@ def row_function(sc, row, key, fxn):
         row = row_fxn_constant(sc, row, key, fxn)
     elif function == "map":
         row = row_fxn_map(sc, row, key, fxn)
+    elif function == "mph_to_kph":
+        row = row_fxn_mph_to_kph(sc, row, key, fxn)
 
     return row
 
@@ -1074,6 +1076,19 @@ def row_fxn_constant(sc, row, key, fxn):
     value  = fxn['value']
 
     row['oa:{}'.format(key)] = value
+
+    return row
+
+def row_fxn_mph_to_kph(sc, row, key, fxn):
+    "Convert a miles-per-hour value to kilometers-per-hour"
+    field = fxn.get('field', False)
+
+    if field and field in row:
+        try:
+            mph = float(row[field])
+            row['oa:{}'.format(key)] = str(round(mph * 1.60934))
+        except (ValueError, TypeError):
+            row['oa:{}'.format(key)] = ''
 
     return row
 
