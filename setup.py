@@ -34,7 +34,7 @@ setup(
     },
     test_suite = 'openaddr.tests',
     install_requires = [
-        'gdal == 3.7.1',
+        'gdal == 3.11.0',
 
         'dateutils == 0.6.12', 'ijson == 2.4',
 
