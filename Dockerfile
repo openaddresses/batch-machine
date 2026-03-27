@@ -1,10 +1,9 @@
-FROM ghcr.io/osgeo/gdal:alpine-normal-3.7.1
+FROM ghcr.io/osgeo/gdal:alpine-normal-3.11.0
 
-RUN apk add --no-cache nodejs yarn git python3 python3-dev py3-pip \
-    make bash sqlite-dev zlib-dev geos geos-dev \
-    postgresql-libs gcc g++ musl-dev postgresql-dev cairo \
-    py3-cairo file ca-certificates \
-    && update-ca-certificates
+RUN apk add --no-cache nodejs yarn git python3-dev py3-pip \
+    make sqlite-dev zlib-dev geos-dev \
+    gcc g++ musl-dev postgresql-dev cairo \
+    py3-cairo file
 
 # Download and install Tippecanoe
 RUN git clone -b 2.31.0 https://github.com/felt/tippecanoe.git /tmp/tippecanoe && \
@@ -16,6 +15,6 @@ RUN git clone -b 2.31.0 https://github.com/felt/tippecanoe.git /tmp/tippecanoe &
 WORKDIR /usr/local/src/batch-machine
 ADD . /usr/local/src/batch-machine
 
-RUN pip3 install . && pip3 install --upgrade certifi
+RUN pip3 install --break-system-packages .
 
 CMD python3 test.py
