@@ -1,3 +1,9 @@
+2026-03-27 v10.0.0
+- Upgrade base Docker image from GDAL 3.7.1 to 3.11.0 https://github.com/openaddresses/batch-machine/pull/99
+- Update SSL CA certificates to fix download failures https://github.com/openaddresses/batch-machine/pull/98
+- Add centerline fields and mph_to_kph function https://github.com/openaddresses/batch-machine/pull/96
+- Add centerlines layer support https://github.com/openaddresses/batch-machine/pull/95
+
 2026-01-31 v9.16.0
 - Add support for geopackage https://github.com/openaddresses/batch-machine/pull/88
 
