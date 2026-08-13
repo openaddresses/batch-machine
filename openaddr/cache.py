@@ -145,7 +145,7 @@ class DownloadTask(object):
     def download(self, source_urls, workdir, source_config):
         raise NotImplementedError()
 
-def guess_url_file_extension(url):
+def guess_url_file_extension(url, headers=None):
     ''' Get a filename extension for a URL using various hints.
     '''
     scheme, _, path, _, query, _ = urlparse(url)
@@ -172,7 +172,7 @@ def guess_url_file_extension(url):
         # Get a dictionary of headers and a few bytes of content from the URL.
         #
         if scheme in ('http', 'https'):
-            response = request('GET', url, stream=True)
+            response = request('GET', url, headers=headers or {}, stream=True)
             handle, file = mkstemp()
 
             for chunk in response.iter_content(chunk_size=8192):
@@ -256,7 +256,7 @@ class URLDownloadTask(DownloadTask):
             hash = sha1((host + path_base).encode('utf-8'))
             name_base = u'{}-{}'.format(self.source_prefix, hash.hexdigest()[:8])
 
-        path_ext = guess_url_file_extension(url)
+        path_ext = guess_url_file_extension(url, self.headers)
         _L.debug(u'Guessed {}{} for {}'.format(name_base, path_ext, url))
 
         return os.path.join(dir_path, name_base + path_ext)
