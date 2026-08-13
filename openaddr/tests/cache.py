@@ -486,14 +486,14 @@ class TestURLDownloadTaskHeaders (unittest.TestCase):
         # One request for the extension-guessing pre-flight, one for the real download.
         self.assertEqual(self.seen_referers, ['https://example.gov/gis/', 'https://example.gov/gis/'])
 
-class TestCacheHttpRequestSettings (unittest.TestCase):
+class TestCacheRequestSettings (unittest.TestCase):
     ''' Confirm that openaddr.cache() reads headers from the nested
-        http_request_settings.headers key in the source config, and that a
-        source with no http_request_settings at all still works.
+        request.headers key in the source config, and that a source with
+        no request settings at all still works.
     '''
 
     def setUp(self):
-        self.destdir = tempfile.mkdtemp(prefix='testCacheHttpSettings-')
+        self.destdir = tempfile.mkdtemp(prefix='testCacheRequestSettings-')
         self.seen_referers = []
 
     def tearDown(self):
@@ -505,7 +505,7 @@ class TestCacheHttpRequestSettings (unittest.TestCase):
         # A query string forces guess_url_file_extension() to make a
         # sniffing request instead of trusting the URL's extension,
         # so this URL exercises both the pre-flight and real download.
-        if (host, path, query) == ('http-request-settings-test.local', '/addresses.csv', 'download=true'):
+        if (host, path, query) == ('request-settings-test.local', '/addresses.csv', 'download=true'):
             self.seen_referers.append(request.headers.get('Referer'))
             return httmock.response(200, b'FAKE,FAKE\n', headers={'Content-Type': 'text/csv'})
 
@@ -518,14 +518,14 @@ class TestCacheHttpRequestSettings (unittest.TestCase):
                 "addresses": [dict({
                     "name": "default",
                     "protocol": "http",
-                    "data": "http://http-request-settings-test.local/addresses.csv?download=true",
+                    "data": "http://request-settings-test.local/addresses.csv?download=true",
                 }, **layersource_extra)]
             }
         }), "addresses", "default")
 
-    def test_cache_reads_headers_from_http_request_settings(self):
+    def test_cache_reads_headers_from_request_settings(self):
         source_config = self.make_source_config({
-            "http_request_settings": {
+            "request": {
                 "headers": {"Referer": "https://example.gov/gis/"}
             }
         })
@@ -535,7 +535,7 @@ class TestCacheHttpRequestSettings (unittest.TestCase):
 
         self.assertEqual(self.seen_referers, ['https://example.gov/gis/', 'https://example.gov/gis/'])
 
-    def test_cache_without_http_request_settings_sends_no_referer(self):
+    def test_cache_without_request_settings_sends_no_referer(self):
         source_config = self.make_source_config({})
 
         with httmock.HTTMock(self.response_content):
