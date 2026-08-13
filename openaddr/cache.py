@@ -130,15 +130,16 @@ class DownloadTask(object):
 
 
     @classmethod
-    def from_protocol_string(clz, protocol_string, source_prefix=None):
+    def from_protocol_string(clz, protocol_string, source_prefix=None, headers=None):
+        headers = headers or {}
         if protocol_string.lower() == 'http':
-            return URLDownloadTask(source_prefix)
+            return URLDownloadTask(source_prefix, headers=headers)
         elif protocol_string.lower() == 'file':
-            return URLDownloadTask(source_prefix)
+            return URLDownloadTask(source_prefix, headers=headers)
         elif protocol_string.lower() == 'ftp':
-            return URLDownloadTask(source_prefix)
+            return URLDownloadTask(source_prefix, headers=headers)
         elif protocol_string.lower() == 'esri':
-            return EsriRestDownloadTask(source_prefix)
+            return EsriRestDownloadTask(source_prefix, headers=headers)
         else:
             raise KeyError("I don't know how to extract for protocol {}".format(protocol_string))
 
@@ -391,7 +392,7 @@ class EsriRestDownloadTask(DownloadTask):
                 _L.debug("File exists %s", file_path)
                 continue
 
-            downloader = EsriDumper(source_url, parent_logger=_L, timeout=300)
+            downloader = EsriDumper(source_url, parent_logger=_L, timeout=300, extra_headers=self.headers)
 
             metadata = downloader.get_metadata()
 
