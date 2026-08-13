@@ -75,8 +75,9 @@ def cache(source_config, destdir, extras):
         source_urls = [source_urls]
 
     protocol_string = source_config.data_source.get('protocol')
+    source_headers = source_config.data_source.get('headers') or {}
 
-    task = DownloadTask.from_protocol_string(protocol_string, source_config)
+    task = DownloadTask.from_protocol_string(protocol_string, source_config, headers=source_headers)
     downloaded_files = task.download(source_urls, workdir, source_config)
 
     # FIXME: I wrote the download stuff to assume multiple files because
@@ -128,6 +129,9 @@ def conform(source_config, destdir, extras):
     if not isinstance(source_urls, list):
         source_urls = [source_urls]
 
+    # source_config.data_source['headers'] is intentionally not passed here:
+    # this re-downloads from the OA-owned cache artifact (S3), not the
+    # contributor's original host, so contributor-supplied headers don't apply.
     task1 = URLDownloadTask(source_config.data_source_name)
     downloaded_path = task1.download(source_urls, workdir, source_config)
     _L.info("Downloaded to %s", downloaded_path)
