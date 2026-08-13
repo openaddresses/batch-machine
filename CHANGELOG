@@ -1,3 +1,6 @@
+2026-08-13 v10.1.0
+- Support custom HTTP request headers for a source, including on the file-extension pre-flight request (needed for downloads gated on Referer/etc.)
+
 2026-03-27 v10.0.0
 - Upgrade base Docker image from GDAL 3.7.1 to 3.11.0 https://github.com/openaddresses/batch-machine/pull/99
 - Update SSL CA certificates to fix download failures https://github.com/openaddresses/batch-machine/pull/98
