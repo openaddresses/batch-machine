@@ -25,7 +25,7 @@ from ..conform import (
     row_fxn_first_non_empty, row_fxn_constant, row_fxn_map,
     row_canonicalize_unit_and_number, conform_cli,
     convert_regexp_replace, normalize_ogr_filename_case,
-    is_in, geojson_source_to_csv, check_source_tests
+    is_in, geojson_source_to_csv, ogr_source_to_csv, check_source_tests
     )
 
 " Return an x,y array given a wkt point string"
@@ -2252,6 +2252,66 @@ class TestConformMisc(unittest.TestCase):
             self.assertEqual(rows[0]['address'], '')
             self.assertEqual(rows[1]['pid'], '2')
             self.assertEqual(rows[1]['address'], '123 Maple St')
+
+    def test_ogr_source_to_csv_multisurface(self):
+        ''' Curve geometries (e.g. MULTISURFACE) from file geodatabases should
+        be linearized before being written out, since shapely/GEOS can't
+        parse GDAL's curve-geometry WKT types.
+        https://github.com/openaddresses/batch-machine/issues/62
+        '''
+        from osgeo import ogr, osr
+        from shapely.wkt import loads as wkt_loads
+
+        srs = osr.SpatialReference()
+        srs.ImportFromEPSG(4326)
+
+        source_path = os.path.join(self.testdir, 'curved-buildings.gpkg')
+        driver = ogr.GetDriverByName('GPKG')
+        datasource = driver.CreateDataSource(source_path)
+        layer = datasource.CreateLayer('buildings', srs=srs, geom_type=ogr.wkbMultiSurface)
+        layer.CreateField(ogr.FieldDefn('bin', ogr.OFTString))
+
+        feature = ogr.Feature(layer.GetLayerDefn())
+        feature.SetField('bin', '12345')
+        feature.SetGeometry(ogr.CreateGeometryFromWkt(
+            'MULTISURFACE (CURVEPOLYGON (CIRCULARSTRING (0 0, 1 1, 2 0, 1 -1, 0 0)))'
+        ))
+        layer.CreateFeature(feature)
+        feature = None
+        datasource = None
+
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "buildings": [{
+                    "name": "default",
+                    "conform": {"format": "gpkg"}
+                }]
+            }
+        }), "buildings", "default")
+
+        csv_path = os.path.join(self.testdir, 'curved-buildings.csv')
+        ogr_source_to_csv(c, source_path, csv_path)
+
+        with open(csv_path, encoding='utf8') as file:
+            row = next(csv.DictReader(file))
+            self.assertEqual(row['bin'], '12345')
+
+            # The output WKT should be a linear geometry type that shapely can parse.
+            self.assertNotIn('CURVE', row[GEOM_FIELDNAME])
+            self.assertNotIn('SURFACE', row[GEOM_FIELDNAME])
+
+            geom = wkt_loads(row[GEOM_FIELDNAME])
+            self.assertEqual(geom.geom_type, 'MultiPolygon')
+
+            # Sanity-check the linearized shape isn't degenerate and roughly
+            # matches the original curve geometry's bounds.
+            minx, miny, maxx, maxy = geom.bounds
+            self.assertAlmostEqual(minx, 0, places=2)
+            self.assertAlmostEqual(maxx, 2, places=2)
+            self.assertAlmostEqual(miny, -1, places=2)
+            self.assertAlmostEqual(maxy, 1, places=2)
+            self.assertGreater(geom.area, 0)
 
 class TestConformCsv(unittest.TestCase):
     "Fixture to create real files to test csv_source_to_csv()"
