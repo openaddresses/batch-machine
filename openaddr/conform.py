@@ -606,6 +606,14 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
             if geom is not None:
                 geom.Transform(coordTransform)
 
+                if geom.HasCurveGeometry():
+                    # Some sources (notably file geodatabases with curved
+                    # parcel/building boundaries) contain curve geometry types
+                    # like MULTISURFACE or CURVEPOLYGON. Shapely/GEOS can't
+                    # parse those WKT types, so linearize them first.
+                    # https://github.com/openaddresses/batch-machine/issues/62
+                    geom = geom.GetLinearGeometry()
+
                 if source_config.layer == "addresses":
                     # For Addresses - Calculate the centroid on surface of the geometry and write it as X and Y columns
                     try:
