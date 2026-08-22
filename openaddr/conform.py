@@ -951,8 +951,8 @@ def row_fxn_regexp(sc, row, key, fxn):
     pattern = re.compile(fxn.get("pattern", False))
     replace = fxn.get('replace', False)
     if replace:
-        match = re.sub(pattern, convert_regexp_replace(replace), row[fxn["field"]])
-        row["oa:{}".format(key)] = match
+        value = row[fxn["field"]]
+        row["oa:{}".format(key)] = re.sub(pattern, convert_regexp_replace(replace), value) if pattern.search(value) else ''
     else:
         match = pattern.search(row[fxn["field"]])
         row["oa:{}".format(key)] = ''.join(filter(None, match.groups())) if match else ''
