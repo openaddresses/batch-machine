@@ -1955,6 +1955,24 @@ class TestConformCli (unittest.TestCase):
             self.assertAlmostEqual(-122.2592497, rows[0]['geometry']['coordinates'][0], places=4)
             self.assertAlmostEqual(37.8026126, rows[0]['geometry']['coordinates'][1], places=4)
 
+    def test_lake_man_shp_epsg4269_axis_order(self):
+        # Regression test for https://github.com/openaddresses/batch-machine/issues/26
+        # A shapefile with an explicit geographic "srs" tag (here EPSG:4269, NAD83)
+        # must not have its coordinates flipped by GDAL 3's authority-compliant
+        # (lat, lon) axis order. The underlying shapefile geometry is stored in
+        # ordinary (lon, lat) order, same coordinates as the plain lake-man.shp
+        # fixture used by test_lake_man, so the expected output here matches that
+        # test's expected values. Before the fix, this source's coordinates come
+        # out as (lat, lon) instead of (lon, lat).
+        rc, dest_path = self._run_conform_on_source('lake-man-epsg4269', 'shp')
+        self.assertEqual(0, rc)
+
+        with open(dest_path) as fp:
+            rows = list(map(json.loads, list(fp)))
+            self.assertEqual('Point', rows[0]['geometry']['type'])
+            self.assertAlmostEqual(-122.2592497, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.8026126, rows[0]['geometry']['coordinates'][1], places=4)
+
     # TODO: add tests for non-ESRI GeoJSON sources
 
     def test_lake_man_split2(self):
@@ -2034,8 +2052,11 @@ class TestConformCli (unittest.TestCase):
         with open(dest_path) as fp:
             rows = list(map(json.loads, list(fp)))
             self.assertEqual(6, len(rows))
-            self.assertAlmostEqual(37.8026126, rows[0]['geometry']['coordinates'][0], places=4)
-            self.assertAlmostEqual(-122.2592497, rows[0]['geometry']['coordinates'][1], places=4)
+            # GeoJSON coordinates are always [lon, lat]. This source has an
+            # explicit "srs": "EPSG:4326" tag; see
+            # https://github.com/openaddresses/batch-machine/issues/26.
+            self.assertAlmostEqual(-122.2592497, rows[0]['geometry']['coordinates'][0], places=4)
+            self.assertAlmostEqual(37.8026126, rows[0]['geometry']['coordinates'][1], places=4)
             self.assertEqual(rows[0]['properties']['number'], '5115')
             self.assertEqual(rows[0]['properties']['street'], 'FRUITED PLAINS LN')
 
