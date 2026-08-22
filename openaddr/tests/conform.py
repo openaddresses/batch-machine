@@ -348,6 +348,37 @@ class TestConformTransforms (unittest.TestCase):
         d = row_fxn_regexp(c, d, "street", c.data_source["conform"]["street"])
         self.assertEqual(e, d)
 
+        "regex split - replace - bad match"
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": {
+                            "function": "regexp",
+                            "field": "ADDRESS",
+                            "pattern": "^([0-9]+)(?:.*)",
+                            "replace": "$1"
+                        },
+                        "street": {
+                            "function": "regexp",
+                            "field": "ADDRESS",
+                            "pattern": "(fake)",
+                            "replace": "$1"
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
+        d = { "ADDRESS": "123 MAPLE ST" }
+        e = copy.deepcopy(d)
+        e.update({ "oa:number": "123", "oa:street": "" })
+
+        d = row_fxn_regexp(c, d, "number", c.data_source["conform"]["number"])
+        d = row_fxn_regexp(c, d, "street", c.data_source["conform"]["street"])
+        self.assertEqual(e, d)
+
     def test_transform_and_convert(self):
         d = SourceConfig(dict({
             "schema": 2,
