@@ -12,6 +12,8 @@ import unittest
 import tempfile
 import shutil
 
+from zipfile import ZipFile
+
 from .. import SourceConfig
 
 from ..conform import (
@@ -25,7 +27,8 @@ from ..conform import (
     row_fxn_first_non_empty, row_fxn_constant, row_fxn_map,
     row_canonicalize_unit_and_number, conform_cli,
     convert_regexp_replace, normalize_ogr_filename_case,
-    is_in, geojson_source_to_csv, ogr_source_to_csv, check_source_tests
+    is_in, geojson_source_to_csv, ogr_source_to_csv, check_source_tests,
+    ZipDecompressTask, DecompressionError, elaborate_filenames
     )
 
 " Return an x,y array given a wkt point string"
@@ -2680,3 +2683,99 @@ class TestAccuracyMap(unittest.TestCase):
 
         d = row_fxn_map(c, d, "accuracy", c.data_source["conform"]["accuracy"])
         self.assertEqual(e, d)
+
+
+class TestZipDecompressTask(unittest.TestCase):
+    ''' Regression tests for GitHub issue #35: "Support zipped shapefiles
+        within source zip" -- an outer source zip contains a nested zip that
+        itself contains the shapefile, plus miscellaneous extra files
+        (license, readme, lookup tables) sitting next to the nested zip.
+    '''
+
+    def setUp(self):
+        self.testdir = tempfile.mkdtemp(prefix='openaddr-TestZipDecompressTask-')
+        self.workdir = os.path.join(self.testdir, 'work')
+        os.mkdir(self.workdir)
+
+        # A real shapefile (.shp/.shx/.dbf/.prj) fixture, already zipped up.
+        self.inner_zip_path = os.path.join(
+            os.path.dirname(__file__), 'conforms', 'lake-man.zip')
+
+    def tearDown(self):
+        shutil.rmtree(self.testdir)
+
+    def _make_outer_zip(self, extra_files={'license.txt': 'be nice', 'readme.txt': 'read me'}):
+        ''' Build an outer.zip containing nested.zip (the shapefile zip)
+            alongside some unrelated non-zip files, matching the structure
+            described in issue #35.
+        '''
+        outer_zip_path = os.path.join(self.testdir, 'outer.zip')
+
+        with ZipFile(outer_zip_path, 'w') as outer_zip:
+            outer_zip.write(self.inner_zip_path, arcname='nested.zip')
+            for name, content in extra_files.items():
+                outer_zip.writestr(name, content)
+
+        return outer_zip_path
+
+    def test_single_nested_zip_is_extracted(self):
+        ''' A zip-of-a-zip-containing-a-shapefile, with no "file" filter
+            (i.e. no conform "file" tag), should be fully extracted so the
+            shapefile members end up available.
+        '''
+        outer_zip_path = self._make_outer_zip()
+
+        task = ZipDecompressTask()
+        output_files = task.decompress([outer_zip_path], self.workdir, [])
+
+        output_names = {os.path.basename(path) for path in output_files}
+        self.assertIn('lake-man.shp', output_names)
+        self.assertIn('lake-man.shx', output_names)
+        self.assertIn('lake-man.dbf', output_names)
+        self.assertIn('lake-man.prj', output_names)
+
+        # The extra sibling files should also have survived extraction.
+        self.assertIn('license.txt', output_names)
+        self.assertIn('readme.txt', output_names)
+
+        shp_path = next(path for path in output_files if path.endswith('lake-man.shp'))
+        self.assertGreater(os.path.getsize(shp_path), 0)
+
+    def test_single_nested_zip_is_extracted_with_file_filter(self):
+        ''' Same structure as above, but exercised the way a real source
+            would use it: with a conform "file" tag naming the shapefile
+            inside the nested zip (e.g. "file": "lake-man.shp"), which is
+            expanded by elaborate_filenames() into the .shp/.shx/.dbf/.prj
+            set and passed through as the `filenames` allow-list.
+        '''
+        outer_zip_path = self._make_outer_zip()
+        filenames = elaborate_filenames('lake-man.shp')
+
+        task = ZipDecompressTask()
+        output_files = task.decompress([outer_zip_path], self.workdir, filenames)
+
+        output_names = {os.path.basename(path) for path in output_files}
+        self.assertIn('lake-man.shp', output_names)
+        self.assertIn('lake-man.shx', output_names)
+        self.assertIn('lake-man.dbf', output_names)
+        self.assertIn('lake-man.prj', output_names)
+
+        # Sibling non-zip files that don't match the filter should still be
+        # skipped, since the caller only asked for the named shapefile.
+        self.assertNotIn('license.txt', output_names)
+        self.assertNotIn('readme.txt', output_names)
+
+    def test_multiple_nested_zips_raise_decompression_error(self):
+        ''' If more than one zip appears at the same directory level inside
+            the outer zip, extraction should fail loudly rather than
+            silently pick one.
+        '''
+        outer_zip_path = os.path.join(self.testdir, 'outer-ambiguous.zip')
+
+        with ZipFile(outer_zip_path, 'w') as outer_zip:
+            outer_zip.write(self.inner_zip_path, arcname='nested-a.zip')
+            outer_zip.write(self.inner_zip_path, arcname='nested-b.zip')
+
+        task = ZipDecompressTask()
+        with self.assertRaises(DecompressionError):
+            task.decompress([outer_zip_path], self.workdir, [])

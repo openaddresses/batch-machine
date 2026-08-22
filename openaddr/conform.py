@@ -240,6 +240,14 @@ class ZipDecompressTask(DecompressionTask):
     def _extract_zip(self, source_path, expand_path, filenames):
         with ZipFile(source_path, 'r') as z:
             for name in z.namelist():
+                # Nested zip files are always extracted regardless of the
+                # filenames filter, since the requested file may be inside
+                # one of them. The filter is re-applied when that nested
+                # zip is itself extracted.
+                if name.lower().endswith('.zip'):
+                    z.extract(name, expand_path)
+                    continue
+
                 if len(filenames) and not is_in(name, filenames):
                     # Download only the named file, if any.
                     _L.debug("Skipped file {}".format(name))
