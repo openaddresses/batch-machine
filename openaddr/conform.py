@@ -203,6 +203,15 @@ def is_in(path, names):
     return False
 
 class ZipDecompressTask(DecompressionTask):
+    # Recursing into nested zips (see #35/#112) means a maliciously or
+    # accidentally crafted zip bomb could otherwise fill a job's disk before
+    # any per-entry file type filtering applies. Cap the declared
+    # (uncompressed) size of any single entry and how many nested zips deep
+    # we'll recurse, so worst case is bounded and the job fails loudly
+    # instead of exhausting disk.
+    MAX_ZIP_ENTRY_BYTES = 2 * 1024 ** 3  # 2GB
+    MAX_NESTED_ZIP_DEPTH = 10
+
     def decompress(self, source_paths, workdir, filenames):
         output_files = []
         expand_path = os.path.join(workdir, UNZIPPED_DIRNAME)
@@ -218,6 +227,11 @@ class ZipDecompressTask(DecompressionTask):
         pending = list(self._find_single_zips(expand_path))
 
         while pending:
+            if len(processed) >= self.MAX_NESTED_ZIP_DEPTH:
+                raise DecompressionError(
+                    "Refusing to recurse more than {} nested zip files deep - possible zip bomb"
+                    .format(self.MAX_NESTED_ZIP_DEPTH)
+                )
             zip_path = pending.pop()
             if zip_path in processed:
                 continue
@@ -239,13 +253,24 @@ class ZipDecompressTask(DecompressionTask):
 
     def _extract_zip(self, source_path, expand_path, filenames):
         with ZipFile(source_path, 'r') as z:
-            for name in z.namelist():
+            for zinfo in z.infolist():
+                name = zinfo.filename
+
+                # Check the declared (uncompressed) size from the zip's
+                # central directory before extracting anything - a bomb's
+                # compressed size can be tiny, but its declared size isn't.
+                if zinfo.file_size > self.MAX_ZIP_ENTRY_BYTES:
+                    raise DecompressionError(
+                        "Refusing to extract {} - declared size {} bytes exceeds {} byte limit, possible zip bomb"
+                        .format(name, zinfo.file_size, self.MAX_ZIP_ENTRY_BYTES)
+                    )
+
                 # Nested zip files are always extracted regardless of the
                 # filenames filter, since the requested file may be inside
                 # one of them. The filter is re-applied when that nested
                 # zip is itself extracted.
                 if name.lower().endswith('.zip'):
-                    z.extract(name, expand_path)
+                    z.extract(zinfo, expand_path)
                     continue
 
                 if len(filenames) and not is_in(name, filenames):

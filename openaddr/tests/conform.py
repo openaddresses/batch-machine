@@ -12,6 +12,7 @@ import unittest
 import tempfile
 import shutil
 
+from unittest import mock
 from zipfile import ZipFile
 
 from .. import SourceConfig
@@ -2779,3 +2780,37 @@ class TestZipDecompressTask(unittest.TestCase):
         task = ZipDecompressTask()
         with self.assertRaises(DecompressionError):
             task.decompress([outer_zip_path], self.workdir, [])
+
+    def test_oversized_entry_raises_decompression_error(self):
+        ''' A zip entry declaring an uncompressed size over the configured
+            cap should be refused before extraction, as a zip bomb guard.
+            Uses a real (small) fixture but lowers the cap far below its
+            actual size, rather than crafting an actual multi-GB payload.
+        '''
+        outer_zip_path = self._make_outer_zip()
+
+        task = ZipDecompressTask()
+        with mock.patch.object(ZipDecompressTask, 'MAX_ZIP_ENTRY_BYTES', 10):
+            with self.assertRaises(DecompressionError):
+                task.decompress([outer_zip_path], self.workdir, [])
+
+    def test_deeply_nested_zips_raise_decompression_error(self):
+        ''' A chain of nested zips deeper than the configured limit should
+            be refused, as a zip bomb guard against chained amplification.
+            Each level's nested zip is placed inside its own subfolder
+            (arcname "levelN/nested.zip") so unwrapping one level doesn't
+            land in the same directory as the next - matching how the
+            existing "one zip per directory" width check expects real
+            nested archives to be laid out.
+        '''
+        current_path = self.inner_zip_path
+        for level in range(4):
+            next_path = os.path.join(self.testdir, 'wrap-{}.zip'.format(level))
+            with ZipFile(next_path, 'w') as z:
+                z.write(current_path, arcname='level{}/nested.zip'.format(level))
+            current_path = next_path
+
+        task = ZipDecompressTask()
+        with mock.patch.object(ZipDecompressTask, 'MAX_NESTED_ZIP_DEPTH', 2):
+            with self.assertRaises(DecompressionError):
+                task.decompress([current_path], self.workdir, [])
