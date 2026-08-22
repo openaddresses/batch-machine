@@ -716,18 +716,26 @@ def csv_source_to_csv(source_config, source_path, dest_path):
 def geojson_source_to_csv(source_config, source_path, dest_path):
     '''
     '''
+    # Not every feature shares the same set of properties, so make a first
+    # pass to collect the union of every feature's property keys (in
+    # first-seen order) before opening the CSV writer.
+    out_fieldnames = []
+    seen_fieldnames = set()
+    with open(source_path) as file:
+        for feature in stream_geojson(file):
+            for key in feature['properties'].keys():
+                if key not in seen_fieldnames:
+                    seen_fieldnames.add(key)
+                    out_fieldnames.append(key)
+    out_fieldnames.append(GEOM_FIELDNAME)
+
     # For every row in the source GeoJSON
     with open(source_path) as file:
         # Write the extracted CSV file
         with open(dest_path, 'w', encoding='utf-8') as dest_fp:
-            writer = None
+            writer = csv.DictWriter(dest_fp, out_fieldnames)
+            writer.writeheader()
             for (row_number, feature) in enumerate(stream_geojson(file)):
-                if writer is None:
-                    out_fieldnames = list(feature['properties'].keys())
-                    out_fieldnames.append(GEOM_FIELDNAME)
-                    writer = csv.DictWriter(dest_fp, out_fieldnames)
-                    writer.writeheader()
-
                 try:
                     row = feature['properties']
                     if feature['geometry'] is None:

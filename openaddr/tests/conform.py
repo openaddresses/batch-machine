@@ -2212,6 +2212,47 @@ class TestConformMisc(unittest.TestCase):
             self.assertEqual(row[GEOM_FIELDNAME], 'POINT (-74.9833483425103 40.05498715)')
             self.assertEqual(row['PARCEL_NUM'], '02-022-003')
 
+    def test_geojson_source_to_csv_non_uniform_properties(self):
+        ''' Features with different property keys should not crash the writer.
+        '''
+        c = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": { }
+                }]
+            }
+        }), "addresses", "default")
+
+        geojson_path = os.path.join(self.testdir, 'non-uniform.geojson')
+        with open(geojson_path, 'w', encoding='utf8') as file:
+            json.dump({
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {"pid": "1"},
+                        "geometry": {"type": "Point", "coordinates": [-121.2, 39.3]}
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": {"pid": "2", "address": "123 Maple St"},
+                        "geometry": {"type": "Point", "coordinates": [-121.3, 39.4]}
+                    }
+                ]
+            }, file)
+
+        csv_path = os.path.join(self.testdir, 'non-uniform-conformed.csv')
+        geojson_source_to_csv(c, geojson_path, csv_path)
+
+        with open(csv_path, encoding='utf8') as file:
+            rows = list(csv.DictReader(file))
+            self.assertEqual(rows[0]['pid'], '1')
+            self.assertEqual(rows[0]['address'], '')
+            self.assertEqual(rows[1]['pid'], '2')
+            self.assertEqual(rows[1]['address'], '123 Maple St')
+
 class TestConformCsv(unittest.TestCase):
     "Fixture to create real files to test csv_source_to_csv()"
 
