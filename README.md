@@ -63,4 +63,4 @@ Supported layer types are `addresses`, `parcels`, `buildings`, and `centerlines`
 
 Review https://github.com/openaddresses/openaddresses/blob/master/CONTRIBUTING.md for input json syntax.
 
-Supported conform formats include `shapefile`, `geojson`, `csv`, `xml`, `gdb`, and `gpkg`.
+Supported conform formats include `shapefile`, `geojson`, `csv`, `xml`, `gdb`, `gpkg`, and `kml` (2D Point placemarks with simple `ExtendedData` attributes are verified; other geometry types and `Schema`-typed attributes go through the same GDAL driver but are untested; altitude/3D coordinates and KMZ are not supported).

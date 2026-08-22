@@ -1,3 +1,11 @@
+2026-08-22 v10.2.0
+- Fix lat/lon axis flip for shapefile sources with an explicit `srs` tag https://github.com/openaddresses/batch-machine/pull/113
+- Extract nested zip files regardless of the conform `file` filter, cap zip entry size and nesting depth as a zip bomb guard, and skip recursing into a nested zip once the filter is already satisfied https://github.com/openaddresses/batch-machine/pull/112
+- Add KML support to the conform pipeline https://github.com/openaddresses/batch-machine/pull/111
+- Linearize curve geometries (e.g. `MULTISURFACE`) before exporting to WKT, fixing GDB parcel/building sources that error out https://github.com/openaddresses/batch-machine/pull/110
+- Fix `regexp` function's `replace` mode returning the unmatched field unchanged instead of an empty string https://github.com/openaddresses/batch-machine/pull/109
+- Collect the union of feature property keys before writing `geojson_source_to_csv` output, fixing a crash on GeoJSON sources with non-uniform feature properties https://github.com/openaddresses/batch-machine/pull/108
+
 2026-08-13 v10.1.0
 - Support custom HTTP request headers for a source via `request.headers`, including on the file-extension pre-flight request (needed for downloads gated on Referer/etc.)
 
