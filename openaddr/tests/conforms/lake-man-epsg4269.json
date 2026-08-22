@@ -1,0 +1,20 @@
+{
+    "schema": 2,
+    "layers": {
+        "addresses": [{
+            "name": "default",
+            "data": "http://fake-web/lake-man-epsg4269.zip",
+            "cache": "http://fake-cache/lake-man-epsg4269.zip",
+            "protocol": "http",
+            "compression": "zip",
+            "conform": {
+                "lon": "X",
+                "lat": "Y",
+                "number": "NUMBER",
+                "street": "STRNAME",
+                "format": "shapefile",
+                "srs": "EPSG:4269"
+            }
+        }]
+    }
+}
