@@ -203,26 +203,56 @@ def is_in(path, names):
     return False
 
 class ZipDecompressTask(DecompressionTask):
+    # Recursing into nested zips (see #35/#112) means a maliciously or
+    # accidentally crafted zip bomb could otherwise fill a job's disk before
+    # any per-entry file type filtering applies. Cap the declared
+    # (uncompressed) size of any single entry and how many nested zips deep
+    # we'll recurse, so worst case is bounded and the job fails loudly
+    # instead of exhausting disk.
+    MAX_ZIP_ENTRY_BYTES = 2 * 1024 ** 3  # 2GB
+    MAX_NESTED_ZIP_DEPTH = 10
+
     def decompress(self, source_paths, workdir, filenames):
         output_files = []
         expand_path = os.path.join(workdir, UNZIPPED_DIRNAME)
         mkdirsp(expand_path)
 
         # Extract contents of zip file into expand_path directory.
+        found = set()
         for source_path in source_paths:
-            self._extract_zip(source_path, expand_path, filenames)
+            found |= self._extract_zip(source_path, expand_path, filenames)
+
+        def fully_satisfied():
+            # Only short-circuit when there's an explicit file filter AND
+            # we can prove every name it asked for has actually been
+            # extracted - if filenames is empty (caller wants everything)
+            # or matching is inexact (e.g. a directory-style entry in
+            # `filenames` that `is_in()` matched but doesn't literally
+            # equal), this stays False and we fall back to full recursion,
+            # same as before this optimization existed.
+            return bool(filenames) and set(filenames) <= found
 
         # Recursively extract nested zip files, but fail if more than one zip
-        # appears at the same directory level.
+        # appears at the same directory level. Skip recursing at all once the
+        # requested file(s) are already found - there's no reason to keep
+        # opening nested zips we don't need, which also limits exposure to a
+        # zip bomb hiding deeper in the chain than what was asked for.
         processed = set()
-        pending = list(self._find_single_zips(expand_path))
+        pending = [] if fully_satisfied() else list(self._find_single_zips(expand_path))
 
         while pending:
+            if len(processed) >= self.MAX_NESTED_ZIP_DEPTH:
+                raise DecompressionError(
+                    "Refusing to recurse more than {} nested zip files deep - possible zip bomb"
+                    .format(self.MAX_NESTED_ZIP_DEPTH)
+                )
             zip_path = pending.pop()
             if zip_path in processed:
                 continue
             processed.add(zip_path)
-            self._extract_zip(zip_path, os.path.dirname(zip_path), filenames)
+            found |= self._extract_zip(zip_path, os.path.dirname(zip_path), filenames)
+            if fully_satisfied():
+                break
             pending.extend(self._find_single_zips(os.path.dirname(zip_path)))
 
         # Collect names of directories and files in expand_path directory.
@@ -232,20 +262,54 @@ class ZipDecompressTask(DecompressionTask):
                     output_files.append(os.path.join(dirpath, dirname))
                     _L.debug("Expanded directory {}".format(output_files[-1]))
             for filename in filenames:
+                if filename.lower().endswith('.zip'):
+                    # A zip left un-recursed-into (e.g. because the request
+                    # was already satisfied without it, or filtered out at
+                    # its own directory level) isn't a usable source file.
+                    continue
                 output_files.append(os.path.join(dirpath, filename))
                 _L.debug("Expanded file {}".format(output_files[-1]))
 
         return output_files
 
     def _extract_zip(self, source_path, expand_path, filenames):
+        ''' Extract matching entries, returning the subset of `filenames`
+            (lower-cased) that were found by exact name - used by
+            decompress() to tell whether it's safe to stop recursing into
+            further nested zips.
+        '''
+        found = set()
         with ZipFile(source_path, 'r') as z:
-            for name in z.namelist():
+            for zinfo in z.infolist():
+                name = zinfo.filename
+
+                # Check the declared (uncompressed) size from the zip's
+                # central directory before extracting anything - a bomb's
+                # compressed size can be tiny, but its declared size isn't.
+                if zinfo.file_size > self.MAX_ZIP_ENTRY_BYTES:
+                    raise DecompressionError(
+                        "Refusing to extract {} - declared size {} bytes exceeds {} byte limit, possible zip bomb"
+                        .format(name, zinfo.file_size, self.MAX_ZIP_ENTRY_BYTES)
+                    )
+
+                # Nested zip files are always extracted regardless of the
+                # filenames filter, since the requested file may be inside
+                # one of them. The filter is re-applied when that nested
+                # zip is itself extracted.
+                if name.lower().endswith('.zip'):
+                    z.extract(zinfo, expand_path)
+                    continue
+
                 if len(filenames) and not is_in(name, filenames):
                     # Download only the named file, if any.
                     _L.debug("Skipped file {}".format(name))
                     continue
 
+                if len(filenames) and name.lower() in filenames:
+                    found.add(name.lower())
+
                 z.extract(name, expand_path)
+        return found
 
     def _find_single_zips(self, root_path):
         zip_paths = []

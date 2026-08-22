@@ -12,6 +12,9 @@ import unittest
 import tempfile
 import shutil
 
+from unittest import mock
+from zipfile import ZipFile
+
 from .. import SourceConfig
 
 from ..conform import (
@@ -25,7 +28,8 @@ from ..conform import (
     row_fxn_first_non_empty, row_fxn_constant, row_fxn_map,
     row_canonicalize_unit_and_number, conform_cli,
     convert_regexp_replace, normalize_ogr_filename_case,
-    is_in, geojson_source_to_csv, ogr_source_to_csv, check_source_tests
+    is_in, geojson_source_to_csv, ogr_source_to_csv, check_source_tests,
+    ZipDecompressTask, DecompressionError, elaborate_filenames
     )
 
 " Return an x,y array given a wkt point string"
@@ -2680,3 +2684,171 @@ class TestAccuracyMap(unittest.TestCase):
 
         d = row_fxn_map(c, d, "accuracy", c.data_source["conform"]["accuracy"])
         self.assertEqual(e, d)
+
+
+class TestZipDecompressTask(unittest.TestCase):
+    ''' Regression tests for GitHub issue #35: "Support zipped shapefiles
+        within source zip" -- an outer source zip contains a nested zip that
+        itself contains the shapefile, plus miscellaneous extra files
+        (license, readme, lookup tables) sitting next to the nested zip.
+    '''
+
+    def setUp(self):
+        self.testdir = tempfile.mkdtemp(prefix='openaddr-TestZipDecompressTask-')
+        self.workdir = os.path.join(self.testdir, 'work')
+        os.mkdir(self.workdir)
+
+        # A real shapefile (.shp/.shx/.dbf/.prj) fixture, already zipped up.
+        self.inner_zip_path = os.path.join(
+            os.path.dirname(__file__), 'conforms', 'lake-man.zip')
+
+    def tearDown(self):
+        shutil.rmtree(self.testdir)
+
+    def _make_outer_zip(self, extra_files={'license.txt': 'be nice', 'readme.txt': 'read me'}):
+        ''' Build an outer.zip containing nested.zip (the shapefile zip)
+            alongside some unrelated non-zip files, matching the structure
+            described in issue #35.
+        '''
+        outer_zip_path = os.path.join(self.testdir, 'outer.zip')
+
+        with ZipFile(outer_zip_path, 'w') as outer_zip:
+            outer_zip.write(self.inner_zip_path, arcname='nested.zip')
+            for name, content in extra_files.items():
+                outer_zip.writestr(name, content)
+
+        return outer_zip_path
+
+    def test_single_nested_zip_is_extracted(self):
+        ''' A zip-of-a-zip-containing-a-shapefile, with no "file" filter
+            (i.e. no conform "file" tag), should be fully extracted so the
+            shapefile members end up available.
+        '''
+        outer_zip_path = self._make_outer_zip()
+
+        task = ZipDecompressTask()
+        output_files = task.decompress([outer_zip_path], self.workdir, [])
+
+        output_names = {os.path.basename(path) for path in output_files}
+        self.assertIn('lake-man.shp', output_names)
+        self.assertIn('lake-man.shx', output_names)
+        self.assertIn('lake-man.dbf', output_names)
+        self.assertIn('lake-man.prj', output_names)
+
+        # The extra sibling files should also have survived extraction.
+        self.assertIn('license.txt', output_names)
+        self.assertIn('readme.txt', output_names)
+
+        shp_path = next(path for path in output_files if path.endswith('lake-man.shp'))
+        self.assertGreater(os.path.getsize(shp_path), 0)
+
+    def test_single_nested_zip_is_extracted_with_file_filter(self):
+        ''' Same structure as above, but exercised the way a real source
+            would use it: with a conform "file" tag naming the shapefile
+            inside the nested zip (e.g. "file": "lake-man.shp"), which is
+            expanded by elaborate_filenames() into the .shp/.shx/.dbf/.prj
+            set and passed through as the `filenames` allow-list.
+        '''
+        outer_zip_path = self._make_outer_zip()
+        filenames = elaborate_filenames('lake-man.shp')
+
+        task = ZipDecompressTask()
+        output_files = task.decompress([outer_zip_path], self.workdir, filenames)
+
+        output_names = {os.path.basename(path) for path in output_files}
+        self.assertIn('lake-man.shp', output_names)
+        self.assertIn('lake-man.shx', output_names)
+        self.assertIn('lake-man.dbf', output_names)
+        self.assertIn('lake-man.prj', output_names)
+
+        # Sibling non-zip files that don't match the filter should still be
+        # skipped, since the caller only asked for the named shapefile.
+        self.assertNotIn('license.txt', output_names)
+        self.assertNotIn('readme.txt', output_names)
+
+    def test_multiple_nested_zips_raise_decompression_error(self):
+        ''' If more than one zip appears at the same directory level inside
+            the outer zip, extraction should fail loudly rather than
+            silently pick one.
+        '''
+        outer_zip_path = os.path.join(self.testdir, 'outer-ambiguous.zip')
+
+        with ZipFile(outer_zip_path, 'w') as outer_zip:
+            outer_zip.write(self.inner_zip_path, arcname='nested-a.zip')
+            outer_zip.write(self.inner_zip_path, arcname='nested-b.zip')
+
+        task = ZipDecompressTask()
+        with self.assertRaises(DecompressionError):
+            task.decompress([outer_zip_path], self.workdir, [])
+
+    def test_skips_nested_zip_once_filtered_file_is_already_found(self):
+        ''' If the outer zip already directly contains everything the
+            "file" filter asked for, an unrelated nested zip sitting next
+            to it should never be opened/extracted at all - there's no
+            reason to recurse once the request is satisfied, and not doing
+            so limits exposure to a zip bomb hiding in that nested zip.
+        '''
+        outer_zip_path = os.path.join(self.testdir, 'outer-already-satisfied.zip')
+        conforms_dir = os.path.join(os.path.dirname(__file__), 'conforms')
+
+        with ZipFile(outer_zip_path, 'w') as outer_zip:
+            for ext in ('.shp', '.shx', '.dbf', '.prj'):
+                outer_zip.write(
+                    os.path.join(conforms_dir, 'lake-man' + ext),
+                    arcname='lake-man' + ext
+                )
+            # An unrelated nested zip that should never get opened.
+            with tempfile.NamedTemporaryFile(suffix='.zip') as decoy_zip_file:
+                with ZipFile(decoy_zip_file.name, 'w') as decoy_zip:
+                    decoy_zip.writestr('decoy.txt', 'should never be extracted')
+                outer_zip.write(decoy_zip_file.name, arcname='decoy.zip')
+
+        filenames = elaborate_filenames('lake-man.shp')
+
+        task = ZipDecompressTask()
+        output_files = task.decompress([outer_zip_path], self.workdir, filenames)
+
+        output_names = {os.path.basename(path) for path in output_files}
+        self.assertIn('lake-man.shp', output_names)
+        self.assertIn('lake-man.shx', output_names)
+        self.assertIn('lake-man.dbf', output_names)
+        self.assertIn('lake-man.prj', output_names)
+
+        # Proves decoy.zip was never opened/extracted: neither its contents
+        # nor the zip file itself should appear anywhere in the output.
+        self.assertNotIn('decoy.txt', output_names)
+        self.assertNotIn('decoy.zip', output_names)
+
+    def test_oversized_entry_raises_decompression_error(self):
+        ''' A zip entry declaring an uncompressed size over the configured
+            cap should be refused before extraction, as a zip bomb guard.
+            Uses a real (small) fixture but lowers the cap far below its
+            actual size, rather than crafting an actual multi-GB payload.
+        '''
+        outer_zip_path = self._make_outer_zip()
+
+        task = ZipDecompressTask()
+        with mock.patch.object(ZipDecompressTask, 'MAX_ZIP_ENTRY_BYTES', 10):
+            with self.assertRaises(DecompressionError):
+                task.decompress([outer_zip_path], self.workdir, [])
+
+    def test_deeply_nested_zips_raise_decompression_error(self):
+        ''' A chain of nested zips deeper than the configured limit should
+            be refused, as a zip bomb guard against chained amplification.
+            Each level's nested zip is placed inside its own subfolder
+            (arcname "levelN/nested.zip") so unwrapping one level doesn't
+            land in the same directory as the next - matching how the
+            existing "one zip per directory" width check expects real
+            nested archives to be laid out.
+        '''
+        current_path = self.inner_zip_path
+        for level in range(4):
+            next_path = os.path.join(self.testdir, 'wrap-{}.zip'.format(level))
+            with ZipFile(next_path, 'w') as z:
+                z.write(current_path, arcname='level{}/nested.zip'.format(level))
+            current_path = next_path
+
+        task = ZipDecompressTask()
+        with mock.patch.object(ZipDecompressTask, 'MAX_NESTED_ZIP_DEPTH', 2):
+            with self.assertRaises(DecompressionError):
+                task.decompress([current_path], self.workdir, [])
