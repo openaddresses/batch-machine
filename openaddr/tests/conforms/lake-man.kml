@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>lake-man</name>
+  <Placemark>
+    <name>5115 FRUITED PLAINS LN</name>
+    <ExtendedData>
+      <Data name="NUMBER"><value>5115</value></Data>
+      <Data name="STRNAME"><value>FRUITED PLAINS LN</value></Data>
+    </ExtendedData>
+    <Point><coordinates>-122.259249687195,37.8026126376074</coordinates></Point>
+  </Placemark>
+  <Placemark>
+    <name>5121 FRUITED PLAINS LN</name>
+    <ExtendedData>
+      <Data name="NUMBER"><value>5121</value></Data>
+      <Data name="STRNAME"><value>FRUITED PLAINS LN</value></Data>
+    </ExtendedData>
+    <Point><coordinates>-122.256717681885,37.8025278661215</coordinates></Point>
+  </Placemark>
+  <Placemark>
+    <name>5133 FRUITED PLAINS LN</name>
+    <ExtendedData>
+      <Data name="NUMBER"><value>5133</value></Data>
+      <Data name="STRNAME"><value>FRUITED PLAINS LN</value></Data>
+    </ExtendedData>
+    <Point><coordinates>-122.257940769196,37.802968676786</coordinates></Point>
+  </Placemark>
+  <Placemark>
+    <name>5126 FRUITED PLAINS LN</name>
+    <ExtendedData>
+      <Data name="NUMBER"><value>5126</value></Data>
+      <Data name="STRNAME"><value>FRUITED PLAINS LN</value></Data>
+    </ExtendedData>
+    <Point><coordinates>-122.258970737457,37.8007476424409</coordinates></Point>
+  </Placemark>
+  <Placemark>
+    <name>5120 FRUITED PLAINS LN</name>
+    <ExtendedData>
+      <Data name="NUMBER"><value>5120</value></Data>
+      <Data name="STRNAME"><value>FRUITED PLAINS LN</value></Data>
+    </ExtendedData>
+    <Point><coordinates>-122.256953716278,37.800713733002</coordinates></Point>
+  </Placemark>
+  <Placemark>
+    <name>5115 OLD MILL RD</name>
+    <ExtendedData>
+      <Data name="NUMBER"><value>5115</value></Data>
+      <Data name="STRNAME"><value>OLD MILL RD</value></Data>
+    </ExtendedData>
+    <Point><coordinates>-122.257640361786,37.8043589085714</coordinates></Point>
+  </Placemark>
+</Document>
+</kml>
