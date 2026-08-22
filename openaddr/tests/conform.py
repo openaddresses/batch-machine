@@ -2781,6 +2781,44 @@ class TestZipDecompressTask(unittest.TestCase):
         with self.assertRaises(DecompressionError):
             task.decompress([outer_zip_path], self.workdir, [])
 
+    def test_skips_nested_zip_once_filtered_file_is_already_found(self):
+        ''' If the outer zip already directly contains everything the
+            "file" filter asked for, an unrelated nested zip sitting next
+            to it should never be opened/extracted at all - there's no
+            reason to recurse once the request is satisfied, and not doing
+            so limits exposure to a zip bomb hiding in that nested zip.
+        '''
+        outer_zip_path = os.path.join(self.testdir, 'outer-already-satisfied.zip')
+        conforms_dir = os.path.join(os.path.dirname(__file__), 'conforms')
+
+        with ZipFile(outer_zip_path, 'w') as outer_zip:
+            for ext in ('.shp', '.shx', '.dbf', '.prj'):
+                outer_zip.write(
+                    os.path.join(conforms_dir, 'lake-man' + ext),
+                    arcname='lake-man' + ext
+                )
+            # An unrelated nested zip that should never get opened.
+            with tempfile.NamedTemporaryFile(suffix='.zip') as decoy_zip_file:
+                with ZipFile(decoy_zip_file.name, 'w') as decoy_zip:
+                    decoy_zip.writestr('decoy.txt', 'should never be extracted')
+                outer_zip.write(decoy_zip_file.name, arcname='decoy.zip')
+
+        filenames = elaborate_filenames('lake-man.shp')
+
+        task = ZipDecompressTask()
+        output_files = task.decompress([outer_zip_path], self.workdir, filenames)
+
+        output_names = {os.path.basename(path) for path in output_files}
+        self.assertIn('lake-man.shp', output_names)
+        self.assertIn('lake-man.shx', output_names)
+        self.assertIn('lake-man.dbf', output_names)
+        self.assertIn('lake-man.prj', output_names)
+
+        # Proves decoy.zip was never opened/extracted: neither its contents
+        # nor the zip file itself should appear anywhere in the output.
+        self.assertNotIn('decoy.txt', output_names)
+        self.assertNotIn('decoy.zip', output_names)
+
     def test_oversized_entry_raises_decompression_error(self):
         ''' A zip entry declaring an uncompressed size over the configured
             cap should be refused before extraction, as a zip bomb guard.
