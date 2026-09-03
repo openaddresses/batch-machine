@@ -2837,14 +2837,17 @@ class TestZipDecompressTask(unittest.TestCase):
             than its compressed size on disk is refused, even when the
             declared size alone is under MAX_ZIP_ENTRY_BYTES - a tiny
             compressed payload inflating to a huge declared size is the
-            classic zip bomb signature.
+            classic zip bomb signature. Only applies once the declared size
+            clears MIN_RATIO_CHECK_BYTES (mocked low here) - see
+            test_small_highly_compressible_entry_does_not_raise for why.
         '''
         bomb_zip_path = os.path.join(self.testdir, 'bomb.zip')
         with ZipFile(bomb_zip_path, 'w', compression=ZIP_DEFLATED) as z:
             z.writestr('bomb.txt', b'\x00' * 200000)
 
         task = ZipDecompressTask()
-        with mock.patch.object(ZipDecompressTask, 'MAX_ZIP_RATIO', 50):
+        with mock.patch.object(ZipDecompressTask, 'MAX_ZIP_RATIO', 50), \
+             mock.patch.object(ZipDecompressTask, 'MIN_RATIO_CHECK_BYTES', 1000):
             with self.assertRaises(DecompressionError):
                 task.decompress([bomb_zip_path], self.workdir, [])
 
@@ -2859,11 +2862,33 @@ class TestZipDecompressTask(unittest.TestCase):
             z.writestr('dense.bin', os.urandom(20000))
 
         task = ZipDecompressTask()
-        with mock.patch.object(ZipDecompressTask, 'MAX_ZIP_RATIO', 50):
+        with mock.patch.object(ZipDecompressTask, 'MAX_ZIP_RATIO', 50), \
+             mock.patch.object(ZipDecompressTask, 'MIN_RATIO_CHECK_BYTES', 1000):
             output_files = task.decompress([dense_zip_path], self.workdir, [])
 
         output_names = {os.path.basename(path) for path in output_files}
         self.assertIn('dense.bin', output_names)
+
+    def test_small_highly_compressible_entry_does_not_raise(self):
+        ''' A small declared size shouldn't trip the ratio guard no matter
+            how extreme its compression ratio - e.g. real Esri file
+            geodatabases contain tiny (a few KB), highly-compressible index
+            files (.gdbtablx, .atx) that legitimately exceed 100x ratio.
+            Decompressing something this small can't meaningfully exhaust
+            disk, so the ratio check only applies once MIN_RATIO_CHECK_BYTES
+            is cleared - left at its real default here (unlike the other
+            ratio tests) specifically to prove that gate holds.
+        '''
+        index_zip_path = os.path.join(self.testdir, 'index.zip')
+        with ZipFile(index_zip_path, 'w', compression=ZIP_DEFLATED) as z:
+            z.writestr('a00000006.gdbtablx', b'\x00' * 5152)
+
+        task = ZipDecompressTask()
+        with mock.patch.object(ZipDecompressTask, 'MAX_ZIP_RATIO', 2):
+            output_files = task.decompress([index_zip_path], self.workdir, [])
+
+        output_names = {os.path.basename(path) for path in output_files}
+        self.assertIn('a00000006.gdbtablx', output_names)
 
     def test_deeply_nested_zips_raise_decompression_error(self):
         ''' A chain of nested zips deeper than the configured limit should

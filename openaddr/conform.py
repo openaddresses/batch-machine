@@ -217,9 +217,13 @@ class ZipDecompressTask(DecompressionTask):
     MAX_NESTED_ZIP_DEPTH = 10
 
     # A declared:compressed ratio beyond this is the classic zip bomb
-    # signature (a tiny payload inflating to something huge). Legitimate
-    # geodata rarely compresses beyond single or low double digits.
+    # signature (a tiny payload inflating to something huge) - but only
+    # once an entry clears MIN_RATIO_CHECK_BYTES. Small structured/sparse
+    # files (e.g. a gdb's .gdbtablx/.atx index entries, a few KB each) can
+    # legitimately exceed 100x on their own without posing any real disk
+    # risk, since even fully inflated they're still tiny.
     MAX_ZIP_RATIO = 100
+    MIN_RATIO_CHECK_BYTES = 500 * 1024 ** 2  # 500MB
 
     def decompress(self, source_paths, workdir, filenames):
         output_files = []
@@ -303,13 +307,17 @@ class ZipDecompressTask(DecompressionTask):
 
                 # Declared size alone doesn't distinguish a bomb from a big
                 # legitimate dataset - check how implausibly well it claims
-                # to have compressed too.
-                ratio = zinfo.file_size / max(zinfo.compress_size, 1)
-                if ratio > self.MAX_ZIP_RATIO:
-                    raise DecompressionError(
-                        "Refusing to extract {} - declared:compressed ratio {:.1f}x exceeds {}x limit, possible zip bomb"
-                        .format(name, ratio, self.MAX_ZIP_RATIO)
-                    )
+                # to have compressed too. Skip this for small entries: a
+                # tiny file can have an extreme ratio (e.g. a sparse index
+                # file) without any real disk risk, since fully inflated
+                # it's still tiny.
+                if zinfo.file_size >= self.MIN_RATIO_CHECK_BYTES:
+                    ratio = zinfo.file_size / max(zinfo.compress_size, 1)
+                    if ratio > self.MAX_ZIP_RATIO:
+                        raise DecompressionError(
+                            "Refusing to extract {} - declared:compressed ratio {:.1f}x exceeds {}x limit, possible zip bomb"
+                            .format(name, ratio, self.MAX_ZIP_RATIO)
+                        )
 
                 # Nested zip files are always extracted regardless of the
                 # filenames filter, since the requested file may be inside
