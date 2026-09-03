@@ -1,3 +1,6 @@
+2026-09-03 v10.3.0
+- Raise the zip bomb guard's per-entry size cap to 50GB and add a declared:compressed ratio check (gated to entries over 500MB) so legitimately huge, well-compressed datasets like the national address database aren't rejected as bombs https://github.com/openaddresses/batch-machine/pull/114
+
 2026-08-22 v10.2.0
 - Fix lat/lon axis flip for shapefile sources with an explicit `srs` tag https://github.com/openaddresses/batch-machine/pull/113
 - Extract nested zip files regardless of the conform `file` filter, cap zip entry size and nesting depth as a zip bomb guard, and skip recursing into a nested zip once the filter is already satisfied https://github.com/openaddresses/batch-machine/pull/112
