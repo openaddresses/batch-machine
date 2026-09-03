@@ -209,8 +209,17 @@ class ZipDecompressTask(DecompressionTask):
     # (uncompressed) size of any single entry and how many nested zips deep
     # we'll recurse, so worst case is bounded and the job fails loudly
     # instead of exhausting disk.
-    MAX_ZIP_ENTRY_BYTES = 2 * 1024 ** 3  # 2GB
+    # 50GB is a generous backstop bounding worst-case disk usage even for
+    # known-legitimate large datasets (e.g. the national address database's
+    # ~34GB gdbtable) - the ratio check below is what actually distinguishes
+    # a real bomb from a big well-compressed file.
+    MAX_ZIP_ENTRY_BYTES = 50 * 1024 ** 3  # 50GB
     MAX_NESTED_ZIP_DEPTH = 10
+
+    # A declared:compressed ratio beyond this is the classic zip bomb
+    # signature (a tiny payload inflating to something huge). Legitimate
+    # geodata rarely compresses beyond single or low double digits.
+    MAX_ZIP_RATIO = 100
 
     def decompress(self, source_paths, workdir, filenames):
         output_files = []
@@ -290,6 +299,16 @@ class ZipDecompressTask(DecompressionTask):
                     raise DecompressionError(
                         "Refusing to extract {} - declared size {} bytes exceeds {} byte limit, possible zip bomb"
                         .format(name, zinfo.file_size, self.MAX_ZIP_ENTRY_BYTES)
+                    )
+
+                # Declared size alone doesn't distinguish a bomb from a big
+                # legitimate dataset - check how implausibly well it claims
+                # to have compressed too.
+                ratio = zinfo.file_size / max(zinfo.compress_size, 1)
+                if ratio > self.MAX_ZIP_RATIO:
+                    raise DecompressionError(
+                        "Refusing to extract {} - declared:compressed ratio {:.1f}x exceeds {}x limit, possible zip bomb"
+                        .format(name, ratio, self.MAX_ZIP_RATIO)
                     )
 
                 # Nested zip files are always extracted regardless of the
