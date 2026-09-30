@@ -1,3 +1,6 @@
+2026-09-29 v10.4.0
+- Support a `filter` conform key on Esri sources that replaces the default `1=1` query used to fetch rows https://github.com/openaddresses/batch-machine/pull/115
+
 2026-09-03 v10.3.0
 - Raise the zip bomb guard's per-entry size cap to 50GB and add a declared:compressed ratio check (gated to entries over 500MB) so legitimately huge, well-compressed datasets like the national address database aren't rejected as bombs https://github.com/openaddresses/batch-machine/pull/114
 
