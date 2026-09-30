@@ -392,7 +392,14 @@ class EsriRestDownloadTask(DownloadTask):
                 _L.debug("File exists %s", file_path)
                 continue
 
-            downloader = EsriDumper(source_url, parent_logger=_L, timeout=300, extra_headers=self.headers)
+            extra_query_args = {}
+            if conform.get('filter'):
+                # Replaces the default "1=1" (all rows); esridump ANDs it with its own paging clauses
+                extra_query_args['where'] = conform['filter']
+                _L.info("Using custom ESRI where clause: %s", conform['filter'])
+
+            downloader = EsriDumper(source_url, parent_logger=_L, timeout=300, extra_headers=self.headers,
+                                    extra_query_args=extra_query_args)
 
             metadata = downloader.get_metadata()
 
