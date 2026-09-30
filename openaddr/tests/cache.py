@@ -154,6 +154,33 @@ class TestCacheEsriDownload (unittest.TestCase):
                     # This is the expected exception at this point
                     self.assertEqual(e.message, "Could not find object ID field name for deduplication")
 
+    def _download_with_conform(self, extra):
+        conform = {"number": "num", "street": "str"}
+        conform.update(extra)
+        config = SourceConfig({
+            "schema": 2,
+            "layers": {"addresses": [{"name": "default", "conform": conform}]}
+        }, "addresses", "default")
+
+        with patch.object(cache_module, 'EsriDumper') as dumper_patch:
+            dumper = dumper_patch.return_value
+            dumper.get_metadata.return_value = {'fields': []}
+            dumper.get_feature_count.return_value = 0
+            dumper.__iter__.return_value = iter([])
+            EsriRestDownloadTask('us-fl-palmbeach').download(['http://example.com/'], self.workdir, config)
+
+        return dumper_patch.call_args.kwargs
+
+    def test_download_filter(self):
+        """ ESRI Caching Will Pass A Custom filter Clause To The Dumper """
+        kwargs = self._download_with_conform({"filter": "STATUS = 'ACTIVE'"})
+        self.assertEqual({'where': "STATUS = 'ACTIVE'"}, kwargs['extra_query_args'])
+
+    def test_download_without_filter(self):
+        """ ESRI Caching Leaves The Default Where Clause Alone Without filter """
+        kwargs = self._download_with_conform({})
+        self.assertEqual({}, kwargs['extra_query_args'])
+
     def test_field_names_to_request(self):
         '''
         '''
