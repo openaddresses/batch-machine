@@ -324,6 +324,25 @@ class TestCacheEsriDownload (unittest.TestCase):
         fields8 = EsriRestDownloadTask.field_names_to_request(conform8)
         self.assertEqual(fields8, ['Number', 'Street'])
 
+        conform8b = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "addresses": [{
+                    "name": "default",
+                    "conform": {
+                        "number": "Number",
+                        "street": "Street",
+                        "city": {
+                            "function": "first_non_empty",
+                            "fields": ["Town", "PostOffice"]
+                        }
+                    }
+                }]
+            }
+        }), "addresses", "default")
+        fields8b = EsriRestDownloadTask.field_names_to_request(conform8b)
+        self.assertEqual(fields8b, ['Number', 'PostOffice', 'Street', 'Town'])
+
         conform9 = SourceConfig(dict({
             "schema": 2,
             "layers": {
