@@ -1597,6 +1597,20 @@ class TestConformTransforms (unittest.TestCase):
         d = row_fxn_remove_postfix(c, d, "street", c["conform"]["street"])
         self.assertEqual(e, d)
 
+    def test_row_first_non_empty_field_order_matters(self):
+        "first_non_empty - swapping the order of fields changes the result"
+        row = { "FIELD1": "field1 value", "FIELD2": "field2 value" }
+
+        for fields, expected in [
+            (["FIELD1", "FIELD2"], "field1 value"),
+            (["FIELD2", "FIELD1"], "field2 value"),
+        ]:
+            c = { "conform": {
+                "street": { "function": "first_non_empty", "fields": fields }
+            } }
+            d = row_fxn_first_non_empty(c, copy.deepcopy(row), "street", c["conform"]["street"])
+            self.assertEqual(d["oa:street"], expected)
+
     def test_row_first_non_empty(self):
         "first_non_empty - fields array is empty"
         c = { "conform": {

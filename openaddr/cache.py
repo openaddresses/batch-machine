@@ -324,8 +324,8 @@ class EsriRestDownloadTask(DownloadTask):
         if not fxn:
             return set()
 
-        if fxn in ('join', 'format'):
-            # Join and format functions are a list of fields
+        if fxn in ('join', 'format', 'first_non_empty'):
+            # Join, format, and first_non_empty functions are a list of fields
             return set(v['fields'])
         elif fxn == 'chain':
             # Chain function is a list of functions that we should recurse into for field names
