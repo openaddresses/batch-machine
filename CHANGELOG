@@ -1,3 +1,6 @@
+2026-10-05 v10.5.0
+- Request `first_non_empty` fields when fetching Esri layers https://github.com/openaddresses/batch-machine/pull/117
+
 2026-09-29 v10.4.0
 - Support a `filter` conform key on Esri sources that replaces the default `1=1` query used to fetch rows https://github.com/openaddresses/batch-machine/pull/115
 
