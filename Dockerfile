@@ -6,7 +6,7 @@ RUN apk add --no-cache nodejs yarn git python3-dev py3-pip \
     py3-cairo file
 
 # Download and install Tippecanoe
-RUN git clone -b 2.31.0 https://github.com/felt/tippecanoe.git /tmp/tippecanoe && \
+RUN git clone -b 2.79.0 https://github.com/felt/tippecanoe.git /tmp/tippecanoe && \
     cd /tmp/tippecanoe && \
     make && \
     PREFIX=/usr/local make install && \
