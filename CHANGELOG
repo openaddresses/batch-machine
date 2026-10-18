@@ -1,3 +1,6 @@
+2026-10-18 v10.6.0
+- Upgrade tippecanoe from 2.31.0 to 2.79.0 so tile-join no longer exhausts memory when joining the large fabric shards https://github.com/openaddresses/batch-machine/pull/119
+
 2026-10-05 v10.5.0
 - Request `first_non_empty` fields when fetching Esri layers https://github.com/openaddresses/batch-machine/pull/117
 
