@@ -1,3 +1,9 @@
+2026-11-03 v11.0.0
+- Upgrade base Docker image from GDAL 3.11.0 to 3.13.3
+- Upgrade mapbox-vector-tile 2.0.1 to 2.2.0, protobuf 4 to 6, ijson 2.4 to 3.6.0, requests 2.33.0 to 2.34.2, uritemplate 4.1.1 to 4.2.0; drop unused dateutils and future
+- Open GeoJSON sources in binary mode for ijson 3 and replace deprecated OGR `Destroy()` calls
+- Update GitHub Actions used by the release workflows
+
 2026-11-02 v10.7.0
 - Support an `owners` conform key on parcel sources, a list of `{ name, address? }` objects output as a list
 

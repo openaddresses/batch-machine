@@ -753,10 +753,9 @@ def ogr_source_to_csv(source_config, source_path, dest_path):
 
             writer.writerow(row)
 
-            in_feature.Destroy()
             in_feature = in_layer.GetNextFeature()
 
-    in_datasource.Destroy()
+    in_datasource.Close()
 
 def csv_source_to_csv(source_config, source_path, dest_path):
     "Convert a source CSV file to an intermediate form, coerced to UTF-8 and EPSG:4326"
@@ -849,7 +848,7 @@ def geojson_source_to_csv(source_config, source_path, dest_path):
     # first-seen order) before opening the CSV writer.
     out_fieldnames = []
     seen_fieldnames = set()
-    with open(source_path) as file:
+    with open(source_path, 'rb') as file:
         for feature in stream_geojson(file):
             for key in feature['properties'].keys():
                 if key not in seen_fieldnames:
@@ -858,7 +857,7 @@ def geojson_source_to_csv(source_config, source_path, dest_path):
     out_fieldnames.append(GEOM_FIELDNAME)
 
     # For every row in the source GeoJSON
-    with open(source_path) as file:
+    with open(source_path, 'rb') as file:
         # Write the extracted CSV file
         with open(dest_path, 'w', encoding='utf-8') as dest_fp:
             writer = csv.DictWriter(dest_fp, out_fieldnames)

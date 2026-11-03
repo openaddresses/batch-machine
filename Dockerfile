@@ -1,4 +1,4 @@
-FROM ghcr.io/osgeo/gdal:alpine-normal-3.11.0@sha256:edf2793e0f1ceb74ab12a1d85bd3404b541a113720fbc1e032613e7df2774f7c
+FROM ghcr.io/osgeo/gdal:alpine-normal-3.13.3@sha256:102f7f57fea5ce2cb4cb5a1deb060b78ab1f5a77232663a84641d4b7bf2e1aa3
 
 RUN apk add --no-cache nodejs yarn git python3-dev py3-pip \
     make sqlite-dev zlib-dev geos-dev \
