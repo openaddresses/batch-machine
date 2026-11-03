@@ -15,7 +15,7 @@ import logging
 
 from openaddr.tests import TestOA, TestState
 from openaddr.tests.cache import TestCacheExtensionGuessing, TestCacheEsriDownload
-from openaddr.tests.conform import TestConformCli, TestConformTransforms, TestConformMisc, TestConformCsv, TestConformTests
+from openaddr.tests.conform import TestConformCli, TestConformTransforms, TestConformMisc, TestConformCsv, TestConformTests, TestParcelOwners
 from openaddr.tests.preview import TestPreview
 from openaddr.tests.slippymap import TestSlippyMap
 from openaddr.tests.util import TestUtilities
