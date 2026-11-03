@@ -2924,3 +2924,82 @@ class TestZipDecompressTask(unittest.TestCase):
         with mock.patch.object(ZipDecompressTask, 'MAX_NESTED_ZIP_DEPTH', 2):
             with self.assertRaises(DecompressionError):
                 task.decompress([current_path], self.workdir, [])
+
+class TestParcelOwners (unittest.TestCase):
+    "Test the owners object list on the parcels layer"
+
+    GEOM = "POLYGON ((0 0, 0 1, 1 1, 0 0))"
+
+    def _config(self, conform):
+        return SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "parcels": [{
+                    "name": "default",
+                    "conform": dict({"format": "geojson", "pid": "PIN"}, **conform)
+                }]
+            }
+        }), "parcels", "default")
+
+    def test_owners_field_list_and_function(self):
+        d = self._config({"owners": [
+            {"name": "OWNER1", "address": ["MAIL_ADDR", "MAIL_CITY", "MAIL_STATE", "MAIL_ZIP"]},
+            {"name": ["OWN_FIRST_2", "OWN_LAST_2"]},
+            {"name": {"function": "regexp", "field": "OWNER3", "pattern": "^(.*?)\\s*&?$"}, "address": "OWNER3_MAIL"}
+        ]})
+
+        feat = row_transform_and_convert(d, {
+            "PIN": "123",
+            "OWNER1": "SMITH JOHN", "MAIL_ADDR": "1 MAIN ST", "MAIL_CITY": "DENVER", "MAIL_STATE": "CO", "MAIL_ZIP": "80202",
+            "OWN_FIRST_2": "JANE", "OWN_LAST_2": "SMITH",
+            "OWNER3": "DOE JIM &", "OWNER3_MAIL": "",
+            GEOM_FIELDNAME: self.GEOM
+        })
+
+        self.assertEqual(feat["properties"]["pid"], "123")
+        self.assertEqual(feat["properties"]["owners"], [
+            {"name": "SMITH JOHN", "address": "1 MAIN ST DENVER CO 80202"},
+            {"name": "JANE SMITH"},
+            {"name": "DOE JIM"}
+        ])
+        self.assertEqual(sorted(feat["properties"].keys()), ["hash", "owners", "pid"])
+
+    def test_owners_blank_slots_dropped(self):
+        d = self._config({"owners": [
+            {"name": "OWNER1", "address": "MAIL"},
+            {"name": "OWNER2"},
+            {"name": "OWNER3"}
+        ]})
+
+        feat = row_transform_and_convert(d, {
+            "PIN": "1", "OWNER1": " ACME LLC ", "MAIL": "  ", "OWNER2": " ", "OWNER3": None,
+            GEOM_FIELDNAME: self.GEOM
+        })
+
+        self.assertEqual(feat["properties"]["owners"], [{"name": "ACME LLC"}])
+
+    def test_owners_all_blank(self):
+        d = self._config({"owners": [{"name": "OWNER1"}]})
+
+        feat = row_transform_and_convert(d, {"PIN": "1", "OWNER1": "", GEOM_FIELDNAME: self.GEOM})
+
+        self.assertEqual(feat["properties"]["owners"], [])
+
+    def test_owners_absent(self):
+        d = self._config({})
+
+        feat = row_transform_and_convert(d, {"PIN": "1", "OWNER1": "SMITH JOHN", GEOM_FIELDNAME: self.GEOM})
+
+        self.assertEqual(feat["properties"]["owners"], [])
+        self.assertEqual(sorted(feat["properties"].keys()), ["hash", "owners", "pid"])
+
+    def test_owners_hash_is_stable(self):
+        d = self._config({"owners": [{"name": "OWNER1"}]})
+        d.data_source["fingerprint"] = "abc"
+
+        a = row_transform_and_convert(d, {"PIN": "1", "OWNER1": "SMITH JOHN", GEOM_FIELDNAME: self.GEOM})
+        b = row_transform_and_convert(d, {"PIN": "1", "OWNER1": "SMITH JOHN", GEOM_FIELDNAME: self.GEOM})
+        c = row_transform_and_convert(d, {"PIN": "1", "OWNER1": "SMITH JANE", GEOM_FIELDNAME: self.GEOM})
+
+        self.assertEqual(a["properties"]["hash"], b["properties"]["hash"])
+        self.assertNotEqual(a["properties"]["hash"], c["properties"]["hash"])

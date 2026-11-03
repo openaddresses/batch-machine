@@ -342,6 +342,27 @@ class EsriRestDownloadTask(DownloadTask):
             return set([v.get('field')])
 
     @classmethod
+    def fields_from_conform_value(cls, v):
+        ''' Return the set of source field names referenced by a conform value.
+
+            Non-string scalars (e.g. an integer accuracy constant) are skipped since Esri only supports string field names.
+        '''
+        if isinstance(v, dict):
+            return (cls.fields_from_conform_function(v) if 'function' in v else None) or set()
+        elif isinstance(v, list):
+            fields = set()
+            for item in v:
+                if isinstance(item, dict) and 'function' not in item:
+                    for sub in item.values():
+                        fields |= cls.fields_from_conform_value(sub)
+                else:
+                    fields |= cls.fields_from_conform_value(item)
+            return fields
+        elif isinstance(v, str):
+            return set([v])
+        return set()
+
+    @classmethod
     def field_names_to_request(cls, source_config):
         ''' Return list of fieldnames to request based on conform, or None.
         '''
@@ -354,20 +375,7 @@ class EsriRestDownloadTask(DownloadTask):
         fields = set()
         for k, v in conform.items():
             if k in source_config.SCHEMA:
-                if isinstance(v, dict):
-                    # It's a function of some sort?
-                    if 'function' in v:
-                        fields |= cls.fields_from_conform_function(v)
-                elif isinstance(v, list):
-                    # It's a list of field names
-                    fields |= set(v)
-                elif isinstance(v, str):
-                    # It's a direct field name mapping
-                    fields.add(v)
-                # Note: We intentionally skip non-string scalar values (e.g., integers) because
-                # Esri only supports string field names. Also, the 'accuracy' field can be
-                # set to an integer constant (like 1) to indicate a fixed accuracy level,
-                # rather than a field name to fetch from the source.
+                fields |= cls.fields_from_conform_value(v)
 
         if fields:
             # Remove any blank or None values

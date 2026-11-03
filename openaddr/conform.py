@@ -48,12 +48,15 @@ GEOM_FIELDNAME = 'oa:geom'
 
 ADDRESSES_SCHEMA = [ 'hash', 'number', 'street', 'unit', 'city', 'district', 'region', 'postcode', 'id', 'accuracy' ]
 BUILDINGS_SCHEMA = [ 'hash', 'height', 'levels']
-PARCELS_SCHEMA = [ 'hash', 'pid' ]
+PARCELS_SCHEMA = [ 'hash', 'pid', 'owners' ]
 CENTERLINES_SCHEMA = [ 'hash', 'id', 'name', 'oneway', 'speed', 'classification', 'surface', 'addr_from_left', 'addr_to_left', 'addr_from_right', 'addr_to_right', 'zip_left', 'zip_right' ]
 RESERVED_SCHEMA = ADDRESSES_SCHEMA + BUILDINGS_SCHEMA + PARCELS_SCHEMA + CENTERLINES_SCHEMA + [
     "lat",
     "lon"
 ]
+
+# Schema fields whose conform value is a list of objects and whose output is a list, keyed by the attribute that must be non-empty
+OBJECT_LIST_SCHEMA = { 'owners': ['name', 'address'] }
 
 UNZIPPED_DIRNAME = 'unzipped'
 UNGZIPPED_DIRNAME = 'ungzipped'
@@ -1029,7 +1032,9 @@ def row_transform_and_convert(source_config, row):
 
     "Attribute tags can utilize processing fxns"
     for k, v in c.items():
-        if k in source_config.SCHEMA and isinstance(v, list):
+        if k in source_config.SCHEMA and k in OBJECT_LIST_SCHEMA and isinstance(v, list):
+            row = row_object_list(source_config, row, k)
+        elif k in source_config.SCHEMA and isinstance(v, list):
             "Lists are a concat shortcut to concat fields with spaces"
             row = row_merge(source_config, row, k)
         if k in source_config.SCHEMA and isinstance(v, dict):
@@ -1055,10 +1060,40 @@ def row_transform_and_convert(source_config, row):
 
     return feat
 
+def row_resolve(sc, row, key, value):
+    "Resolve a conform value (field name, list of fields to merge, or function) into row['oa:key']"
+    if isinstance(value, dict):
+        row = row_function(sc, row, key, value)
+    elif isinstance(value, list):
+        merge_data = [(row.get(field, '') or '').strip() for field in value]
+        row["oa:{}".format(key)] = ' '.join([part for part in merge_data if part])
+    else:
+        row["oa:{}".format(key)] = (row.get(value, '') or '').strip()
+    return row
+
 def row_merge(sc, row, key):
     "Merge multiple columns like 'Maple','St' to 'Maple St'"
-    merge_data = [(row.get(field, '') or '').strip() for field in sc.data_source["conform"][key]]
-    row["oa:{}".format(key)] = ' '.join([part for part in merge_data if part])
+    return row_resolve(sc, row, key, sc.data_source["conform"][key])
+
+def row_object_list(sc, row, key):
+    "Build a list of objects like owners from a list of conform objects, dropping entries whose first attribute is empty"
+    attrs = OBJECT_LIST_SCHEMA[key]
+    items = []
+    for index, obj in enumerate(sc.data_source["conform"][key]):
+        item = {}
+        for attr in attrs:
+            if attr not in obj:
+                continue
+            tmp = "{}.{}.{}".format(key, index, attr)
+            row = row_resolve(sc, row, tmp, obj[attr])
+            value = row.pop("oa:{}".format(tmp), None)
+            row.pop(tmp, None)
+            value = str(value).strip() if value is not None else ''
+            if value:
+                item[attr] = value
+        if item.get(attrs[0]):
+            items.append(item)
+    row["oa:{}".format(key)] = items
     return row
 
 def row_fxn_join(sc, row, key, fxn):
@@ -1304,6 +1339,8 @@ def row_convert_to_out(source_config, row):
             # resolve to an oa:-prefixed field.
             if cfield and isinstance(cfield, str):
                 output["properties"][field] = row.get(cfield)
+            elif field in OBJECT_LIST_SCHEMA:
+                output["properties"][field] = []
             else:
                 output["properties"][field] = ''
 

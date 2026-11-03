@@ -129,6 +129,27 @@ class TestCacheEsriDownload (unittest.TestCase):
             actual = task.field_names_to_request(c)
             self.assertEqual(expected, actual)
 
+    def test_field_names_to_request_owners(self):
+        conform = SourceConfig(dict({
+            "schema": 2,
+            "layers": {
+                "parcels": [{
+                    "name": "default",
+                    "conform": {
+                        "pid": "PIN",
+                        "owners": [
+                            {"name": "OWNER1", "address": ["MAIL_ADDR", "MAIL_CITY"]},
+                            {"name": {"function": "regexp", "field": "OWNER2", "pattern": "^(.*)$"}},
+                            {"name": {"function": "constant", "value": "COUNTY"}}
+                        ]
+                    }
+                }]
+            }
+        }), "parcels", "default")
+
+        fields = EsriRestDownloadTask.field_names_to_request(conform)
+        self.assertEqual(fields, ['MAIL_ADDR', 'MAIL_CITY', 'OWNER1', 'OWNER2', 'PIN'])
+
     def test_download_handles_no_count(self):
         """ ESRI Caching Will Handle A Server Without returnCountOnly Support """
         task = EsriRestDownloadTask('us-fl-palmbeach')
